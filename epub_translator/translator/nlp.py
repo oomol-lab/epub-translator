@@ -34,8 +34,3 @@ class NLP:
   def _split_into_sents(self, text: str) -> list[str]:
     cells: list[str] = re.split(r"(\.|!|\?|;|。|！|？|；)", text)
     return [cells[i] + cells[i+1] for i in range(0, len(cells)-1, 2)]
-
-if __name__ == "__main__":
-  text = "山の向こうに日が沈むと、黄河が海に流れ込みます。千マイル先を見たい場合は、次のレベルに進んでください。"
-  for line in NLP().split_into_sents(text):
-    print(line)

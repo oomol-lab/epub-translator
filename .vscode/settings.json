@@ -49,6 +49,7 @@
     "rects",
     "rootfile",
     "rootfiles",
+    "sents",
     "tiktoken",
     "tobytes",
     "updation",

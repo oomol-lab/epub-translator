@@ -1,0 +1,34 @@
+name: build
+on:
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.16"
+
+      - name: Step poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: "2.1.3"
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-root
+
+      # lxml 有问题，等我们换掉 XML
+      # - name: Lint
+      #   run: |
+      #     poetry run pylint ./epub_translator/**/*.py ./tests/**/*.py
+
+      - name: Run unit tests
+        run: poetry run python test.py
