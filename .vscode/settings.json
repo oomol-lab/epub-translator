@@ -1,0 +1,56 @@
+{
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "pylint.args": [
+    "--generate-members"
+  ],
+  "files.associations": {
+    "*.jinja": "jinja-xml",
+    "*.xml.jinja": "jinja-xml",
+    "*.xhtml.jinja": "jinja-html",
+    "*.css.jinja": "jinja-css",
+    "*.xml": "xml"
+  },
+  "[jinja-xml]": {
+    "editor.wordWrap": "on"
+  },
+  "[xml]": {
+    "editor.wordWrap": "on"
+  },
+  "cSpell.words": [
+    "analyse",
+    "analyser",
+    "analysers",
+    "analysing",
+    "apos",
+    "arcname",
+    "CJKA",
+    "clazz",
+    "datas",
+    "elif",
+    "endfor",
+    "epub",
+    "fitz",
+    "frombytes",
+    "kwoa",
+    "langchain",
+    "layoutreader",
+    "mathml",
+    "matplotlib",
+    "metas",
+    "OEBPS",
+    "Onnx",
+    "OOMOL",
+    "pixmap",
+    "rects",
+    "rootfile",
+    "rootfiles",
+    "tiktoken",
+    "tobytes",
+    "updation",
+    "venv",
+    "Zeyu",
+    "zinfo"
+  ]
+}
