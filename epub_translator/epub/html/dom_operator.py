@@ -19,7 +19,7 @@ def append_texts(root: Element, texts: Iterable[str | Iterable[str] | None]):
     if text is None:
       continue
     if not isinstance(text, str):
-      # TODO: implmenets split text
+      # TODO: implements split text
       text = "".join(text)
     if position == TextPosition.WHOLE_DOM:
       if parent is not None:

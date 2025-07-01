@@ -18,7 +18,7 @@ _LAN_FULL_NAMES: dict[str, str] = {
   "de": "German",
 }
 
-class Translater:
+class Translator:
   def __init__(
         self,
         group_max_tokens: int,

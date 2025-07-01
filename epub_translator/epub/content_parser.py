@@ -52,7 +52,7 @@ class EpubContent:
   @property
   def ncx_path(self):
     ncx_dom = self._manifest.find(".//*[@id=\"ncx\"]")
-    if not ncx_dom is None:
+    if ncx_dom is not None:
       href_path = ncx_dom.get("href")
       base_path = os.path.dirname(self._content_path)
       path = os.path.join(base_path, href_path)
@@ -106,7 +106,7 @@ class EpubContent:
   @title.setter
   def title(self, title: str):
     title_dom = self._get_title()
-    if not title_dom is None:
+    if title_dom is not None:
       title_dom.text = _escape_ascii(title)
 
   def _get_title(self):

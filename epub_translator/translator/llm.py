@@ -1,6 +1,5 @@
 from typing import Generator, cast
 from io import StringIO
-from enum import Enum
 from pydantic import SecretStr
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessageChunk
 from langchain_openai import ChatOpenAI
