@@ -1,9 +1,12 @@
 [project]
 name = "epub-translator"
 version = "0.0.1"
-description = ""
+description = "Translate the epub book using LLM. The translated book will retain the original text and list the translated text side by side with the original text."
 authors = [
-    {name = "Tao Zeyu",email = "i@taozeyu.com"}
+    {name = "Tao Zeyu", email = "i@taozeyu.com"}
+]
+maintainers = [
+    {name = "Tao Zeyu", email = "i@taozeyu.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
@@ -19,7 +22,18 @@ dependencies = [
     "langchain-openai (==0.3.13)"
 ]
 
-
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+license = "MIT"
+readme = "README.md"
+homepage = "https://hub.oomol.com/package/book-translator"
+repository = "https://github.com/oomol-flows/books-translator"
+packages = [
+    {include = "epub_translator" }
+]
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^3.3.7"
