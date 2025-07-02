@@ -6,9 +6,9 @@ from ..llm import LLM
 
 _SPACE = re.compile(r"\s+")
 
-def translate_chunk(llm: LLM, fragments: list[str]):
+def translate(llm: LLM, texts: list[str]):
   request_element = Element("request")
-  for i, fragment in enumerate(fragments):
+  for i, fragment in enumerate(texts):
     fragment_element = Element("fragment", attrib={
       "id": str(i + 1),
     })
@@ -22,7 +22,7 @@ def translate_chunk(llm: LLM, fragments: list[str]):
       "target_language": "英语",
     },
   )
-  translated_fragments = [""] * len(fragments)
+  translated_fragments = [""] * len(texts)
   for fragment_element in resp_element:
     if fragment_element.text is None:
       continue
