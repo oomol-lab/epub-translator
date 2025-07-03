@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
 from resource_segmentation import Incision
-from epub_translator.llm import LLM
+from epub_translator import LLM
 from epub_translator.translation import translate, Fragment
 
 
@@ -21,7 +21,7 @@ def main() -> None:
     llm=llm,
     cache_path=temp_path / "cache",
     max_chunk_tokens_count=4096,
-    fragments=list(
+    gen_fragments_iter=lambda:(
       Fragment(text=text, start_incision=Incision.IMPOSSIBLE, end_incision=Incision.IMPOSSIBLE)
       for text in (
         "分析者和他的每个家人之间发生的斗争逐渐聚焦起来，最初的事件或情境（我在这儿将其称为S）。",

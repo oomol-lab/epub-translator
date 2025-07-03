@@ -1,1 +1,1 @@
-from .file import translate_html
+from .file import HTMLFile

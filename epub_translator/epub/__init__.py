@@ -1,3 +1,2 @@
-from .content_parser import EpubContent
-from .types import Translate, ReportProgress
-from .html import translate_html
+from .content_parser import Spine, EpubContent
+from .html import HTMLFile
