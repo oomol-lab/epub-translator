@@ -1,6 +1,6 @@
 import re
 
-from typing import Iterable, Generator
+from typing import Callable, Iterator, Generator
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
@@ -13,7 +13,7 @@ from .chunk import match_fragments
 
 def translate(
       llm: LLM,
-      fragments: Iterable[Fragment],
+      gen_fragments_iter: Callable[[], Iterator[Fragment]],
       cache_path: Path | None,
       max_chunk_tokens_count: int,
     )-> Generator[str, None, None]:
@@ -21,13 +21,13 @@ def translate(
   store = Store(cache_path) if cache_path else None
   chunk_ranges = list(split_into_chunks(
     llm=llm,
-    fragments_iter=iter(fragments),
+    fragments_iter=gen_fragments_iter(),
     max_chunk_tokens_count=max_chunk_tokens_count,
   ))
   for chunk in match_fragments(
     llm=llm,
     chunk_ranges_iter=iter(chunk_ranges),
-    fragments_iter=iter(fragments),
+    fragments_iter=gen_fragments_iter(),
   ):
     translated_texts: list[str] | None = None
     if store is not None:
