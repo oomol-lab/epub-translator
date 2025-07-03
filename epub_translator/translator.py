@@ -16,17 +16,17 @@ def translate(
       working_path: PathLike | None = None,
     ):
 
-  is_temp_workspace = bool(working_path)
-  working_path = working_path if working_path else mkdtemp()
+  is_temp_workspace = not bool(working_path)
+  working_path = working_path or mkdtemp()
   try:
     temp_dir = _clean_path(Path(working_path) / "temp")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     context = ZipContext(
       epub_path=Path(source_path),
-      temp_dir=Path(working_path),
+      temp_dir=temp_dir,
     )
-    context.replace_ncx(_translate_ncx)
+    context.replace_ncx(lambda texts: _translate_ncx(llm, texts))
     _translate_spine(llm, context, working_path)
 
     translated_path = _clean_path(Path(translated_path))
@@ -40,9 +40,16 @@ def translate(
 def _translate_ncx(llm: LLM, texts: list[str]) -> list[str]:
   return list(_translate(
     llm=llm,
-    gen_fragments_iter=lambda: iter(texts),
     cache_path=None,
     max_chunk_tokens_count=4096,
+    gen_fragments_iter=lambda: (
+      Fragment(
+        text=text,
+        start_incision=Incision.IMPOSSIBLE,
+        end_incision=Incision.IMPOSSIBLE,
+      )
+      for text in texts
+    ),
   ))
 
 def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
@@ -57,18 +64,27 @@ def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
     cache_path=working_path / "cache",
     max_chunk_tokens_count=4096,
   ):
+    did_touch_end = False
+
     if spine_file is not None and \
        translated_count >= len(translated_texts):
       spine_file.write_texts(translated_texts)
       spine_file = None
 
-    if spine_file is None:
+    while spine_file is None:
       spine_path = next(spine_paths_iter, None)
       if spine_path is None:
+        did_touch_end = True
         break
       spine_file = context.read_spine_file(spine_path)
+      if spine_file.texts_length == 0:
+        spine_file = None
+        continue
       translated_texts = [""] * spine_file.texts_length
       translated_count = 0
+
+    if did_touch_end:
+      break
 
     translated_texts[translated_count] = translated_text
     translated_count += 1
