@@ -22,6 +22,7 @@ class Store:
       else:
         rmtree(file_path)
 
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w", encoding="utf-8") as file:
       is_first_line = True
       for line in lines_iter:

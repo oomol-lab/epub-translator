@@ -26,11 +26,11 @@ class ChunkRange:
 
 def match_fragments(
         llm: LLM,
-        chunks_iter: Iterator[ChunkRange],
+        chunk_ranges_iter: Iterator[ChunkRange],
         fragments_iter: Iterator[Fragment],
       ) -> Generator[Chunk, None, None]:
 
-  for range, texts in _match_range_and_texts(chunks_iter, fragments_iter):
+  for range, texts in _match_range_and_texts(chunk_ranges_iter, fragments_iter):
     head_length = range.body_index - range.head_index
     body_length = range.tail_index - range.body_index
     head = texts[:head_length]
