@@ -1,14 +1,15 @@
 import unittest
-from epub_translator.epub import translate_html
+
+from typing import Callable
+from epub_translator.epub import HTMLFile
 
 
 class TestAddFunction(unittest.TestCase):
 
   def test_string_logic(self):
-    target = translate_html(
-      translate=lambda texts, _: [t for t in texts],
+    target = self._translate_html(
+      translate=lambda texts: [t for t in texts],
       file_content = "<html><body>hello<span>the</span>world</body></html>",
-      report_progress=lambda _: None,
     )
     self.assertEqual(
       first=target,
@@ -17,11 +18,17 @@ class TestAddFunction(unittest.TestCase):
 
   def test_pick_and_replace_content(self):
     # Just a smoke test
-    translate_html(
-      translate=lambda texts, _: [""],
+    self._translate_html(
+      translate=lambda _: [""],
       file_content = self._get_test_xml_content(),
-      report_progress=lambda _: None,
     )
+
+  def _translate_html(self, translate: Callable[[list[str]], list[str]], file_content: str):
+    html_file = HTMLFile(file_content)
+    source_texts = html_file.read_texts()
+    translated_texts = translate(source_texts)
+    html_file.write_texts(translated_texts)
+    return html_file.file_content
 
   def _get_test_xml_content(self) -> str:
     return """

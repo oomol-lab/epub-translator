@@ -6,7 +6,7 @@ import shutil
 
 from typing import Callable
 from lxml.etree import parse
-from .epub import translate_html, Translate, EpubContent
+from .epub import Translate, EpubContent
 
 
 ProgressReporter = Callable[[float], None]
@@ -107,13 +107,14 @@ def _translate_spines(epub_content: EpubContent, translate: Translate, report_pr
     if spine.media_type == "application/xhtml+xml":
       file_path = spine.path
       with open(file_path, "r", encoding="utf-8") as file:
-        content = translate_html(
-          translate=translate,
-          file_content=file.read(),
-          report_progress=lambda p, i=index: report_progress((float(i) + p) / len(spines)),
-        )
-      with open(file_path, "w", encoding="utf-8") as file:
-        file.write(content)
+        pass # TODO:
+        # content = translate_html(
+        #   translate=translate,
+        #   file_content=file.read(),
+        #   report_progress=lambda p, i=index: report_progress((float(i) + p) / len(spines)),
+        # )
+      # with open(file_path, "w", encoding="utf-8") as file:
+      #   file.write(content)
 
     report_progress(float(index + 1) / len(spines))
 
