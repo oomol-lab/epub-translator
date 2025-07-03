@@ -42,6 +42,10 @@ class ZipContext:
     with open(spine_path, "r", encoding="utf-8") as file:
       return HTMLFile(file.read())
 
+  def write_spine_file(self, spine_path: Path, file: HTMLFile):
+    with open(spine_path, "w", encoding="utf-8") as f:
+      f.write(file.file_content)
+
   def replace_ncx(self, replace: Callable[[list[str]], list[str]]):
     ncx_path = self._epub_content.ncx_path
     if ncx_path is None:

@@ -92,6 +92,8 @@ def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
   if spine_file and translated_count > 0:
     spine_file.write_texts(translated_texts)
 
+  context.write_spine_file(spine_path, spine_file)
+
 def _gen_fragments(context: ZipContext):
   for spine_path in context.search_spine_paths():
     spine_file = context.read_spine_file(spine_path)
