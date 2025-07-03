@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
 from resource_segmentation import Incision
-from epub_translator.llm import LLM
+from epub_translator import LLM
 from epub_translator.translation import translate, Fragment
 
 

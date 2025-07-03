@@ -1,1 +1,2 @@
-from .translator import Translator
+from .llm import LLM
+from .translator import translate
