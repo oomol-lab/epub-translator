@@ -12,12 +12,9 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "tqdm (>=4.67.1,<5.0.0)",
     "lxml (>=6.0.0,<7.0.0)",
     "tiktoken (>=0.9.0,<0.10.0)",
     "jinja2 (>=3.1.5,<4.0.0)",
-    "langid (>=1.1.6,<2.0.0)",
-    "spacy (>=3.8.7,<4.0.0)",
     "resource-segmentation (==0.0.2)",
     "langchain[openai] (>=0.3.21,<0.4.0)",
 ]
