@@ -14,7 +14,7 @@ class Spine:
     self.media_type = item.get("media-type")
 
   @property
-  def path(self):
+  def path(self) -> str:
     path = os.path.join(self._base_path, self.href)
     path = os.path.abspath(path)
 
@@ -66,7 +66,7 @@ class EpubContent:
       return path
 
   @property
-  def spines(self):
+  def spines(self) -> list[Spine]:
     idref_dict = {}
     index = 0
 
