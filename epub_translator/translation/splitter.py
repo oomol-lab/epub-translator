@@ -1,19 +1,10 @@
-from dataclasses import dataclass
 from typing import Iterator, Generator
 from resource_segmentation import split, Resource, Segment
 
 from ..llm import LLM
 from .types import Fragment
+from .chunk import ChunkRange
 
-
-@dataclass
-class Chunk:
-  head_remain_tokens: int
-  tail_remain_tokens: int
-  head_index: int
-  body_index: int
-  tail_index: int
-  fragments_count: int
 
 def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_tokens_count: int):
   for group in split(
@@ -41,7 +32,7 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
       tail_index = body_end_index + 1
       fragments_count = tail_index - head_index
 
-    yield Chunk(
+    yield ChunkRange(
       head_remain_tokens=group.head_remain_count,
       tail_remain_tokens=group.tail_remain_count,
       head_index=head_index,
