@@ -12,7 +12,8 @@ class TextPosition(Enum):
 TextDescription = tuple[Element, TextPosition, Element | None]
 
 _IGNORE_TAGS = (
-  "title", "link", "style", "css", "img", "script", "metadata"
+  "title", "link", "style", "css", "img", "script", "metadata",
+  "{http://www.w3.org/1998/Math/MathML}math", # TODO: 公式是正文，也要读进去，暂时忽略避免扰乱得了。
 )
 
 _TEXT_LEAF_TAGS = (

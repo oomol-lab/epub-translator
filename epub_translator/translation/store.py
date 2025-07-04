@@ -1,6 +1,7 @@
 from shutil import rmtree
 from pathlib import Path
 from typing import Iterator
+from .utils import clean_spaces
 
 
 class Store:
@@ -30,7 +31,7 @@ class Store:
           is_first_line = False
         else:
           file.write("\n")
-        file.write(line)
+        file.write(clean_spaces(line))
 
   def _file_path(self, chunk_hash: bytes) -> Path:
     return self._directory / f"{chunk_hash.hex()}.chunk"
