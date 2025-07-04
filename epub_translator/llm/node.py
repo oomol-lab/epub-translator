@@ -1,9 +1,8 @@
-import json
 import datetime
 
 from os import PathLike
 from pathlib import Path
-from typing import cast, Any, Generator, Sequence
+from typing import cast, Any, TypeVar, Generator, Sequence, Callable
 from importlib.resources import files
 from jinja2 import Environment, Template
 from xml.etree.ElementTree import Element
@@ -17,6 +16,8 @@ from ..xml import decode_friendly, encode_friendly
 from .increasable import Increasable
 from .executor import LLMExecutor
 
+
+R = TypeVar("R")
 
 class LLM:
   def __init__(
@@ -73,36 +74,49 @@ class LLM:
 
     return logger
 
-  def request_txt(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> str:
+  def request_text(
+      self,
+      template_name: str,
+      text_tag: str,
+      user_data: Element | str,
+      parser: Callable[[str], R],
+      params: dict[str, Any] | None = None,
+    ) -> R:
+
     if params is None:
       params = {}
+
+    def parse_response(response: str) -> R:
+      text = next(self._search_quotes(text_tag.lower(), response), None)
+      if text is None:
+        raise ValueError(f"No valid {text_tag} response found")
+      return parser(text)
+
     return self._executor.request(
       input=self._create_input(template_name, user_data, params),
-      parser=self._encode_txt,
+      parser=parse_response,
     )
 
-  def request_markdown(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> str:
-    if params is None:
-      params = {}
-    return self._executor.request(
-      input=self._create_input(template_name, user_data, params),
-      parser=self._encode_markdown,
-    )
+  def request_xml(
+        self,
+        template_name: str,
+        user_data: Element | str,
+        parser: Callable[[Element], R],
+        params: dict[str, Any] | None = None,
+      ) -> R:
 
-  def request_json(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> Any:
     if params is None:
       params = {}
-    return self._executor.request(
-      input=self._create_input(template_name, user_data, params),
-      parser=self._encode_json,
-    )
 
-  def request_xml(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> Element:
-    if params is None:
-      params = {}
+    def parse_response(response: str) -> R:
+      element = next(decode_friendly(response, "response"), None)
+      if element is None:
+        raise ValueError("No valid XML response found")
+      return parser(element)
+
     return self._executor.request(
       input=self._create_input(template_name, user_data, params),
-      parser=self._encode_xml,
+      parser=parse_response,
     )
 
   def _create_input(self, template_name: str, user_data: Element | str, params: dict[str, Any]):
@@ -140,26 +154,6 @@ class LLM:
       template = self._env.get_template(template_name)
       self._templates[template_name] = template
     return template
-
-  def _encode_txt(self, response: str) -> str:
-    for quote in self._search_quotes("txt", response):
-      return quote
-    raise ValueError("No valid TXT response found")
-
-  def _encode_markdown(self, response: str) -> str:
-    for quote in self._search_quotes("markdown", response):
-      return quote
-    raise ValueError("No valid Markdown response found")
-
-  def _encode_json(self, response: str) -> Any:
-    for quote in self._search_quotes("json", response):
-      return json.loads(quote)
-    raise ValueError("No valid Markdown response found")
-
-  def _encode_xml(self, response: str) -> Element:
-    for element in decode_friendly(response, "response"):
-      return element
-    raise ValueError("No valid XML response found")
 
   def _search_quotes(self, kind: str, response: str) -> Generator[str, None, None]:
     start_marker = f"```{kind}"
