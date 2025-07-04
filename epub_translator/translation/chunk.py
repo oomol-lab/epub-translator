@@ -64,12 +64,12 @@ def _match_range_and_texts(
 
     if matched_chunk_ranges:
       next_matched_chunks: list[tuple[ChunkRange, list[str]]] = []
-      for chunk, texts in matched_chunk_ranges:
-        if chunk.match(index):
+      for chunk_range, texts in matched_chunk_ranges:
+        if chunk_range.match(index):
           texts.append(fragment.text)
-          next_matched_chunks.append((chunk, texts))
+          next_matched_chunks.append((chunk_range, texts))
         else:
-          yield chunk, texts
+          yield chunk_range, texts
       matched_chunk_ranges = next_matched_chunks
 
   yield from matched_chunk_ranges
