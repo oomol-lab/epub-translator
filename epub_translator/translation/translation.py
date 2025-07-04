@@ -1,14 +1,14 @@
-import re
-
 from typing import Callable, Iterator, Generator
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM
+from ..xml import encode_friendly
 from .types import Fragment
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments
+from .utils import clean_spaces
 
 
 def translate(
@@ -44,24 +44,30 @@ def translate(
     head_length = len(chunk.head)
     yield from translated_texts[head_length:head_length + len(chunk.body)]
 
-_SPACE = re.compile(r"\s+")
-
 def _translate_texts(llm: LLM, texts: list[str]):
-  request_element = Element("request")
-  for i, fragment in enumerate(texts):
-    fragment_element = Element("fragment", attrib={
-      "id": str(i + 1),
-    })
-    fragment_element.text = _SPACE.sub(" ", fragment.strip())
-    request_element.append(fragment_element)
-
-  resp_element = llm.request_xml(
+  translated_text = llm.request_txt(
     template_name="translate",
-    user_data=request_element,
+    user_data=" ".join(clean_spaces(text) for text in texts),
     params={
       "target_language": "英语",
     },
   )
+  request_element = Element("request")
+
+  for i, fragment in enumerate(texts):
+    fragment_element = Element("fragment", attrib={
+      "id": str(i + 1),
+    })
+    fragment_element.text = clean_spaces(fragment)
+    request_element.append(fragment_element)
+
+  request_element_text = encode_friendly(request_element)
+  request_text = f"```XML\n{request_element_text}\n```\n\n{translated_text}"
+  resp_element = llm.request_xml(
+    template_name="format",
+    user_data=request_text,
+  )
+
   translated_fragments = [""] * len(texts)
   for fragment_element in resp_element:
     if fragment_element.text is None:

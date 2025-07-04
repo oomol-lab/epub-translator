@@ -73,6 +73,14 @@ class LLM:
 
     return logger
 
+  def request_txt(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> str:
+    if params is None:
+      params = {}
+    return self._executor.request(
+      input=self._create_input(template_name, user_data, params),
+      parser=self._encode_txt,
+    )
+
   def request_markdown(self, template_name: str, user_data: Element | str, params: dict[str, Any] | None = None) -> str:
     if params is None:
       params = {}
@@ -132,6 +140,11 @@ class LLM:
       template = self._env.get_template(template_name)
       self._templates[template_name] = template
     return template
+
+  def _encode_txt(self, response: str) -> str:
+    for quote in self._search_quotes("txt", response):
+      return quote
+    raise ValueError("No valid TXT response found")
 
   def _encode_markdown(self, response: str) -> str:
     for quote in self._search_quotes("markdown", response):
