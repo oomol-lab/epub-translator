@@ -85,12 +85,12 @@ def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
       translated_texts = [""] * spine_file.texts_length
       translated_count = 0
 
-    if did_touch_end:
-      break
 
     translated_texts[translated_count] = translated_text
     translated_count += 1
 
+    if did_touch_end:
+      break
   if spine_file and translated_count > 0:
     spine_file.write_texts(translated_texts)
 
