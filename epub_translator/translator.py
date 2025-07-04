@@ -9,6 +9,8 @@ from .zip_context import ZipContext
 from .translation import translate as _translate, Fragment, Incision
 
 
+_MAX_TOKENS = 2500
+
 def translate(
       llm: LLM,
       source_path: PathLike,
@@ -41,7 +43,7 @@ def _translate_ncx(llm: LLM, texts: list[str]) -> list[str]:
   return list(_translate(
     llm=llm,
     cache_path=None,
-    max_chunk_tokens_count=4096,
+    max_chunk_tokens_count=_MAX_TOKENS,
     gen_fragments_iter=lambda: (
       Fragment(
         text=text,
@@ -62,7 +64,7 @@ def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
     llm=llm,
     gen_fragments_iter=lambda: _gen_fragments(context),
     cache_path=working_path / "cache",
-    max_chunk_tokens_count=4096,
+    max_chunk_tokens_count=_MAX_TOKENS,
   ):
     did_touch_end = False
 
