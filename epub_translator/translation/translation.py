@@ -48,7 +48,7 @@ def _translate_texts(llm: LLM, texts: list[str]):
   target_language = "英语"
   translated_text = llm.request_txt(
     template_name="translate",
-    user_data=" ".join(clean_spaces(text) for text in texts),
+    user_data="\n".join(clean_spaces(text) for text in texts),
     params={ "target_language": target_language },
   )
   request_element = Element("request")
