@@ -45,12 +45,11 @@ def translate(
     yield from translated_texts[head_length:head_length + len(chunk.body)]
 
 def _translate_texts(llm: LLM, texts: list[str]):
+  target_language = "英语"
   translated_text = llm.request_txt(
     template_name="translate",
     user_data=" ".join(clean_spaces(text) for text in texts),
-    params={
-      "target_language": "英语",
-    },
+    params={ "target_language": target_language },
   )
   request_element = Element("request")
 
@@ -66,6 +65,7 @@ def _translate_texts(llm: LLM, texts: list[str]):
   resp_element = llm.request_xml(
     template_name="format",
     user_data=request_text,
+    params={ "target_language": target_language },
   )
 
   translated_fragments = [""] * len(texts)
