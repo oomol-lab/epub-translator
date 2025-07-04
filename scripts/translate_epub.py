@@ -6,7 +6,7 @@ import shutil
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
-from epub_translator import translate, LLM
+from epub_translator import translate, LLM, Language
 
 
 def main() -> None:
@@ -19,6 +19,7 @@ def main() -> None:
     llm=llm,
     source_path="/Users/taozeyu/Downloads/source.epub",
     translated_path="/Users/taozeyu/Downloads/translated.epub",
+    target_language=Language.JAPANESE,
     working_path=temp_path,
   )
 

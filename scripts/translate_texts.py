@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
 from resource_segmentation import Incision
-from epub_translator import LLM
+from epub_translator import LLM, Language
 from epub_translator.translation import translate, Fragment
 
 
@@ -20,6 +20,7 @@ def main() -> None:
   translated = translate(
     llm=llm,
     cache_path=temp_path / "cache",
+    target_language=Language.ENGLISH,
     max_chunk_tokens_count=4096,
     gen_fragments_iter=lambda:(
       Fragment(text=text, start_incision=Incision.IMPOSSIBLE, end_incision=Incision.IMPOSSIBLE)

@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element
 
 from ..llm import LLM
 from ..xml import encode_friendly
-from .types import Fragment
+from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments
@@ -15,6 +15,7 @@ def translate(
       llm: LLM,
       gen_fragments_iter: Callable[[], Iterator[Fragment]],
       cache_path: Path | None,
+      target_language: Language,
       max_chunk_tokens_count: int,
     )-> Generator[str, None, None]:
 
@@ -36,6 +37,7 @@ def translate(
     if translated_texts is None:
       translated_texts = _translate_texts(
         llm=llm,
+        target_language=target_language,
         texts=chunk.head + chunk.body + chunk.tail,
       )
     if store is not None:
@@ -44,13 +46,12 @@ def translate(
     head_length = len(chunk.head)
     yield from translated_texts[head_length:head_length + len(chunk.body)]
 
-def _translate_texts(llm: LLM, texts: list[str]):
-  target_language = "英语"
+def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
   translated_text = llm.request_text(
     template_name="translate",
     text_tag="TXT",
     user_data="\n".join(clean_spaces(text) for text in texts),
-    params={ "target_language": target_language },
+    params={ "target_language": target_language.value },
     parser=lambda r: r,
   )
   request_element = Element("request")
@@ -68,7 +69,7 @@ def _translate_texts(llm: LLM, texts: list[str]):
   return llm.request_xml(
     template_name="format",
     user_data=request_text,
-    params={ "target_language": target_language },
+    params={ "target_language": target_language.value },
     parser=lambda r: _parse_translated_response(r, len(texts)),
   )
 

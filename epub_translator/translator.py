@@ -6,7 +6,7 @@ from shutil import rmtree
 from .llm import LLM
 from .epub import HTMLFile
 from .zip_context import ZipContext
-from .translation import translate as _translate, Fragment, Incision
+from .translation import translate as _translate, Fragment, Incision, Language
 
 
 _MAX_TOKENS = 2500
@@ -15,6 +15,7 @@ def translate(
       llm: LLM,
       source_path: PathLike,
       translated_path: PathLike,
+      target_language: Language,
       working_path: PathLike | None = None,
     ):
 
@@ -28,9 +29,17 @@ def translate(
       epub_path=Path(source_path),
       temp_dir=temp_dir,
     )
-    context.replace_ncx(lambda texts: _translate_ncx(llm, texts))
-    _translate_spine(llm, context, working_path)
-
+    context.replace_ncx(lambda texts: _translate_ncx(
+      llm=llm,
+      texts=texts,
+      target_language=target_language,
+    ))
+    _translate_spine(
+      llm=llm,
+      context=context,
+      working_path=working_path,
+      target_language=target_language,
+    )
     translated_path = _clean_path(Path(translated_path))
     translated_path.parent.mkdir(parents=True, exist_ok=True)
     context.archive(translated_path)
@@ -39,11 +48,12 @@ def translate(
     if is_temp_workspace:
       rmtree(working_path, ignore_errors=True)
 
-def _translate_ncx(llm: LLM, texts: list[str]) -> list[str]:
+def _translate_ncx(llm: LLM, texts: list[str], target_language: Language) -> list[str]:
   return list(_translate(
     llm=llm,
     cache_path=None,
     max_chunk_tokens_count=_MAX_TOKENS,
+    target_language=target_language,
     gen_fragments_iter=lambda: (
       Fragment(
         text=text,
@@ -54,7 +64,7 @@ def _translate_ncx(llm: LLM, texts: list[str]) -> list[str]:
     ),
   ))
 
-def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
+def _translate_spine(llm: LLM, context: ZipContext, working_path: Path, target_language: Language):
   spine_paths_iter = iter(list(context.search_spine_paths()))
   spine_file: HTMLFile | None = None
   translated_texts: list[str] = []
@@ -65,6 +75,7 @@ def _translate_spine(llm: LLM, context: ZipContext, working_path: Path):
     gen_fragments_iter=lambda: _gen_fragments(context),
     cache_path=working_path / "cache",
     max_chunk_tokens_count=_MAX_TOKENS,
+    target_language=target_language,
   ):
     did_touch_end = False
 
