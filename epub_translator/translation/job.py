@@ -1,5 +1,7 @@
-from typing import Iterator, Generator, Callable
+import signal
+import threading
 
+from typing import Iterator, Generator, Callable
 from .chunk import Chunk
 from ..threads import (
   Interruption,
@@ -18,7 +20,23 @@ def run_translating_job(
     ) -> Generator[tuple[Chunk, list[str]], None, None]:
 
   job = _TranslatingJob(threads_count)
-  yield from job.run(chunks_iter, invoke)
+  did_fire_sigint = False
+  did_fire_sigint_lock = threading.Lock()
+
+  def handle_sigint(signum, frame):
+    nonlocal did_fire_sigint
+    with did_fire_sigint_lock:
+      if did_fire_sigint:
+        return
+      did_fire_sigint = True
+    print("SIGINT received, interrupting the job...")
+    job._interruption.interrupt()
+
+  try:
+    signal.signal(signal.SIGINT, handle_sigint)
+    yield from job.run(chunks_iter, invoke)
+  finally:
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 class _TranslatingJob:
   def __init__(self, threads_count: int):
@@ -27,6 +45,9 @@ class _TranslatingJob:
     self._threads = ThreadPool(self._interruption)
     self._buffer: list[tuple[Chunk, list[str]]] = []
     self._wanna_next_index: int = 0
+
+  def interrupt(self):
+    self._interruption.interrupt()
 
   def run(self, chunks_iter: Iterator[Chunk], invoke: Callable[[Chunk], list[str]]) -> Generator[tuple[Chunk, list[str]], None, None]:
     self._threads.set_workers(self._threads_count)
@@ -50,9 +71,6 @@ class _TranslatingJob:
 
     except WakerDidStop:
       pass
-    except KeyboardInterrupt as err:
-      self._interruption.interrupt()
-      raise err
     finally:
       self._threads.set_workers(0)
 

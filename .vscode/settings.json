@@ -54,6 +54,7 @@
     "rootfile",
     "rootfiles",
     "sents",
+    "signum",
     "tiktoken",
     "tobytes",
     "updation",
