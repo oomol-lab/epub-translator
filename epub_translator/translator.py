@@ -16,6 +16,7 @@ def translate(
       target_language: Language,
       working_path: PathLike | None = None,
       max_chunk_tokens_count: int = 3000,
+      max_threads_count: int = 1,
       report_progress: ProgressReporter | None = None,
     ) -> None:
 
@@ -28,6 +29,7 @@ def translate(
     llm=llm,
     target_language=target_language,
     max_chunk_tokens_count=max_chunk_tokens_count,
+    max_threads_count=max_threads_count,
     report_progress=report_progress,
   ).do(
     source_path=source_path,
@@ -41,12 +43,14 @@ class _Translator:
         llm: LLM,
         target_language: Language,
         max_chunk_tokens_count: int,
+        max_threads_count: int,
         report_progress: ProgressReporter,
       ) -> None:
 
     self._llm: LLM = llm
     self._target_language: Language = target_language
     self._max_chunk_tokens_count: int = max_chunk_tokens_count
+    self._max_threads_count: int = max_threads_count
     self._report_progress: ProgressReporter = report_progress
 
   def do(self, source_path: Path, translated_path: Path, working_path: Path | None) -> None:
@@ -81,6 +85,7 @@ class _Translator:
       llm=self._llm,
       cache_path=None,
       max_chunk_tokens_count=self._max_chunk_tokens_count,
+      max_threads_count=1,
       target_language=self._target_language,
       report_progress=report_progress,
       gen_fragments_iter=lambda: (
@@ -104,6 +109,7 @@ class _Translator:
       gen_fragments_iter=lambda: _gen_fragments(context),
       cache_path=working_path / "cache",
       max_chunk_tokens_count=self._max_chunk_tokens_count,
+      max_threads_count=self._max_threads_count,
       target_language=self._target_language,
       report_progress=report_progress,
     ):

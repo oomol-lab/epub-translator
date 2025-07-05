@@ -1,5 +1,6 @@
 from typing import Callable, Iterator, Generator
 from pathlib import Path
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM
@@ -10,7 +11,6 @@ from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments, Chunk
-from .job import run_translating_job
 from .utils import clean_spaces
 
 
@@ -22,6 +22,7 @@ def translate(
       cache_path: Path | None,
       target_language: Language,
       max_chunk_tokens_count: int,
+      max_threads_count: int,
       report_progress: ProgressReporter,
     )-> Generator[str, None, None]:
 
@@ -34,23 +35,19 @@ def translate(
   total_tokens_count = sum(chunk.tokens_count for chunk in chunk_ranges)
   translated_tokens_count: int = 0
 
-  for chunk, translated_texts in run_translating_job(
-    threads_count=1,
-    invoke=lambda chunk: _translate_chunk(
-      llm=llm,
-      store=store,
-      chunk=chunk,
-      target_language=target_language,
-    ),
-    chunks_iter=match_fragments(
-      llm=llm,
-      chunk_ranges_iter=iter(chunk_ranges),
-      fragments_iter=gen_fragments_iter(),
-    ),
-  ):
-    yield from translated_texts
-    translated_tokens_count += chunk.tokens_count
-    report_progress(float(translated_tokens_count) / total_tokens_count)
+  with ThreadPoolExecutor(max_workers=max_threads_count) as executor:
+    futures = [
+      executor.submit(_translate_chunk, llm, store, chunk, target_language)
+      for chunk in match_fragments(
+        llm=llm,
+        chunk_ranges_iter=iter(chunk_ranges),
+        fragments_iter=gen_fragments_iter(),
+      )
+    ]
+    for chunk_range, future in zip(chunk_ranges, as_completed(futures)):
+      yield from future.result()
+      translated_tokens_count += chunk_range.tokens_count
+      report_progress(float(translated_tokens_count) / total_tokens_count)
 
 def _translate_chunk(llm: LLM, store: Store, chunk: Chunk, target_language: Language) -> list[str]:
     translated_texts: list[str] | None = None
