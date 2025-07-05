@@ -7,6 +7,7 @@ from .types import Fragment
 
 @dataclass
 class Chunk:
+  index: int
   hash: bytes
   head: list[str]
   body: list[str]
@@ -15,6 +16,7 @@ class Chunk:
 
 @dataclass
 class ChunkRange:
+  index: int
   head_remain_tokens: int
   tail_remain_tokens: int
   head_index: int
@@ -32,7 +34,10 @@ def match_fragments(
         fragments_iter: Iterator[Fragment],
       ) -> Generator[Chunk, None, None]:
 
-  for range, texts in _match_range_and_texts(chunk_ranges_iter, fragments_iter):
+  for range, texts in _match_range_and_texts(
+    chunk_range_iter=chunk_ranges_iter,
+    fragments_iter=fragments_iter,
+  ):
     head_length = range.body_index - range.head_index
     body_length = range.tail_index - range.body_index
     head = texts[:head_length]
@@ -48,6 +53,7 @@ def match_fragments(
       head=head,
       body=body,
       tail=tail,
+      index=range.index,
       tokens_count=range.tokens_count,
     )
 
