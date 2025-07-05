@@ -11,12 +11,15 @@ from .chunk import match_fragments
 from .utils import clean_spaces
 
 
+ProgressReporter = Callable[[float], None]
+
 def translate(
       llm: LLM,
       gen_fragments_iter: Callable[[], Iterator[Fragment]],
       cache_path: Path | None,
       target_language: Language,
       max_chunk_tokens_count: int,
+      report_progress: ProgressReporter,
     )-> Generator[str, None, None]:
 
   store = Store(cache_path) if cache_path else None
@@ -25,6 +28,9 @@ def translate(
     fragments_iter=gen_fragments_iter(),
     max_chunk_tokens_count=max_chunk_tokens_count,
   ))
+  total_tokens_count = sum(chunk.tokens_count for chunk in chunk_ranges)
+  translated_tokens_count: int = 0
+
   for chunk in match_fragments(
     llm=llm,
     chunk_ranges_iter=iter(chunk_ranges),
@@ -44,7 +50,10 @@ def translate(
       store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
+    translated_tokens_count += chunk.tokens_count
+
     yield from translated_texts[head_length:head_length + len(chunk.body)]
+    report_progress(float(translated_tokens_count) / total_tokens_count)
 
 def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
   translated_text = llm.request_text(

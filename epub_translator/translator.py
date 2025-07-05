@@ -6,7 +6,7 @@ from shutil import rmtree
 from .llm import LLM
 from .epub import HTMLFile
 from .zip_context import ZipContext
-from .translation import translate as _translate, Fragment, Incision, Language
+from .translation import translate as _translate, Fragment, Incision, Language, ProgressReporter
 
 
 def translate(
@@ -16,16 +16,19 @@ def translate(
       target_language: Language,
       working_path: PathLike | None = None,
       max_chunk_tokens_count: int = 3000,
+      report_progress: ProgressReporter | None = None,
     ) -> None:
 
   source_path = Path(source_path)
   translated_path = Path(translated_path)
   working_path = Path(working_path) if working_path else None
+  report_progress = report_progress or (lambda _: None)
 
   _Translator(
     llm=llm,
     target_language=target_language,
     max_chunk_tokens_count=max_chunk_tokens_count,
+    report_progress=report_progress,
   ).do(
     source_path=source_path,
     translated_path=translated_path,
@@ -38,11 +41,13 @@ class _Translator:
         llm: LLM,
         target_language: Language,
         max_chunk_tokens_count: int,
+        report_progress: ProgressReporter,
       ) -> None:
 
     self._llm: LLM = llm
     self._target_language: Language = target_language
     self._max_chunk_tokens_count: int = max_chunk_tokens_count
+    self._report_progress: ProgressReporter = report_progress
 
   def do(self, source_path: Path, translated_path: Path, working_path: Path | None) -> None:
     is_temp_workspace = not bool(working_path)
@@ -55,20 +60,29 @@ class _Translator:
         epub_path=Path(source_path),
         temp_dir=temp_dir,
       )
-      context.replace_ncx(self._translate_ncx)
-      self._translate_spine(context, working_path)
+      context.replace_ncx(lambda texts: self._translate_ncx(
+        texts=texts,
+        report_progress=lambda p: self._report_progress(p * 0.1)),
+      )
+      self._translate_spine(
+        context=context,
+        working_path=working_path,
+        report_progress=lambda p: self._report_progress(0.1 + p * 0.8),
+      )
       context.archive(translated_path)
+      self._report_progress(1.0)
 
     finally:
       if is_temp_workspace:
         rmtree(working_path, ignore_errors=True)
 
-  def _translate_ncx(self, texts: list[str]) -> list[str]:
+  def _translate_ncx(self, texts: list[str], report_progress: ProgressReporter) -> list[str]:
     return list(_translate(
       llm=self._llm,
       cache_path=None,
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       target_language=self._target_language,
+      report_progress=report_progress,
       gen_fragments_iter=lambda: (
         Fragment(
           text=text,
@@ -79,7 +93,7 @@ class _Translator:
       ),
     ))
 
-  def _translate_spine(self, context: ZipContext, working_path: Path):
+  def _translate_spine(self, context: ZipContext, working_path: Path, report_progress: ProgressReporter):
     spine_paths_iter = iter(list(context.search_spine_paths()))
     spine_file: HTMLFile | None = None
     translated_texts: list[str] = []
@@ -91,6 +105,7 @@ class _Translator:
       cache_path=working_path / "cache",
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       target_language=self._target_language,
+      report_progress=report_progress,
     ):
       did_touch_end = False
 
@@ -110,7 +125,6 @@ class _Translator:
           continue
         translated_texts = [""] * spine_file.texts_length
         translated_count = 0
-
 
       translated_texts[translated_count] = translated_text
       translated_count += 1

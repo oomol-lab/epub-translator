@@ -34,3 +34,4 @@ packages = [
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.3.7"
+tqdm = "^4.67.1"
