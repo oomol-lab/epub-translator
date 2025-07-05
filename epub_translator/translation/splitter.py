@@ -16,16 +16,16 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
     head_index: int
     tail_index: int
     fragments_count: int
-    body_index, body_end_index = _range_of_group_part(group.body)
+    body_index, body_end_index, body_tokens_count = _range_of_group_part(group.body)
 
     if group.head:
-      head_index, head_end_index = _range_of_group_part(group.head)
+      head_index, head_end_index, _ = _range_of_group_part(group.head)
       assert head_end_index + 1 == body_index, "Head must be continuous with body"
     else:
       head_index = body_index
 
     if group.tail:
-      tail_index, tail_end_index = _range_of_group_part(group.tail)
+      tail_index, tail_end_index, _ = _range_of_group_part(group.tail)
       fragments_count = tail_end_index - head_index + 1
       assert body_end_index + 1 == tail_index, "Body must be continuous with tail"
     else:
@@ -39,6 +39,7 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
       body_index=body_index,
       tail_index=tail_index,
       fragments_count=fragments_count,
+      tokens_count=body_tokens_count,
     )
 
 def _gen_resources(llm: LLM, fragments_iter: Iterator[Fragment]) -> Generator[Resource[int], None, None]:
@@ -53,20 +54,23 @@ def _gen_resources(llm: LLM, fragments_iter: Iterator[Fragment]) -> Generator[Re
 def _range_of_group_part(target: list[Resource[int] | Segment[int]]) -> tuple[int, int]:
   start_index: int | None = None
   previous_index: int = 0
-  for index in _iter_group_part(target):
+  tokens_count: int = 0
+  for resource in _iter_group_part(target):
+    index = resource.payload
     if start_index is None:
       start_index = index
     else:
       assert index == previous_index + 1, "Resources in group part must be continuous"
     previous_index = index
+    tokens_count += resource.count
 
   assert start_index is not None, "Group part must contain at least one resource"
-  return start_index, previous_index
+  return start_index, previous_index, tokens_count
 
-def _iter_group_part(target: list[Resource[int] | Segment[int]]) -> Generator[int, None, None]:
+def _iter_group_part(target: list[Resource[int] | Segment[int]]) -> Generator[Resource[int], None, None]:
   for item in target:
     if isinstance(item, Resource):
-      yield item.payload
+      yield item
     elif isinstance(item, Segment):
       for resource in item.resources:
-        yield resource.payload
+        yield resource

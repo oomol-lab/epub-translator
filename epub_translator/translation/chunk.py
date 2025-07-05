@@ -11,6 +11,7 @@ class Chunk:
   head: list[str]
   body: list[str]
   tail: list[str]
+  tokens_count: int
 
 @dataclass
 class ChunkRange:
@@ -20,6 +21,7 @@ class ChunkRange:
   body_index: int
   tail_index: int
   fragments_count: int
+  tokens_count: int
 
   def match(self, index: int) -> bool:
     return self.head_index <= index < self.head_index + self.fragments_count
@@ -41,7 +43,13 @@ def match_fragments(
     head = _crop_extra_texts(llm, head, True, range.head_remain_tokens)
     tail = _crop_extra_texts(llm, tail, False, range.tail_remain_tokens)
 
-    yield Chunk(hash=hash, head=head, body=body, tail=tail)
+    yield Chunk(
+      hash=hash,
+      head=head,
+      body=body,
+      tail=tail,
+      tokens_count=range.tokens_count,
+    )
 
 def _match_range_and_texts(
       chunk_range_iter: Iterator[ChunkRange],

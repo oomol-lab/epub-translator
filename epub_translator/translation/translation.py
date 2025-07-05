@@ -4,18 +4,22 @@ from xml.etree.ElementTree import Element
 
 from ..llm import LLM
 from ..xml import encode_friendly
-from .types import Fragment
+from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments
 from .utils import clean_spaces
 
 
+ProgressReporter = Callable[[float], None]
+
 def translate(
       llm: LLM,
       gen_fragments_iter: Callable[[], Iterator[Fragment]],
       cache_path: Path | None,
+      target_language: Language,
       max_chunk_tokens_count: int,
+      report_progress: ProgressReporter,
     )-> Generator[str, None, None]:
 
   store = Store(cache_path) if cache_path else None
@@ -24,6 +28,9 @@ def translate(
     fragments_iter=gen_fragments_iter(),
     max_chunk_tokens_count=max_chunk_tokens_count,
   ))
+  total_tokens_count = sum(chunk.tokens_count for chunk in chunk_ranges)
+  translated_tokens_count: int = 0
+
   for chunk in match_fragments(
     llm=llm,
     chunk_ranges_iter=iter(chunk_ranges),
@@ -36,20 +43,25 @@ def translate(
     if translated_texts is None:
       translated_texts = _translate_texts(
         llm=llm,
+        target_language=target_language,
         texts=chunk.head + chunk.body + chunk.tail,
       )
     if store is not None:
       store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
-    yield from translated_texts[head_length:head_length + len(chunk.body)]
+    translated_tokens_count += chunk.tokens_count
 
-def _translate_texts(llm: LLM, texts: list[str]):
-  target_language = "英语"
-  translated_text = llm.request_txt(
+    yield from translated_texts[head_length:head_length + len(chunk.body)]
+    report_progress(float(translated_tokens_count) / total_tokens_count)
+
+def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
+  translated_text = llm.request_text(
     template_name="translate",
+    text_tag="TXT",
     user_data="\n".join(clean_spaces(text) for text in texts),
-    params={ "target_language": target_language },
+    params={ "target_language": target_language.value },
+    parser=lambda r: r,
   )
   request_element = Element("request")
 
@@ -62,13 +74,16 @@ def _translate_texts(llm: LLM, texts: list[str]):
 
   request_element_text = encode_friendly(request_element)
   request_text = f"```XML\n{request_element_text}\n```\n\n{translated_text}"
-  resp_element = llm.request_xml(
+
+  return llm.request_xml(
     template_name="format",
     user_data=request_text,
-    params={ "target_language": target_language },
+    params={ "target_language": target_language.value },
+    parser=lambda r: _parse_translated_response(r, len(texts)),
   )
 
-  translated_fragments = [""] * len(texts)
+def _parse_translated_response(resp_element: Element, sources_count: int) -> list[str]:
+  translated_fragments = [""] * sources_count
   for fragment_element in resp_element:
     if fragment_element.text is None:
       continue
@@ -76,6 +91,8 @@ def _translate_texts(llm: LLM, texts: list[str]):
     if id is None:
       continue
     index = int(id) - 1
+    if index < 0 or index >= len(translated_fragments):
+      raise ValueError(f"invalid fragment id: {id}")
     translated_fragments[index] = fragment_element.text.strip()
 
   return translated_fragments
