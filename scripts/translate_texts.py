@@ -21,7 +21,7 @@ def main() -> None:
     llm=llm,
     cache_path=temp_path / "cache",
     target_language=Language.ENGLISH,
-    max_chunk_tokens_count=4096,
+    max_chunk_tokens_count=3000,
     gen_fragments_iter=lambda:(
       Fragment(text=text, start_incision=Incision.IMPOSSIBLE, end_incision=Incision.IMPOSSIBLE)
       for text in (

@@ -9,103 +9,118 @@ from .zip_context import ZipContext
 from .translation import translate as _translate, Fragment, Incision, Language
 
 
-_MAX_TOKENS = 2500
-
 def translate(
       llm: LLM,
       source_path: PathLike,
       translated_path: PathLike,
       target_language: Language,
       working_path: PathLike | None = None,
-    ):
+      max_chunk_tokens_count: int = 3000,
+    ) -> None:
 
-  is_temp_workspace = not bool(working_path)
-  working_path = working_path or mkdtemp()
-  try:
-    temp_dir = _clean_path(Path(working_path) / "temp")
-    temp_dir.mkdir(parents=True, exist_ok=True)
+  source_path = Path(source_path)
+  translated_path = Path(translated_path)
+  working_path = Path(working_path) if working_path else None
 
-    context = ZipContext(
-      epub_path=Path(source_path),
-      temp_dir=temp_dir,
-    )
-    context.replace_ncx(lambda texts: _translate_ncx(
-      llm=llm,
-      texts=texts,
-      target_language=target_language,
-    ))
-    _translate_spine(
-      llm=llm,
-      context=context,
-      working_path=working_path,
-      target_language=target_language,
-    )
-    translated_path = _clean_path(Path(translated_path))
-    translated_path.parent.mkdir(parents=True, exist_ok=True)
-    context.archive(translated_path)
-
-  finally:
-    if is_temp_workspace:
-      rmtree(working_path, ignore_errors=True)
-
-def _translate_ncx(llm: LLM, texts: list[str], target_language: Language) -> list[str]:
-  return list(_translate(
+  _Translator(
     llm=llm,
-    cache_path=None,
-    max_chunk_tokens_count=_MAX_TOKENS,
     target_language=target_language,
-    gen_fragments_iter=lambda: (
-      Fragment(
-        text=text,
-        start_incision=Incision.IMPOSSIBLE,
-        end_incision=Incision.IMPOSSIBLE,
+    max_chunk_tokens_count=max_chunk_tokens_count,
+  ).do(
+    source_path=source_path,
+    translated_path=translated_path,
+    working_path=working_path,
+  )
+
+class _Translator:
+  def __init__(
+        self,
+        llm: LLM,
+        target_language: Language,
+        max_chunk_tokens_count: int,
+      ) -> None:
+
+    self._llm: LLM = llm
+    self._target_language: Language = target_language
+    self._max_chunk_tokens_count: int = max_chunk_tokens_count
+
+  def do(self, source_path: Path, translated_path: Path, working_path: Path | None) -> None:
+    is_temp_workspace = not bool(working_path)
+    working_path = working_path or Path(mkdtemp())
+    try:
+      temp_dir = _clean_path(working_path / "temp")
+      temp_dir.mkdir(parents=True, exist_ok=True)
+
+      context = ZipContext(
+        epub_path=Path(source_path),
+        temp_dir=temp_dir,
       )
-      for text in texts
-    ),
-  ))
+      context.replace_ncx(self._translate_ncx)
+      self._translate_spine(context, working_path)
+      context.archive(translated_path)
 
-def _translate_spine(llm: LLM, context: ZipContext, working_path: Path, target_language: Language):
-  spine_paths_iter = iter(list(context.search_spine_paths()))
-  spine_file: HTMLFile | None = None
-  translated_texts: list[str] = []
-  translated_count: int = 0
+    finally:
+      if is_temp_workspace:
+        rmtree(working_path, ignore_errors=True)
 
-  for translated_text in _translate(
-    llm=llm,
-    gen_fragments_iter=lambda: _gen_fragments(context),
-    cache_path=working_path / "cache",
-    max_chunk_tokens_count=_MAX_TOKENS,
-    target_language=target_language,
-  ):
-    did_touch_end = False
+  def _translate_ncx(self, texts: list[str]) -> list[str]:
+    return list(_translate(
+      llm=self._llm,
+      cache_path=None,
+      max_chunk_tokens_count=self._max_chunk_tokens_count,
+      target_language=self._target_language,
+      gen_fragments_iter=lambda: (
+        Fragment(
+          text=text,
+          start_incision=Incision.IMPOSSIBLE,
+          end_incision=Incision.IMPOSSIBLE,
+        )
+        for text in texts
+      ),
+    ))
 
-    if spine_file is not None and \
-       translated_count >= len(translated_texts):
-      spine_file.write_texts(translated_texts)
-      spine_file = None
+  def _translate_spine(self, context: ZipContext, working_path: Path):
+    spine_paths_iter = iter(list(context.search_spine_paths()))
+    spine_file: HTMLFile | None = None
+    translated_texts: list[str] = []
+    translated_count: int = 0
 
-    while spine_file is None:
-      spine_path = next(spine_paths_iter, None)
-      if spine_path is None:
-        did_touch_end = True
-        break
-      spine_file = context.read_spine_file(spine_path)
-      if spine_file.texts_length == 0:
+    for translated_text in _translate(
+      llm=self._llm,
+      gen_fragments_iter=lambda: _gen_fragments(context),
+      cache_path=working_path / "cache",
+      max_chunk_tokens_count=self._max_chunk_tokens_count,
+      target_language=self._target_language,
+    ):
+      did_touch_end = False
+
+      if spine_file is not None and \
+        translated_count >= len(translated_texts):
+        spine_file.write_texts(translated_texts)
         spine_file = None
-        continue
-      translated_texts = [""] * spine_file.texts_length
-      translated_count = 0
+
+      while spine_file is None:
+        spine_path = next(spine_paths_iter, None)
+        if spine_path is None:
+          did_touch_end = True
+          break
+        spine_file = context.read_spine_file(spine_path)
+        if spine_file.texts_length == 0:
+          spine_file = None
+          continue
+        translated_texts = [""] * spine_file.texts_length
+        translated_count = 0
 
 
-    translated_texts[translated_count] = translated_text
-    translated_count += 1
+      translated_texts[translated_count] = translated_text
+      translated_count += 1
 
-    if did_touch_end:
-      break
-  if spine_file and translated_count > 0:
-    spine_file.write_texts(translated_texts)
+      if did_touch_end:
+        break
+    if spine_file and translated_count > 0:
+      spine_file.write_texts(translated_texts)
 
-  context.write_spine_file(spine_path, spine_file)
+    context.write_spine_file(spine_path, spine_file)
 
 def _gen_fragments(context: ZipContext):
   for spine_path in context.search_spine_paths():
