@@ -7,12 +7,12 @@ from .chunk import ChunkRange
 
 
 def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_tokens_count: int):
-  for group in split(
+  for index, group in enumerate(split(
     resources=_gen_resources(llm, fragments_iter),
     max_segment_count=max_chunk_tokens_count,
     gap_rate=0.15,
     tail_rate=0.5,
-  ):
+  )):
     head_index: int
     tail_index: int
     fragments_count: int
@@ -33,6 +33,7 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
       fragments_count = tail_index - head_index
 
     yield ChunkRange(
+      index=index,
       head_remain_tokens=group.head_remain_count,
       tail_remain_tokens=group.tail_remain_count,
       head_index=head_index,

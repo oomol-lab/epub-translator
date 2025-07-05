@@ -1,13 +1,15 @@
 from typing import Callable, Iterator, Generator
 from pathlib import Path
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM
 from ..xml import encode_friendly
+
 from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
-from .chunk import match_fragments
+from .chunk import match_fragments, Chunk
 from .utils import clean_spaces
 
 
@@ -19,8 +21,9 @@ def translate(
       cache_path: Path | None,
       target_language: Language,
       max_chunk_tokens_count: int,
+      max_threads_count: int,
       report_progress: ProgressReporter,
-    )-> Generator[str, None, None]:
+    ) -> Generator[str, None, None]:
 
   store = Store(cache_path) if cache_path else None
   chunk_ranges = list(split_into_chunks(
@@ -28,14 +31,58 @@ def translate(
     fragments_iter=gen_fragments_iter(),
     max_chunk_tokens_count=max_chunk_tokens_count,
   ))
-  total_tokens_count = sum(chunk.tokens_count for chunk in chunk_ranges)
+  with ThreadPoolExecutor(max_workers=max_threads_count) as executor:
+    futures = [
+      executor.submit(lambda chunk=chunk: (chunk, _translate_chunk(
+        llm=llm,
+        store=store,
+        chunk=chunk,
+        target_language=target_language,
+      )))
+      for chunk in match_fragments(
+        llm=llm,
+        chunk_ranges_iter=iter(chunk_ranges),
+        fragments_iter=gen_fragments_iter(),
+      )
+    ]
+    yield from _sort_translated_texts_by_chunk(
+      target=(f.result() for f in as_completed(futures)),
+      total_tokens_count=sum(chunk.tokens_count for chunk in chunk_ranges),
+      report_progress=report_progress,
+    )
+
+def _sort_translated_texts_by_chunk(
+      target: Iterator[tuple[Chunk, list[str]]],
+      total_tokens_count: int,
+      report_progress: ProgressReporter,
+    ) -> Iterator[list[str]]:
+
+  buffer: list[tuple[Chunk, list[str]]] = []
+  wanna_next_index: int = 0
   translated_tokens_count: int = 0
 
-  for chunk in match_fragments(
-    llm=llm,
-    chunk_ranges_iter=iter(chunk_ranges),
-    fragments_iter=gen_fragments_iter(),
-  ):
+  for chunk, translated_texts in target:
+    buffer.append((chunk, translated_texts))
+    if wanna_next_index == chunk.index:
+      buffer.sort(key=lambda e: e[0].index)
+      to_clear: list[list[str]] = []
+
+      for chunk, translated_texts in buffer:
+        if chunk.index > wanna_next_index:
+          break
+        to_clear.append(translated_texts)
+        if chunk.index == wanna_next_index:
+          wanna_next_index += 1
+
+      if to_clear:
+        buffer = buffer[len(to_clear):]
+        for translated_texts in to_clear:
+          yield from translated_texts
+
+    translated_tokens_count += chunk.tokens_count
+    report_progress(float(translated_tokens_count) / total_tokens_count)
+
+def _translate_chunk(llm: LLM, store: Store, chunk: Chunk, target_language: Language) -> list[str]:
     translated_texts: list[str] | None = None
     if store is not None:
       translated_texts = store.get(chunk.hash)
@@ -50,10 +97,9 @@ def translate(
       store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
-    translated_tokens_count += chunk.tokens_count
+    translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
 
-    yield from translated_texts[head_length:head_length + len(chunk.body)]
-    report_progress(float(translated_tokens_count) / total_tokens_count)
+    return translated_texts
 
 def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
   translated_text = llm.request_text(
