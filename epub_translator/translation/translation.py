@@ -4,10 +4,13 @@ from xml.etree.ElementTree import Element
 
 from ..llm import LLM
 from ..xml import encode_friendly
+from ..threads import assert_continue
+
 from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
-from .chunk import match_fragments
+from .chunk import match_fragments, Chunk
+from .job import run_translating_job
 from .utils import clean_spaces
 
 
@@ -31,11 +34,25 @@ def translate(
   total_tokens_count = sum(chunk.tokens_count for chunk in chunk_ranges)
   translated_tokens_count: int = 0
 
-  for chunk in match_fragments(
-    llm=llm,
-    chunk_ranges_iter=iter(chunk_ranges),
-    fragments_iter=gen_fragments_iter(),
+  for chunk, translated_texts in run_translating_job(
+    threads_count=1,
+    invoke=lambda chunk: _translate_chunk(
+      llm=llm,
+      store=store,
+      chunk=chunk,
+      target_language=target_language,
+    ),
+    chunks_iter=match_fragments(
+      llm=llm,
+      chunk_ranges_iter=iter(chunk_ranges),
+      fragments_iter=gen_fragments_iter(),
+    ),
   ):
+    yield from translated_texts
+    translated_tokens_count += chunk.tokens_count
+    report_progress(float(translated_tokens_count) / total_tokens_count)
+
+def _translate_chunk(llm: LLM, store: Store, chunk: Chunk, target_language: Language) -> list[str]:
     translated_texts: list[str] | None = None
     if store is not None:
       translated_texts = store.get(chunk.hash)
@@ -50,12 +67,12 @@ def translate(
       store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
-    translated_tokens_count += chunk.tokens_count
+    translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
 
-    yield from translated_texts[head_length:head_length + len(chunk.body)]
-    report_progress(float(translated_tokens_count) / total_tokens_count)
+    return translated_texts
 
 def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
+  assert_continue()
   translated_text = llm.request_text(
     template_name="translate",
     text_tag="TXT",
@@ -75,6 +92,7 @@ def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
   request_element_text = encode_friendly(request_element)
   request_text = f"```XML\n{request_element_text}\n```\n\n{translated_text}"
 
+  assert_continue()
   return llm.request_xml(
     template_name="format",
     user_data=request_text,

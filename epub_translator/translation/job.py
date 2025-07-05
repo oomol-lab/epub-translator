@@ -13,7 +13,7 @@ from ..threads import (
 
 def run_translating_job(
       chunks_iter: Iterator[Chunk],
-      invoke: Callable[[Chunk], None],
+      invoke: Callable[[Chunk], list[str]],
       threads_count: int,
     ) -> Generator[tuple[Chunk, list[str]], None, None]:
 
@@ -28,7 +28,7 @@ class _TranslatingJob:
     self._buffer: list[tuple[Chunk, list[str]]] = []
     self._wanna_next_index: int = 0
 
-  def run(self, chunks_iter: Iterator[Chunk], invoke: Callable[[Chunk], None]) -> Generator[tuple[Chunk, list[str]], None, None]:
+  def run(self, chunks_iter: Iterator[Chunk], invoke: Callable[[Chunk], list[str]]) -> Generator[tuple[Chunk, list[str]], None, None]:
     self._threads.set_workers(self._threads_count)
     try:
       for chunk in chunks_iter:
@@ -50,8 +50,9 @@ class _TranslatingJob:
 
     except WakerDidStop:
       pass
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as err:
       self._interruption.interrupt()
+      raise err
     finally:
       self._threads.set_workers(0)
 
