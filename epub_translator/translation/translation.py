@@ -10,6 +10,7 @@ from .types import Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments, Chunk
+from .sorter import sort_translated
 from .utils import clean_spaces
 
 
@@ -36,17 +37,24 @@ def translate(
 
   with ThreadPoolExecutor(max_workers=max_threads_count) as executor:
     futures = [
-      executor.submit(_translate_chunk, llm, store, chunk, target_language)
+      executor.submit(lambda chunk=chunk: (chunk, _translate_chunk(
+        llm=llm,
+        store=store,
+        chunk=chunk,
+        target_language=target_language,
+      )))
       for chunk in match_fragments(
         llm=llm,
         chunk_ranges_iter=iter(chunk_ranges),
         fragments_iter=gen_fragments_iter(),
       )
     ]
-    for chunk_range, future in zip(chunk_ranges, as_completed(futures)):
-      yield from future.result()
-      translated_tokens_count += chunk_range.tokens_count
+    for chunk, translated_texts in sort_translated(
+      target=(f.result() for f in as_completed(futures)),
+    ):
+      translated_tokens_count += chunk.tokens_count
       report_progress(float(translated_tokens_count) / total_tokens_count)
+      yield from translated_texts
 
 def _translate_chunk(llm: LLM, store: Store, chunk: Chunk, target_language: Language) -> list[str]:
     translated_texts: list[str] | None = None

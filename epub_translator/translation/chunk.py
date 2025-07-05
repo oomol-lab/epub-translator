@@ -12,6 +12,7 @@ class Chunk:
   head: list[str]
   body: list[str]
   tail: list[str]
+  tokens_count: int
 
 @dataclass
 class ChunkRange:
@@ -53,6 +54,7 @@ def match_fragments(
       body=body,
       tail=tail,
       index=range.index,
+      tokens_count=range.tokens_count,
     )
 
 def _match_range_and_texts(
