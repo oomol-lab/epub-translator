@@ -5,7 +5,6 @@ from xml.etree.ElementTree import Element
 
 from ..llm import LLM
 from ..xml import encode_friendly
-from ..threads import assert_continue
 
 from .types import Fragment, Language
 from .store import Store
@@ -69,7 +68,6 @@ def _translate_chunk(llm: LLM, store: Store, chunk: Chunk, target_language: Lang
     return translated_texts
 
 def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
-  assert_continue()
   translated_text = llm.request_text(
     template_name="translate",
     text_tag="TXT",
@@ -89,7 +87,6 @@ def _translate_texts(llm: LLM, texts: list[str], target_language: Language):
   request_element_text = encode_friendly(request_element)
   request_text = f"```XML\n{request_element_text}\n```\n\n{translated_text}"
 
-  assert_continue()
   return llm.request_xml(
     template_name="format",
     user_data=request_text,
