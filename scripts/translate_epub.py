@@ -23,8 +23,8 @@ def main() -> None:
 
     translate(
       llm=llm,
-      source_path="/Users/taozeyu/Downloads/source.epub",
-      translated_path="/Users/taozeyu/Downloads/translated.epub",
+      source_path=Path(__file__).parent.parent / "tests" / "assets" / "治疗精神病.epub",
+      translated_path=temp_path / "jap_translated.epub",
       target_language=Language.JAPANESE,
       user_prompt="将“弗洛伊德”翻译为“Freud”，而不是假名。",
       working_path=temp_path,
