@@ -14,6 +14,7 @@ def translate(
       source_path: PathLike,
       translated_path: PathLike,
       target_language: Language,
+      user_prompt: str | None = None,
       working_path: PathLike | None = None,
       max_chunk_tokens_count: int = 3000,
       max_threads_count: int = 1,
@@ -28,6 +29,7 @@ def translate(
   _Translator(
     llm=llm,
     target_language=target_language,
+    user_prompt=user_prompt,
     max_chunk_tokens_count=max_chunk_tokens_count,
     max_threads_count=max_threads_count,
     report_progress=report_progress,
@@ -42,6 +44,7 @@ class _Translator:
         self,
         llm: LLM,
         target_language: Language,
+        user_prompt: str | None,
         max_chunk_tokens_count: int,
         max_threads_count: int,
         report_progress: ProgressReporter,
@@ -49,6 +52,7 @@ class _Translator:
 
     self._llm: LLM = llm
     self._target_language: Language = target_language
+    self._user_prompt: str | None = user_prompt
     self._max_chunk_tokens_count: int = max_chunk_tokens_count
     self._max_threads_count: int = max_threads_count
     self._report_progress: ProgressReporter = report_progress
@@ -87,6 +91,7 @@ class _Translator:
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       max_threads_count=1,
       target_language=self._target_language,
+      user_prompt=self._user_prompt,
       report_progress=report_progress,
       gen_fragments_iter=lambda: (
         Fragment(
@@ -111,6 +116,7 @@ class _Translator:
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       max_threads_count=self._max_threads_count,
       target_language=self._target_language,
+      user_prompt=self._user_prompt,
       report_progress=report_progress,
     ):
       did_touch_end = False

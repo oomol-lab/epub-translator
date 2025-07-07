@@ -26,6 +26,7 @@ def main() -> None:
       source_path="/Users/taozeyu/Downloads/source.epub",
       translated_path="/Users/taozeyu/Downloads/translated.epub",
       target_language=Language.JAPANESE,
+      user_prompt="将“弗洛伊德”翻译为“Freud”，而不是假名。",
       working_path=temp_path,
       report_progress=refresh_progress,
     )
