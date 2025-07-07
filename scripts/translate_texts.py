@@ -28,7 +28,6 @@ def main() -> None:
     gen_fragments_iter=lambda:(
       Fragment(text=text, start_incision=Incision.IMPOSSIBLE, end_incision=Incision.IMPOSSIBLE)
       for text in (
-        "原文如下，请开始翻译：",
         "分析者和他的每个家人之间发生的斗争逐渐聚焦起来，最初的事件或情境（我在这儿将其称为S）。",
         "基于迄今为止在分析中所阐述的内容，被赋予了一系列的意义一这些意义并不一定相互抵消或相互矛盾，但每一个意义都呈现了问题的一条线索（换句话说，在这里，我将后来的每一个事件或情境称为S2）。",
         "一个神经症分析者试图通过这种方式，在事件发生数年甚至数十年后，回溯性地绑住或固定一个较早事件的意义，每一次重新解读都可以起到暂时性地锚定（法语capitonner）其意义的作用，有些重新解读要比其他的重新解读更长时间地绑住其意义。",
