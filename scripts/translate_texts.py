@@ -22,7 +22,9 @@ def main() -> None:
     cache_path=temp_path / "cache",
     target_language=Language.ENGLISH,
     max_chunk_tokens_count=3000,
+    max_threads_count=1,
     report_progress=lambda _: None,
+    user_prompt="将“分析者”翻译为\"visitor\"，并始终用双引号包裹。",
     gen_fragments_iter=lambda:(
       Fragment(text=text, start_incision=Incision.IMPOSSIBLE, end_incision=Incision.IMPOSSIBLE)
       for text in (
