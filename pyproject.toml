@@ -1,7 +1,8 @@
 [project]
 name = "epub-translator"
-version = "0.0.1"
+version = "0.0.2"
 description = "Translate the epub book using LLM. The translated book will retain the original text and list the translated text side by side with the original text."
+keywords=["epub", "llm", "translation", "translator"]
 authors = [
     {name = "Tao Zeyu", email = "i@taozeyu.com"}
 ]
