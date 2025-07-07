@@ -63,6 +63,7 @@ class _Translator:
     try:
       temp_dir = _clean_path(working_path / "temp")
       temp_dir.mkdir(parents=True, exist_ok=True)
+      cache_path = working_path / "cache"
 
       context = ZipContext(
         epub_path=Path(source_path),
@@ -70,11 +71,12 @@ class _Translator:
       )
       context.replace_ncx(lambda texts: self._translate_ncx(
         texts=texts,
+        cache_path=cache_path,
         report_progress=lambda p: self._report_progress(p * 0.1)),
       )
       self._translate_spine(
         context=context,
-        working_path=working_path,
+        cache_path=cache_path,
         report_progress=lambda p: self._report_progress(0.1 + p * 0.8),
       )
       context.archive(translated_path)
@@ -84,10 +86,10 @@ class _Translator:
       if is_temp_workspace:
         rmtree(working_path, ignore_errors=True)
 
-  def _translate_ncx(self, texts: list[str], report_progress: ProgressReporter) -> list[str]:
+  def _translate_ncx(self, texts: list[str], cache_path: Path, report_progress: ProgressReporter) -> list[str]:
     return list(_translate(
       llm=self._llm,
-      cache_path=None,
+      cache_path=cache_path,
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       max_threads_count=1,
       target_language=self._target_language,
@@ -103,7 +105,7 @@ class _Translator:
       ),
     ))
 
-  def _translate_spine(self, context: ZipContext, working_path: Path, report_progress: ProgressReporter):
+  def _translate_spine(self, context: ZipContext, cache_path: Path, report_progress: ProgressReporter):
     spine_paths_iter = iter(list(context.search_spine_paths()))
     spine_file: HTMLFile | None = None
     translated_texts: list[str] = []
@@ -112,7 +114,7 @@ class _Translator:
     for translated_text in _translate(
       llm=self._llm,
       gen_fragments_iter=lambda: _gen_fragments(context),
-      cache_path=working_path / "cache",
+      cache_path=cache_path,
       max_chunk_tokens_count=self._max_chunk_tokens_count,
       max_threads_count=self._max_threads_count,
       target_language=self._target_language,
