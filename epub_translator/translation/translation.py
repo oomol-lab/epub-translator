@@ -46,6 +46,7 @@ def translate(
       )))
       for chunk in match_fragments(
         llm=llm,
+        target_language=target_language,
         chunk_ranges_iter=iter(chunk_ranges),
         fragments_iter=gen_fragments_iter(),
       )

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Iterator, Iterable, Generator
 from hashlib import sha512
 from ..llm import LLM
-from .types import Fragment
+from .types import Fragment, Language
 
 
 @dataclass
@@ -30,6 +30,7 @@ class ChunkRange:
 
 def match_fragments(
         llm: LLM,
+        target_language: Language,
         chunk_ranges_iter: Iterator[ChunkRange],
         fragments_iter: Iterator[Fragment],
       ) -> Generator[Chunk, None, None]:
@@ -44,7 +45,7 @@ def match_fragments(
     body = texts[head_length:head_length + body_length]
     tail = texts[head_length + body_length:]
 
-    hash = _hash_texts_list((head, body, tail))
+    hash = _hash_texts_list(target_language, (head, body, tail))
     head = _crop_extra_texts(llm, head, True, range.head_remain_tokens)
     tail = _crop_extra_texts(llm, tail, False, range.tail_remain_tokens)
 
@@ -88,15 +89,12 @@ def _match_range_and_texts(
 
   yield from matched_chunk_ranges
 
-def _hash_texts_list(texts_iterable: Iterable[list[str]]) -> bytes:
-  is_first = True
+def _hash_texts_list(target_language: Language, texts_iterable: Iterable[list[str]]) -> bytes:
   m = sha512()
+  m.update(target_language.value.encode("utf-8"))
   for texts in texts_iterable:
     for text in texts:
-      if is_first:
-        is_first = False
-      else:
-        m.update(b"\x00")
+      m.update(b"\x00")
       m.update(text.encode("utf-8"))
   return m.digest()
 
