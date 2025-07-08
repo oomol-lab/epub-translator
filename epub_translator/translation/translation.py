@@ -107,15 +107,19 @@ def _translate_chunk(
     ) -> list[str]:
 
     translated_texts: list[str] | None = None
+    source_texts = chunk.head + chunk.body + chunk.tail
     if store is not None:
       translated_texts = store.get(chunk.hash)
+      if len(source_texts) != len(translated_texts):
+        translated_texts = None
+        print(f"Warning: Mismatched lengths in cached translation for chunk: {chunk.hash.hex()}",)
 
     if translated_texts is None:
       translated_texts = [
         clean_spaces(text)
         for text in _translate_texts(
           llm=llm,
-          texts=chunk.head + chunk.body + chunk.tail,
+          texts=source_texts,
           target_language=target_language,
           user_prompt=user_prompt,
         )
