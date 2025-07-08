@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element
 from ..llm import LLM
 from ..xml import encode_friendly
 
-from .types import Fragment, Language
+from .types import language_chinese_name, Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments, Chunk
@@ -110,7 +110,8 @@ def _translate_chunk(
     source_texts = chunk.head + chunk.body + chunk.tail
     if store is not None:
       translated_texts = store.get(chunk.hash)
-      if len(source_texts) != len(translated_texts):
+      if translated_texts is not None and \
+         len(source_texts) != len(translated_texts):
         translated_texts = None
         print(f"Warning: Mismatched lengths in cached translation for chunk: {chunk.hash.hex()}",)
 
@@ -120,6 +121,7 @@ def _translate_chunk(
         for text in _translate_texts(
           llm=llm,
           texts=source_texts,
+          texts_tokens=chunk.tokens_count,
           target_language=target_language,
           user_prompt=user_prompt,
         )
@@ -132,9 +134,13 @@ def _translate_chunk(
 
     return translated_texts
 
+_PLAIN_TEXT_SCALE = 2.0
+_XML_TEXT_SCALE = 2.5
+
 def _translate_texts(
       llm: LLM,
       texts: list[str],
+      texts_tokens: int,
       target_language: Language,
       user_prompt: str | None,
     ) -> list[str]:
@@ -152,8 +158,9 @@ def _translate_texts(
     text_tag="TXT",
     user_data=user_data,
     parser=lambda r: r,
+    max_tokens=texts_tokens * _PLAIN_TEXT_SCALE,
     params={
-      "target_language": target_language.value,
+      "target_language": language_chinese_name(target_language),
       "user_prompt": user_prompt,
     },
   )
@@ -172,8 +179,11 @@ def _translate_texts(
   return llm.request_xml(
     template_name="format",
     user_data=request_text,
-    params={ "target_language": target_language.value },
+    max_tokens=texts_tokens * _XML_TEXT_SCALE,
     parser=lambda r: _parse_translated_response(r, len(texts)),
+    params={
+      "target_language": language_chinese_name(target_language),
+    },
   )
 
 def _parse_translated_response(resp_element: Element, sources_count: int) -> list[str]:

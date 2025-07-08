@@ -80,6 +80,7 @@ class LLM:
       text_tag: str,
       user_data: Element | str,
       parser: Callable[[str], R],
+      max_tokens: int | None = None,
       params: dict[str, Any] | None = None,
     ) -> R:
 
@@ -95,6 +96,7 @@ class LLM:
     return self._executor.request(
       input=self._create_input(template_name, user_data, params),
       parser=parse_response,
+      max_tokens=max_tokens,
     )
 
   def request_xml(
@@ -102,6 +104,7 @@ class LLM:
         template_name: str,
         user_data: Element | str,
         parser: Callable[[Element], R],
+        max_tokens: int | None = None,
         params: dict[str, Any] | None = None,
       ) -> R:
 
@@ -117,6 +120,7 @@ class LLM:
     return self._executor.request(
       input=self._create_input(template_name, user_data, params),
       parser=parse_response,
+      max_tokens=max_tokens,
     )
 
   def _create_input(self, template_name: str, user_data: Element | str, params: dict[str, Any]):
