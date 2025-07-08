@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element
 from ..llm import LLM
 from ..xml import encode_friendly
 
-from .types import Fragment, Language
+from .types import language_chinese_name, Fragment, Language
 from .store import Store
 from .splitter import split_into_chunks
 from .chunk import match_fragments, Chunk
@@ -153,7 +153,7 @@ def _translate_texts(
     user_data=user_data,
     parser=lambda r: r,
     params={
-      "target_language": target_language.value,
+      "target_language": language_chinese_name(target_language),
       "user_prompt": user_prompt,
     },
   )
@@ -172,8 +172,10 @@ def _translate_texts(
   return llm.request_xml(
     template_name="format",
     user_data=request_text,
-    params={ "target_language": target_language.value },
     parser=lambda r: _parse_translated_response(r, len(texts)),
+    params={
+      "target_language": language_chinese_name(target_language),
+    },
   )
 
 def _parse_translated_response(resp_element: Element, sources_count: int) -> list[str]:

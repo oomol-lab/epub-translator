@@ -2,11 +2,12 @@ from os import PathLike
 from pathlib import Path
 from tempfile import mkdtemp
 from shutil import rmtree
+from resource_segmentation import Incision
 
 from .llm import LLM
 from .epub import HTMLFile
 from .zip_context import ZipContext
-from .translation import translate as _translate, Fragment, Incision, Language, ProgressReporter
+from .translation import translate as _translate, Fragment, Language, ProgressReporter
 
 
 def translate(
