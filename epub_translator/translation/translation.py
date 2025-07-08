@@ -101,12 +101,15 @@ def _translate_chunk(
       translated_texts = store.get(chunk.hash)
 
     if translated_texts is None:
-      translated_texts = _translate_texts(
-        llm=llm,
-        texts=chunk.head + chunk.body + chunk.tail,
-        target_language=target_language,
-        user_prompt=user_prompt,
-      )
+      translated_texts = [
+        clean_spaces(text)
+        for text in _translate_texts(
+          llm=llm,
+          texts=chunk.head + chunk.body + chunk.tail,
+          target_language=target_language,
+          user_prompt=user_prompt,
+        )
+      ]
       if store is not None:
         store.put(chunk.hash, translated_texts)
 
