@@ -38,7 +38,7 @@ class LLMExecutor:
       timeout=timeout,
     )
 
-  def request(self, input: LanguageModelInput, parser: Callable[[str], Any]) -> Any:
+  def request(self, input: LanguageModelInput, parser: Callable[[str], Any], max_tokens: int | None) -> Any:
     result: Any | None = None
     last_error: Exception | None = None
     did_success = False
@@ -56,6 +56,7 @@ class LLMExecutor:
             input=input,
             top_p=top_p.current,
             temperature=temperature.current,
+            max_tokens=max_tokens,
           )
           if logger is not None:
             logger.debug(f"[[Response]]:\n{response}\n")
@@ -133,12 +134,14 @@ class LLMExecutor:
         input: LanguageModelInput,
         top_p: float | None,
         temperature: float | None,
+        max_tokens: int | None,
       ):
     stream = self._model.stream(
       input=input,
       timeout=self._timeout,
       top_p=top_p,
       temperature=temperature,
+      max_tokens=max_tokens,
     )
     buffer = StringIO()
     for chunk in stream:
