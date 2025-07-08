@@ -107,7 +107,7 @@ class _Translator:
 
   def _translate_spine(self, context: ZipContext, cache_path: Path, report_progress: ProgressReporter):
     spine_paths_iter = iter(list(context.search_spine_paths()))
-    spine_file: HTMLFile | None = None
+    spine: tuple[Path, HTMLFile] | None = None
     translated_texts: list[str] = []
     translated_count: int = 0
 
@@ -123,32 +123,37 @@ class _Translator:
     ):
       did_touch_end = False
 
-      if spine_file is not None and \
-        translated_count >= len(translated_texts):
+      if spine and translated_count >= len(translated_texts):
+        spine_path, spine_file = spine
         spine_file.write_texts(translated_texts)
-        spine_file = None
+        context.write_spine_file(spine_path, spine_file)
+        spine = None
 
-      while spine_file is None:
+      while not spine:
         spine_path = next(spine_paths_iter, None)
         if spine_path is None:
+          spine = None
           did_touch_end = True
           break
         spine_file = context.read_spine_file(spine_path)
         if spine_file.texts_length == 0:
-          spine_file = None
           continue
+        spine = (spine_path, spine_file)
         translated_texts = [""] * spine_file.texts_length
         translated_count = 0
+        break
 
       translated_texts[translated_count] = translated_text
       translated_count += 1
 
       if did_touch_end:
         break
-    if spine_file and translated_count > 0:
-      spine_file.write_texts(translated_texts)
 
-    context.write_spine_file(spine_path, spine_file)
+    if spine:
+      spine_path, spine_file = spine
+      if translated_count > 0:
+        spine_file.write_texts(translated_texts)
+      context.write_spine_file(spine_path, spine_file)
 
 def _gen_fragments(context: ZipContext):
   for spine_path in context.search_spine_paths():

@@ -46,12 +46,23 @@ def translate(
       )))
       for chunk in match_fragments(
         llm=llm,
+        target_language=target_language,
         chunk_ranges_iter=iter(chunk_ranges),
         fragments_iter=gen_fragments_iter(),
       )
     ]
+    def _generate_chunks_from_futures():
+      try:
+        for future in as_completed(futures):
+          yield future.result()
+      except Exception as err:
+        for future in futures:
+          if not future.done():
+            future.cancel()
+        raise err
+
     yield from _sort_translated_texts_by_chunk(
-      target=(f.result() for f in as_completed(futures)),
+      target=_generate_chunks_from_futures(),
       total_tokens_count=sum(chunk.tokens_count for chunk in chunk_ranges),
       report_progress=report_progress,
     )
@@ -96,18 +107,25 @@ def _translate_chunk(
     ) -> list[str]:
 
     translated_texts: list[str] | None = None
+    source_texts = chunk.head + chunk.body + chunk.tail
     if store is not None:
       translated_texts = store.get(chunk.hash)
+      if len(source_texts) != len(translated_texts):
+        translated_texts = None
+        print(f"Warning: Mismatched lengths in cached translation for chunk: {chunk.hash.hex()}",)
 
     if translated_texts is None:
-      translated_texts = _translate_texts(
-        llm=llm,
-        texts=chunk.head + chunk.body + chunk.tail,
-        target_language=target_language,
-        user_prompt=user_prompt,
-      )
-    if store is not None:
-      store.put(chunk.hash, translated_texts)
+      translated_texts = [
+        clean_spaces(text)
+        for text in _translate_texts(
+          llm=llm,
+          texts=source_texts,
+          target_language=target_language,
+          user_prompt=user_prompt,
+        )
+      ]
+      if store is not None:
+        store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
     translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
