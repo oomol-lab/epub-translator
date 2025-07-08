@@ -177,7 +177,7 @@ def _translate_texts(
   )
 
 def _parse_translated_response(resp_element: Element, sources_count: int) -> list[str]:
-  translated_fragments = [""] * sources_count
+  fragments: list[str | None] = [None] * sources_count
   for fragment_element in resp_element:
     if fragment_element.text is None:
       continue
@@ -185,11 +185,21 @@ def _parse_translated_response(resp_element: Element, sources_count: int) -> lis
     if id is None:
       continue
     index = int(id) - 1
-    if index < 0 or index >= len(translated_fragments):
+    if index < 0 or index >= len(fragments):
       raise ValueError(f"invalid fragment id: {id}")
-    translated_fragments[index] = fragment_element.text.strip()
+    fragments[index] = fragment_element.text.strip()
 
-  return translated_fragments
+  # 有时 LLM 会将多段融合在一起，这里尽可能让译文靠后，将空白段留在前面。
+  # 这样看起来一大段的译文对应若干小段原文，观感更好。
+  for i in range(len(fragments)):
+    fragment = fragments[i]
+    if fragment is not None and i < len(fragments) - 1:
+      next_fragment = fragments[i + 1]
+      if next_fragment is None:
+        fragments[i] = None
+        fragments[i + 1] = fragment
+
+  return [f or "" for f in fragments]
 
 def _normalize_user_input(user_lines: list[str]) -> str | None:
   empty_lines_count: int = 0
