@@ -106,8 +106,8 @@ def _translate_chunk(
         target_language=target_language,
         user_prompt=user_prompt,
       )
-    if store is not None:
-      store.put(chunk.hash, translated_texts)
+      if store is not None:
+        store.put(chunk.hash, translated_texts)
 
     head_length = len(chunk.head)
     translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
