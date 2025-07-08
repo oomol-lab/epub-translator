@@ -12,7 +12,7 @@ class Store:
     if not file_path.exists() or not file_path.is_file():
       return None
     with file_path.open("r", encoding="utf-8") as file:
-      return list(line for line in file)
+      return file.read().split("\n")
 
   def put(self, chunk_hash: bytes, lines_iter: Iterator[str]):
     file_path = self._file_path(chunk_hash)
