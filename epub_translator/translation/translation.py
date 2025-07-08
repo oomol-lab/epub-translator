@@ -1,3 +1,4 @@
+from math import ceil
 from typing import Callable, Iterator, Generator
 from pathlib import Path
 from concurrent.futures import as_completed, ThreadPoolExecutor
@@ -158,7 +159,7 @@ def _translate_texts(
     text_tag="TXT",
     user_data=user_data,
     parser=lambda r: r,
-    max_tokens=texts_tokens * _PLAIN_TEXT_SCALE,
+    max_tokens=ceil(texts_tokens * _PLAIN_TEXT_SCALE),
     params={
       "target_language": language_chinese_name(target_language),
       "user_prompt": user_prompt,
@@ -179,7 +180,7 @@ def _translate_texts(
   return llm.request_xml(
     template_name="format",
     user_data=request_text,
-    max_tokens=texts_tokens * _XML_TEXT_SCALE,
+    max_tokens=ceil(texts_tokens * _XML_TEXT_SCALE),
     parser=lambda r: _parse_translated_response(r, len(texts)),
     params={
       "target_language": language_chinese_name(target_language),

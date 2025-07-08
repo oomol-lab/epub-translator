@@ -22,28 +22,19 @@ class Language(Enum):
   JAPANESE = "ja"
   KOREAN = "ko"
 
+_LANGUAGE_NAMES = {
+  Language.SIMPLIFIED_CHINESE: "简体中文",
+  Language.TRADITIONAL_CHINESE: "繁体中文",
+  Language.ENGLISH: "英语",
+  Language.FRENCH: "法语",
+  Language.GERMAN: "德语",
+  Language.SPANISH: "西班牙语",
+  Language.RUSSIAN: "俄语",
+  Language.ITALIAN: "意大利语",
+  Language.PORTUGUESE: "葡萄牙语",
+  Language.JAPANESE: "日语",
+  Language.KOREAN: "韩语",
+}
+
 def language_chinese_name(language: Language) -> str:
-  if language == Language.SIMPLIFIED_CHINESE:
-    return "简体中文"
-  elif language == Language.TRADITIONAL_CHINESE:
-    return "繁体中文"
-  elif language == Language.ENGLISH:
-    return "英语"
-  elif language == Language.FRENCH:
-    return "法语"
-  elif language == Language.GERMAN:
-    return "德语"
-  elif language == Language.SPANISH:
-    return "西班牙语"
-  elif language == Language.RUSSIAN:
-    return "俄语"
-  elif language == Language.ITALIAN:
-    return "意大利语"
-  elif language == Language.PORTUGUESE:
-    return "葡萄牙语"
-  elif language == Language.JAPANESE:
-    return "日语"
-  elif language == Language.KOREAN:
-    return "韩语"
-  else:
-    raise ValueError(f"Unknown language: {language}")
+  return _LANGUAGE_NAMES[language]
