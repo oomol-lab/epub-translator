@@ -51,8 +51,18 @@ def translate(
         fragments_iter=gen_fragments_iter(),
       )
     ]
+    def _generate_chunks_from_futures():
+      try:
+        for future in as_completed(futures):
+          yield future.result()
+      except Exception as err:
+        for future in futures:
+          if not future.done():
+            future.cancel()
+        raise err
+
     yield from _sort_translated_texts_by_chunk(
-      target=(f.result() for f in as_completed(futures)),
+      target=_generate_chunks_from_futures(),
       total_tokens_count=sum(chunk.tokens_count for chunk in chunk_ranges),
       report_progress=report_progress,
     )
