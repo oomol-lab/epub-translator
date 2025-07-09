@@ -17,11 +17,11 @@ epub-translator 利用 AI 大模型自动翻译 EPUB 电子书，并 100% 保留
 
 无论你是开发者、语言学习者，还是电子书爱好者，epub-translator 都能让你轻松跨越语言障碍。
 
-- [x] *多语言互译*：支持 英文、中文、日文、西班牙语、法语、德语等主流语言互译。
-- [x] *双语对照*：生成上下/左右对照的双语 EPUB，方便对照学习。
-- [x] *插入提示词*：指导 AI 翻译，如术语表，角色人名表等。
-- [x] *AI 模型可选*：支持 DeepSeek、ChatGPT 等主流大模型。
-- [x] *高性能并行*：AI 请求多路并发，快速翻译整本书籍。
+- [x] **多语言互译**：支持 英文、中文、日文、西班牙语、法语、德语等主流语言互译。
+- [x] **双语对照**：生成上下对照的双语 EPUB，方便对照学习。
+- [x] **插入提示词**：指导 AI 翻译，如术语表，角色人名表等。
+- [x] **AI 模型可选**：支持 DeepSeek、ChatGPT 等主流大模型。
+- [x] **高性能并行**：AI 请求多路并发，快速翻译整本书籍。
 
 ## 环境
 
@@ -85,7 +85,7 @@ EPUB Translator 可以将已翻译内容缓存为本地文件，以便在翻译�
 
 ```python
 translate(
-  ...,
+  ..., # 其他参数
   working_path="/path/to/cache/translating/files",
 )
 ```
@@ -106,6 +106,7 @@ with tqdm(total=1.0, desc="Translating") as bar:
     bar.refresh()
 
   translate(
+    ..., # 其他参数
     report_progress=refresh_progress,
   )
 ```
@@ -116,7 +117,7 @@ with tqdm(total=1.0, desc="Translating") as bar:
 
 ```python
 translate(
-  ...,
+  ..., # 其他参数
   user_prompt="Le Petit Prince 应该译为“小王子”。",
 )
 ```

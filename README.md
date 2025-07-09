@@ -17,11 +17,11 @@ epub-translator uses AI big models to automatically translate EPUB e-books, and 
 
 Whether you are a developer, language learner, or e-book lover, epub-translator can help you easily overcome language barriers.
 
-- [x] *Multi-language translation*: Supports translation between mainstream languages ​​such as English, Chinese, Japanese, Spanish, French, and German.
-- [x] *Bilingual comparison*: Generates bilingual EPUBs with top-down/left-right comparisons for easy comparison and learning.
-- [x] *Insert prompt words*: Guide AI translation, such as glossary, character name list, etc.
-- [x] *Optional AI model*: Supports mainstream big models such as DeepSeek and ChatGPT.
-- [x] *High-performance parallelism*: AI requests multiple concurrent channels to quickly translate the entire book.
+- [x] **Multi-language translation**: Supports translation between mainstream languages ​​such as English, Chinese, Japanese, Spanish, French, and German.
+- [x] **Bilingual comparison**: Generates bilingual EPUBs with top-down comparisons for easy comparison and learning.
+- [x] **Insert prompt words**: Guide AI translation, such as glossary, character name list, etc.
+- [x] **Optional AI model**: Supports mainstream big models such as DeepSeek and ChatGPT.
+- [x] **High-performance parallelism**: AI requests multiple concurrent channels to quickly translate the entire book.
 
 ## Environment
 
@@ -85,7 +85,7 @@ Just configure the `working_path` field when calling `translate` and specify a p
 
 ```python
 translate(
-  ...,
+  ..., # other parameters
   working_path="/path/to/cache/translating/files",
 )
 ```
@@ -106,6 +106,7 @@ with tqdm(total=1.0, desc="Translating") as bar:
     bar.refresh()
 
   translate(
+    ..., # other parameters
     report_progress=refresh_progress,
   )
 ```
@@ -116,7 +117,7 @@ Insert prompt words to guide the AI ​​language model on how to translate. Fo
 
 ```python
 translate(
-...,
+  ..., # other parameters
   user_prompt='Le Petit Prince should be translated as "Little Prince".',
 )
 ```
