@@ -29,7 +29,7 @@ You can call EPUB Translator directly as a library, or use [OOMOL Studio](https:
 
 ### Run with OOMOL Studio
 
-OOMOL uses container technology to directly package the dependencies required by PDF craft, and it is ready to use out of the box.
+OOMOL uses container technology to directly package the dependencies required by EPUB Translator, and it is ready to use out of the box.
 
 [![](./docs/images/link2youtube.png)](https://www.youtube.com/watch?v=QsAdiskxfXI)
 

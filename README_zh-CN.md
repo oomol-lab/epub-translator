@@ -29,7 +29,7 @@ epub-translator 利用 AI 大模型自动翻译 EPUB 电子书，并 100% 保留
 
 ### 使用 OOMOL Studio 运行
 
-OOMOL 使用容器技术将 PDF craft 所需的依赖直接打包，开箱即用。
+OOMOL 使用容器技术将 EPUB Translator 所需的依赖直接打包，开箱即用。
 
 [![](./docs/images/link2bilibili.png)](https://www.bilibili.com/video/BV1Y9G4z5Ewt)
 
