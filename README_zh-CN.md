@@ -64,7 +64,7 @@ from epub_translator import translate, Language
 translate(
   llm=llm, # 上一步构造的 llm 对象
   source_path="/path/to/epub/file", # 要翻译的原 EPUB 文件
-  translated_path=temp_path / "/path/to/translated/epub/file", # 翻译后的 EPUB 保存路径
+  translated_path="/path/to/translated/epub/file", # 翻译后的 EPUB 保存路径
   target_language=Language.SIMPLIFIED_CHINESE, # 翻译目标语言，此例为简体中文。
 )
 ```

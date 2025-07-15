@@ -64,7 +64,7 @@ from epub_translator import translate, Language
 translate(
   llm=llm, # llm object constructed in the previous step
   source_path="/path/to/epub/file", # Original EPUB file to be translated
-  translated_path=temp_path / "/path/to/translated/epub/file", # Path to save the translated EPUB
+  translated_path="/path/to/translated/epub/file", # Path to save the translated EPUB
   target_language=Language.ENGLISH, # Target language for translation, in this case English.
 )
 ```
