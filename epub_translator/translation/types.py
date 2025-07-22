@@ -1,7 +1,12 @@
-from enum import Enum
+from enum import Enum, IntEnum
 from dataclasses import dataclass
-from resource_segmentation import Incision
 
+
+class Incision(IntEnum):
+  MUST_BE = 3
+  MOST_LIKELY = 2
+  IMPOSSIBLE = 0
+  UNCERTAIN = 1
 
 @dataclass
 class Fragment:

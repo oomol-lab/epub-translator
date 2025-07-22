@@ -2,7 +2,7 @@ from typing import Iterator, Generator
 from resource_segmentation import split, Resource, Segment
 
 from ..llm import LLM
-from .types import Fragment
+from .types import Fragment, Incision
 from .chunk import ChunkRange
 
 
@@ -12,6 +12,7 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
     max_segment_count=max_chunk_tokens_count,
     gap_rate=0.15,
     tail_rate=0.5,
+    border_incision=Incision.IMPOSSIBLE,
   )):
     head_index: int
     tail_index: int
@@ -52,7 +53,7 @@ def _gen_resources(llm: LLM, fragments_iter: Iterator[Fragment]) -> Generator[Re
       payload=index,
     )
 
-def _range_of_group_part(target: list[Resource[int] | Segment[int]]) -> tuple[int, int]:
+def _range_of_group_part(target: list[Resource[int] | Segment[int]]) -> tuple[int, int, int]:
   start_index: int | None = None
   previous_index: int = 0
   tokens_count: int = 0
