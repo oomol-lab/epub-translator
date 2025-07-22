@@ -1,6 +1,6 @@
 [project]
 name = "epub-translator"
-version = "0.0.5"
+version = "0.0.6"
 description = "Translate the epub book using LLM. The translated book will retain the original text and list the translated text side by side with the original text."
 keywords=["epub", "llm", "translation", "translator"]
 authors = [
@@ -16,7 +16,7 @@ dependencies = [
     "lxml (>=6.0.0,<7.0.0)",
     "tiktoken (>=0.9.0,<0.10.0)",
     "jinja2 (>=3.1.5,<4.0.0)",
-    "resource-segmentation (==0.0.2)",
+    "resource-segmentation (>=0.0.3,<0.1.0)",
     "langchain[openai] (>=0.3.21,<0.4.0)",
 ]
 
