@@ -20,7 +20,7 @@ class ZipContext:
               file.write(source.read())
 
     self._temp_dir: Path = temp_dir
-    self._epub_content: EpubContent = EpubContent(temp_dir)
+    self._epub_content: EpubContent = EpubContent(str(temp_dir))
 
   def archive(self, saved_path: Path):
     with zipfile.ZipFile(saved_path, "w") as zip_file:

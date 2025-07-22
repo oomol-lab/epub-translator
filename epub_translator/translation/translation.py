@@ -72,7 +72,7 @@ def _sort_translated_texts_by_chunk(
       target: Iterator[tuple[Chunk, list[str]]],
       total_tokens_count: int,
       report_progress: ProgressReporter,
-    ) -> Iterator[list[str]]:
+    ) -> Generator[str, None, None]:
 
   buffer: list[tuple[Chunk, list[str]]] = []
   wanna_next_index: int = 0
@@ -101,39 +101,39 @@ def _sort_translated_texts_by_chunk(
 
 def _translate_chunk(
       llm: LLM,
-      store: Store,
+      store: Store | None,
       chunk: Chunk,
       target_language: Language,
       user_prompt: str | None,
     ) -> list[str]:
 
-    translated_texts: list[str] | None = None
-    source_texts = chunk.head + chunk.body + chunk.tail
+  translated_texts: list[str] | None = None
+  source_texts = chunk.head + chunk.body + chunk.tail
+  if store is not None:
+    translated_texts = store.get(chunk.hash)
+    if translated_texts is not None and \
+        len(source_texts) != len(translated_texts):
+      translated_texts = None
+      print(f"Warning: Mismatched lengths in cached translation for chunk: {chunk.hash.hex()}",)
+
+  if translated_texts is None:
+    translated_texts = [
+      clean_spaces(text)
+      for text in _translate_texts(
+        llm=llm,
+        texts=source_texts,
+        texts_tokens=chunk.tokens_count,
+        target_language=target_language,
+        user_prompt=user_prompt,
+      )
+    ]
     if store is not None:
-      translated_texts = store.get(chunk.hash)
-      if translated_texts is not None and \
-         len(source_texts) != len(translated_texts):
-        translated_texts = None
-        print(f"Warning: Mismatched lengths in cached translation for chunk: {chunk.hash.hex()}",)
+      store.put(chunk.hash, translated_texts)
 
-    if translated_texts is None:
-      translated_texts = [
-        clean_spaces(text)
-        for text in _translate_texts(
-          llm=llm,
-          texts=source_texts,
-          texts_tokens=chunk.tokens_count,
-          target_language=target_language,
-          user_prompt=user_prompt,
-        )
-      ]
-      if store is not None:
-        store.put(chunk.hash, translated_texts)
+  head_length = len(chunk.head)
+  translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
 
-    head_length = len(chunk.head)
-    translated_texts = translated_texts[head_length:head_length + len(chunk.body)]
-
-    return translated_texts
+  return translated_texts
 
 _PLAIN_TEXT_SCALE = 2.0
 _XML_TEXT_SCALE = 2.5
