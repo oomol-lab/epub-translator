@@ -1,6 +1,6 @@
 from shutil import rmtree
 from pathlib import Path
-from typing import Iterator
+from typing import Iterable
 
 
 class Store:
@@ -14,7 +14,7 @@ class Store:
     with file_path.open("r", encoding="utf-8") as file:
       return file.read().split("\n")
 
-  def put(self, chunk_hash: bytes, lines_iter: Iterator[str]):
+  def put(self, chunk_hash: bytes, lines: Iterable[str]):
     file_path = self._file_path(chunk_hash)
     if file_path.exists():
       if file_path.is_file():
@@ -25,7 +25,7 @@ class Store:
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w", encoding="utf-8") as file:
       is_first_line = True
-      for line in lines_iter:
+      for line in lines:
         if is_first_line:
           is_first_line = False
         else:

@@ -2,7 +2,7 @@ from typing import Iterator, Generator
 from resource_segmentation import split, Resource, Segment
 
 from ..llm import LLM
-from .types import Fragment
+from .types import Fragment, Incision
 from .chunk import ChunkRange
 
 
@@ -12,20 +12,21 @@ def split_into_chunks(llm: LLM, fragments_iter: Iterator[Fragment], max_chunk_to
     max_segment_count=max_chunk_tokens_count,
     gap_rate=0.15,
     tail_rate=0.5,
+    border_incision=Incision.IMPOSSIBLE,
   )):
     head_index: int
     tail_index: int
     fragments_count: int
-    body_index, body_end_index, body_tokens_count = _range_of_group_part(group.body)
+    body_index, body_end_index, body_tokens_count = _group_part(group.body)
 
     if group.head:
-      head_index, head_end_index, _ = _range_of_group_part(group.head)
+      head_index, head_end_index, _ = _group_part(group.head)
       assert head_end_index + 1 == body_index, "Head must be continuous with body"
     else:
       head_index = body_index
 
     if group.tail:
-      tail_index, tail_end_index, _ = _range_of_group_part(group.tail)
+      tail_index, tail_end_index, _ = _group_part(group.tail)
       fragments_count = tail_end_index - head_index + 1
       assert body_end_index + 1 == tail_index, "Body must be continuous with tail"
     else:
@@ -52,7 +53,7 @@ def _gen_resources(llm: LLM, fragments_iter: Iterator[Fragment]) -> Generator[Re
       payload=index,
     )
 
-def _range_of_group_part(target: list[Resource[int] | Segment[int]]) -> tuple[int, int]:
+def _group_part(target: list[Resource[int] | Segment[int]]) -> tuple[int, int, int]:
   start_index: int | None = None
   previous_index: int = 0
   tokens_count: int = 0
