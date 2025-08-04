@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
 from tqdm import tqdm
-from epub_translator import translate, LLM, Language
+from epub_translator import translate, LLM, Language, TranslatedWriteMode
 
 
 def main() -> None:
@@ -26,6 +26,7 @@ def main() -> None:
       source_path=Path(__file__).parent.parent / "tests" / "assets" / "治疗精神病.epub",
       translated_path=temp_path / "jap_translated.epub",
       target_language=Language.JAPANESE,
+      write_mode=TranslatedWriteMode.APPEND,
       user_prompt="将“弗洛伊德”翻译为“Freud”，而不是假名。",
       working_path=temp_path,
       report_progress=refresh_progress,

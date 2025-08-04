@@ -13,7 +13,7 @@ def read_texts(root: Element) -> Generator[str, None, None]:
     elif position == TextPosition.TAIL:
       yield cast(str, element.tail)
 
-def append_texts(root: Element, texts: Iterable[str | Iterable[str] | None]):
+def write_texts(root: Element, texts: Iterable[str | Iterable[str] | None], append: bool):
   zip_list = list(zip(texts, search_texts(root)))
   for text, (element, position, parent) in reversed(zip_list):
     if text is None:
@@ -23,26 +23,32 @@ def append_texts(root: Element, texts: Iterable[str | Iterable[str] | None]):
       text = "".join(text)
     if position == TextPosition.WHOLE_DOM:
       if parent is not None:
-        _append_dom(parent, element, text)
+        _write_dom(parent, element, text, append)
     elif position == TextPosition.TEXT:
-      element.text = _append_text(element.text, text)
+      element.text = _write_text(element.text, text, append)
     elif position == TextPosition.TAIL:
-      element.tail = _append_text(element.tail, text)
+      element.tail = _write_text(element.tail, text, append)
 
-def _append_dom(parent: Element, origin: Element, text: str):
-  appended = Element(origin.tag, {**origin.attrib})
-  for index, child in enumerate(parent):
-    if child == origin:
-      parent.insert(index + 1, appended)
-      break
+def _write_dom(parent: Element, origin: Element, text: str, append: bool):
+  if append:
+    appended = Element(origin.tag, {**origin.attrib})
+    for index, child in enumerate(parent):
+      if child == origin:
+        parent.insert(index + 1, appended)
+        break
+    appended.attrib.pop("id", None)
+    appended.text = text
+    appended.tail = origin.tail
+    origin.tail = None
+  else:
+    for child in origin:
+      origin.remove(child)
+    origin.text = text
 
-  appended.attrib.pop("id", None)
-  appended.text = text
-  appended.tail = origin.tail
-  origin.tail = None
-
-def _append_text(left: str | None, right: str) -> str:
-  if left is None:
+def _write_text(left: str | None, right: str, append: bool) -> str:
+  if not append:
+    return right
+  elif left is None:
     return right
   else:
     return left + right

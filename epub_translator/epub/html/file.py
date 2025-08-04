@@ -2,7 +2,7 @@ import re
 
 from typing import Iterable
 from xml.etree.ElementTree import fromstring, tostring, Element
-from .dom_operator import read_texts, append_texts
+from .dom_operator import read_texts, write_texts
 from .empty_tags import to_xml, to_html
 
 
@@ -41,8 +41,8 @@ class HTMLFile:
     self._texts_length = len(texts)
     return texts
 
-  def write_texts(self, texts: Iterable[str]):
-    append_texts(self._root, texts)
+  def write_texts(self, texts: Iterable[str], append: bool):
+    write_texts(self._root, texts, append)
 
   @property
   def texts_length(self) -> int:
