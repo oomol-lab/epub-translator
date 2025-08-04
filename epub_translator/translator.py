@@ -1,5 +1,6 @@
 from os import PathLike
 from pathlib import Path
+from enum import auto, Enum
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -9,11 +10,16 @@ from .zip_context import ZipContext
 from .translation import translate as _translate, Incision, Fragment, Language, ProgressReporter
 
 
+class TranslatedWriteMode(Enum):
+  APPEND = auto()
+  REPLACE = auto()
+
 def translate(
       llm: LLM,
       source_path: PathLike,
       translated_path: PathLike,
       target_language: Language,
+      write_mode: TranslatedWriteMode = TranslatedWriteMode.APPEND,
       user_prompt: str | None = None,
       working_path: PathLike | None = None,
       max_chunk_tokens_count: int = 3000,
@@ -29,6 +35,7 @@ def translate(
   _Translator(
     llm=llm,
     target_language=target_language,
+    write_mode=write_mode,
     user_prompt=user_prompt,
     max_chunk_tokens_count=max_chunk_tokens_count,
     max_threads_count=max_threads_count,
@@ -44,6 +51,7 @@ class _Translator:
         self,
         llm: LLM,
         target_language: Language,
+        write_mode: TranslatedWriteMode,
         user_prompt: str | None,
         max_chunk_tokens_count: int,
         max_threads_count: int,
@@ -52,6 +60,7 @@ class _Translator:
 
     self._llm: LLM = llm
     self._target_language: Language = target_language
+    self._write_mode: TranslatedWriteMode = write_mode
     self._user_prompt: str | None = user_prompt
     self._max_chunk_tokens_count: int = max_chunk_tokens_count
     self._max_threads_count: int = max_threads_count
@@ -110,6 +119,7 @@ class _Translator:
     spine: tuple[Path, HTMLFile] | None = None
     translated_texts: list[str] = []
     translated_count: int = 0
+    append = (self._write_mode == TranslatedWriteMode.APPEND)
 
     for translated_text in _translate(
       llm=self._llm,
@@ -125,7 +135,7 @@ class _Translator:
 
       if spine and translated_count >= len(translated_texts):
         spine_path, spine_file = spine
-        spine_file.write_texts(translated_texts)
+        spine_file.write_texts(translated_texts, append)
         context.write_spine_file(spine_path, spine_file)
         spine = None
 
@@ -152,7 +162,7 @@ class _Translator:
     if spine:
       spine_path, spine_file = spine
       if translated_count > 0:
-        spine_file.write_texts(translated_texts)
+        spine_file.write_texts(translated_texts, append)
       context.write_spine_file(spine_path, spine_file)
 
 def _gen_fragments(context: ZipContext):

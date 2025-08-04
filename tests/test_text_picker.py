@@ -27,7 +27,7 @@ class TestAddFunction(unittest.TestCase):
     html_file = HTMLFile(file_content)
     source_texts = html_file.read_texts()
     translated_texts = translate(source_texts)
-    html_file.write_texts(translated_texts)
+    html_file.write_texts(translated_texts, True)
     return html_file.file_content
 
   def _get_test_xml_content(self) -> str:
