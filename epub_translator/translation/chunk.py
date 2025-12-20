@@ -112,6 +112,7 @@ def _crop_extra_texts(llm: LLM, texts: list[str], crop_left: bool, remain_tokens
     else:
       remain_tokens = tokens[-remain_tokens_count:] if crop_left else tokens[:remain_tokens_count]
       remain_texts.append(llm.decode_tokens(remain_tokens))
+      break
 
   if crop_left:
     remain_texts.reverse()
