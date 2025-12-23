@@ -1,5 +1,5 @@
 {
-  "editor.tabSize": 2,
+  "editor.tabSize": 4,
   "editor.insertSpaces": true,
   "files.trimTrailingWhitespace": true,
   "[log]": {
@@ -61,9 +61,11 @@
     "zinfo"
   ],
   "[python]": {
-      "editor.formatOnSave": false,
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "charliermarsh.ruff",
       "editor.codeActionsOnSave": {
-          "source.organizeImports": "explicit"
+          "source.organizeImports": "explicit",
+          "source.fixAll": "explicit"
       }
   }
 }
