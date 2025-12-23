@@ -1,37 +1,36 @@
 import unittest
+from collections.abc import Callable
 
-from typing import Callable
 from epub_translator.epub import HTMLFile
 
 
 class TestAddFunction(unittest.TestCase):
+    def test_string_logic(self):
+        target = self._translate_html(
+            translate=lambda texts: [t for t in texts],
+            file_content="<html><body>hello<span>the</span>world</body></html>",
+        )
+        self.assertEqual(
+            first=target,
+            second="<html><body>hello<span>the</span>world</body><body>hellotheworld</body></html>",
+        )
 
-  def test_string_logic(self):
-    target = self._translate_html(
-      translate=lambda texts: [t for t in texts],
-      file_content = "<html><body>hello<span>the</span>world</body></html>",
-    )
-    self.assertEqual(
-      first=target,
-      second="<html><body>hello<span>the</span>world</body><body>hellotheworld</body></html>",
-    )
+    def test_pick_and_replace_content(self):
+        # Just a smoke test
+        self._translate_html(
+            translate=lambda _: [""],
+            file_content=self._get_test_xml_content(),
+        )
 
-  def test_pick_and_replace_content(self):
-    # Just a smoke test
-    self._translate_html(
-      translate=lambda _: [""],
-      file_content = self._get_test_xml_content(),
-    )
+    def _translate_html(self, translate: Callable[[list[str]], list[str]], file_content: str):
+        html_file = HTMLFile(file_content)
+        source_texts = html_file.read_texts()
+        translated_texts = translate(source_texts)
+        html_file.write_texts(translated_texts, True)
+        return html_file.file_content
 
-  def _translate_html(self, translate: Callable[[list[str]], list[str]], file_content: str):
-    html_file = HTMLFile(file_content)
-    source_texts = html_file.read_texts()
-    translated_texts = translate(source_texts)
-    html_file.write_texts(translated_texts, True)
-    return html_file.file_content
-
-  def _get_test_xml_content(self) -> str:
-    return """
+    def _get_test_xml_content(self) -> str:
+        return """
       <html xmlns="http://www.w3.org/1999/xhtml">\n
 
       <head>\n <title>The little prince</title>\n

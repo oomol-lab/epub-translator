@@ -62,7 +62,7 @@ class XMLLikeNode:
     def namespaces(self) -> list[str]:
         return list(self._namespaces.keys())
 
-    def save(self, file: IO[bytes], is_html_like: bool) -> None:
+    def save(self, file: IO[bytes], is_html_like: bool = False) -> None:
         writer = io.TextIOWrapper(file, encoding=self._encoding, write_through=True)
         try:
             if self._header:
