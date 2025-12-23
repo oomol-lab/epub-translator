@@ -10,16 +10,16 @@ class ZipMigration:
         source_zip: zipfile.ZipFile | None = None
         target_zip: zipfile.ZipFile | None = None
         try:
-            self._source_zip = zipfile.ZipFile(source_path, "r")
-            self._target_zip = zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED)
+            source_zip = zipfile.ZipFile(source_path, "r")
+            target_zip = zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED)
         except Exception:
-            if source_zip is not None:
+            if source_zip:
                 source_zip.close()
-            if target_zip is not None:
+            if target_zip:
                 target_zip.close()
             raise
-        self._source_zip = cast(zipfile.ZipFile, source_zip)
-        self._target_zip = cast(zipfile.ZipFile, target_zip)
+        self._source_zip: zipfile.ZipFile = source_zip
+        self._target_zip: zipfile.ZipFile = target_zip
         self._processed_files: set[Path] = set()
 
     def __enter__(self):
