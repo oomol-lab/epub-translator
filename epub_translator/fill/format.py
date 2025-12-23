@@ -18,7 +18,7 @@ class ValidationError(Exception):
 
 
 def _extract_xml_element(text: str) -> Element:
-    xml_start_pattern = r"<xml\s[^>]*>"
+    xml_start_pattern = r"<xml(?:\s[^>]*)?>"
     xml_starts = list(re.finditer(xml_start_pattern, text))
 
     if len(xml_starts) == 0:
