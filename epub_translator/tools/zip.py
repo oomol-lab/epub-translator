@@ -1,6 +1,6 @@
 import zipfile
 from pathlib import Path
-from typing import IO, cast
+from typing import IO
 
 _BUFFER_SIZE = 8192  # 8KB
 
