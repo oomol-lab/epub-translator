@@ -1,0 +1,54 @@
+import zipfile
+from pathlib import Path
+from typing import IO
+
+_BUFFER_SIZE = 8192  # 8KB
+
+
+class ZipMigration:
+    def __init__(self, source_path: Path, target_path: Path) -> None:
+        self._source_zip = zipfile.ZipFile(source_path, "r")
+        self._target_zip = zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED)
+        self._processed_files: set[Path] = set()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        try:
+            if _exc_type is None:
+                all_files = self._source_zip.namelist()
+                for file_path in all_files:
+                    if Path(file_path) not in self._processed_files:
+                        self.migrate(Path(file_path))
+        finally:
+            self._target_zip.close()
+            self._source_zip.close()
+
+        return False
+
+    def list_files(self, prefix_path: Path | None = None) -> list[Path]:
+        all_files = self._source_zip.namelist()
+        if prefix_path is None:
+            return [Path(f) for f in all_files]
+        prefix = str(prefix_path)
+        if not prefix.endswith("/"):
+            prefix += "/"
+        return [Path(f) for f in all_files if f.startswith(prefix)]
+
+    def migrate(self, path: Path):
+        with self.read(path) as source_file:
+            with self._target_zip.open(str(path), "w") as target_file:
+                while True:
+                    chunk = source_file.read(_BUFFER_SIZE)
+                    if not chunk:
+                        break
+                    target_file.write(chunk)
+        self._processed_files.add(path)
+
+    def read(self, path: Path) -> IO[bytes]:
+        return self._source_zip.open(str(path), "r")
+
+    def replace(self, path: Path) -> IO[bytes]:
+        self._processed_files.add(path)
+        return self._target_zip.open(str(path), "w")
