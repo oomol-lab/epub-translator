@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 from xml.etree.ElementTree import Element
 
 
