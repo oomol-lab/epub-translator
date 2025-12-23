@@ -11,6 +11,8 @@ class Increaser:
     if self._value_range is None:
       return
     _, end_value = self._value_range
+    if self._current is None:
+      raise RuntimeError("Current value is None, cannot increase")
     self._current = self._current + 0.5 * (end_value - self._current)
 
 class Increasable:

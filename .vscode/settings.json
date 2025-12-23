@@ -2,9 +2,6 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "files.trimTrailingWhitespace": true,
-  "pylint.args": [
-    "--generate-members"
-  ],
   "[log]": {
     "editor.wordWrap": "on"
   },
@@ -62,7 +59,10 @@
     "Zeyu",
     "zinfo"
   ],
-  "python-envs.defaultEnvManager": "ms-python.python:conda",
-  "python-envs.defaultPackageManager": "ms-python.python:conda",
-  "python-envs.pythonProjects": []
+  "[python]": {
+      "editor.formatOnSave": false,
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+      }
+  }
 }

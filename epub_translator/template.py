@@ -20,7 +20,7 @@ class _DSLoader(BaseLoader):
     super().__init__()
     self._dir_path: Path = dir_path
 
-  def get_source(self, _: Environment, template: str) -> _LoaderResult:
+  def get_source(self, environment: Environment, template: str) -> _LoaderResult:
     template = self._norm_template(template)
     target_path = (self._dir_path / template).resolve()
 
@@ -47,4 +47,4 @@ class _DSLoader(BaseLoader):
     def is_updated() -> bool:
       return mtime == path.stat().st_mtime
 
-    return source, path, is_updated
+    return source, str(path), is_updated
