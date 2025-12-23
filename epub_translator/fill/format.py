@@ -129,23 +129,38 @@ class _ValidationContext:
             if id not in raw_id_map:
                 extra_ids.append(id)
 
-        messages: list[str] = []
-        lost_ids.sort()
-        extra_ids.sort()
+        if lost_ids or extra_ids:
+            messages: list[str] = []
+            lost_ids.sort()
+            extra_ids.sort()
 
-        if lost_ids:
-            tags = [self._str_tag(raw_id_map[id]) for id in lost_ids]
-            messages.append(f"lost sub-tags {' '.join(tags)}")
+            if lost_ids:
+                tags = [self._str_tag(raw_id_map[id]) for id in lost_ids]
+                messages.append(f"lost sub-tags {' '.join(tags)}")
 
-        if extra_ids:
-            tags = [self._str_tag(validated_id_map[id]) for id in extra_ids]
-            messages.append(f"extra sub-tags {' '.join(tags)}")
+            if extra_ids:
+                tags = [self._str_tag(validated_id_map[id]) for id in extra_ids]
+                messages.append(f"extra sub-tags {' '.join(tags)}")
 
-        if messages:
-            self._add_error(
-                ids_path=ids_path,
-                message="find " + " and ".join(messages),
-            )
+            if messages:
+                self._add_error(
+                    ids_path=ids_path,
+                    message="find " + " and ".join(messages),
+                )
+        else:
+            raw_element_empty = not self._has_text_content(raw_ele)
+            validated_ele_empty = not self._has_text_content(validated_ele)
+
+            if raw_element_empty and not validated_ele_empty:
+                self._add_error(
+                    ids_path=ids_path,
+                    message="shouldn't have text content",
+                )
+            elif not raw_element_empty and validated_ele_empty:
+                self._add_error(
+                    ids_path=ids_path,
+                    message="text content is missing",
+                )
 
     def _validate_id_ele(self, ids_path: list[int], id: int, raw_ele: Element, validated_ele: Element):
         if raw_ele.tag == validated_ele.tag:
@@ -169,13 +184,30 @@ class _ValidationContext:
 
     def _build_id_map(self, ele: Element):
         id_map: dict[int, Element] = {}
-        ele_id = ele.get(_ID_KEY, "")
-        id = int(ele_id)
-        if id < 0:
-            raise ValidationError(f'Invalid id "{ele_id}" found. IDs must be non-negative integers.')
-        if ele_id is not None:
-            id_map[id] = ele
+        for child_ele in ele:
+            id_text = child_ele.get(_ID_KEY, None)
+            if id_text is not None:
+                id = int(id_text)
+                if id < 0:
+                    raise ValueError(f"Invalid id {id} found. IDs must be non-negative integers.")
+                if id_text is not None:
+                    id_map[id] = child_ele
         return id_map
+
+    def _has_text_content(self, ele: Element) -> bool:
+        text = "".join(self._plain_text(ele))
+        text = re.sub(r"\s+", "", text)
+        text = text.strip()
+        return len(text) > 0
+
+    def _plain_text(self, ele: Element):
+        if ele.text:
+            yield ele.text
+        for child in ele:
+            if child.get(_ID_KEY, None) is not None:
+                yield from self._plain_text(child)
+            if child.tail:
+                yield child.tail
 
     def _str_tag(self, ele: Element) -> str:
         ele_id = ele.get(_ID_KEY)
