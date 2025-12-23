@@ -19,7 +19,7 @@ def indent(elem: Element, level: int = 0) -> Element:
 
 
 def iter_with_stack(element: Element) -> Generator[tuple[list[Element], Element], None, None]:
-    """中序遍历：yield parent_path, element"""
+    """先序遍历：yield parent_path, element"""
     stack: list[list[Element]] = [[element]]
     while stack:
         current_path = stack.pop()

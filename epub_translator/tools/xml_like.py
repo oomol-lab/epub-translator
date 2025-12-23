@@ -136,19 +136,12 @@ def _serialize_with_namespaces(
     element: Element,
     namespaces: dict[str, str],
 ) -> str:
-    root_attrib = dict(element.attrib)
     for namespace_uri, prefix in namespaces.items():
         if namespace_uri in _ROOT_NAMESPACES:
-            root_attrib["xmlns"] = namespace_uri
+            element.attrib["xmlns"] = namespace_uri
         else:
-            root_attrib[f"xmlns:{prefix}"] = namespace_uri
-
-    root = Element(element.tag, attrib=root_attrib)
-    root.text = element.text
-    root.tail = element.tail
-    root.extend(element)
-    xml_string = tostring(root, encoding="unicode")
-
+            element.attrib[f"xmlns:{prefix}"] = namespace_uri
+    xml_string = tostring(element, encoding="unicode")
     for namespace_uri, prefix in namespaces.items():
         if namespace_uri in _ROOT_NAMESPACES:
             xml_string = xml_string.replace(f"{{{namespace_uri}}}", "")

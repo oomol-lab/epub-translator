@@ -1,14 +1,25 @@
 import zipfile
 from pathlib import Path
-from typing import IO
+from typing import IO, cast
 
 _BUFFER_SIZE = 8192  # 8KB
 
 
 class ZipMigration:
     def __init__(self, source_path: Path, target_path: Path) -> None:
-        self._source_zip = zipfile.ZipFile(source_path, "r")
-        self._target_zip = zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED)
+        source_zip: zipfile.ZipFile | None = None
+        target_zip: zipfile.ZipFile | None = None
+        try:
+            self._source_zip = zipfile.ZipFile(source_path, "r")
+            self._target_zip = zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED)
+        except Exception:
+            if source_zip is not None:
+                source_zip.close()
+            if target_zip is not None:
+                target_zip.close()
+            raise
+        self._source_zip = cast(zipfile.ZipFile, source_zip)
+        self._target_zip = cast(zipfile.ZipFile, target_zip)
         self._processed_files: set[Path] = set()
 
     def __enter__(self):
