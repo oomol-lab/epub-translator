@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from xml.etree.ElementTree import Element
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -11,7 +12,7 @@ class Filler:
     def __init__(self, llm: LLM) -> None:
         self.llm = llm
 
-    def fill(self, source_ele: Element, translated_text: str) -> Element:
+    def fill(self, source_ele: Element, translated_text: str, on_fail: Callable[[str], None] | None = None) -> Element:
         # Load template and create system prompt
         template = self.llm._template("fill")
         system_prompt = template.render()
@@ -44,6 +45,8 @@ class Filler:
                 # Add error feedback to conversation and retry
                 messages.append(AIMessage(content=response))
                 messages.append(HumanMessage(content=str(e)))
+                if on_fail:
+                    on_fail(str(e))
 
         # If all retries failed
         raise RuntimeError(f"Failed to get valid XML structure after {max_retries} attempts")
