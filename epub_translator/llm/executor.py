@@ -116,13 +116,13 @@ class LLMExecutor:
         buffer.write("\n\n")
       if isinstance(message, SystemMessage):
         buffer.write("System:\n")
-        buffer.write(message.content)
+        buffer.write(str(message.content))
       elif isinstance(message, HumanMessage):
         buffer.write("User:\n")
-        buffer.write(message.content)
+        buffer.write(str(message.content))
       elif isinstance(message, AIMessage):
         buffer.write("Assistant:\n")
-        buffer.write(message.content)
+        buffer.write(str(message.content))
       else:
         buffer.write(str(message))
       is_first = False
