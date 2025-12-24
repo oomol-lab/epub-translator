@@ -1,19 +1,26 @@
-import copy
 import re
-from enum import Enum
+from collections.abc import Generator
+from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
 from tiktoken import Encoding
 
 from epub_translator.serial.segment import Segment
+from epub_translator.xml.xml import clone_element
 
 
 class _TextLocation(Enum):
-    """文本位置：节点的 text 或 tail"""
+    TEXT = auto()
+    TAIL = auto()
 
-    TEXT = "text"
-    TAIL = "tail"
+
+@dataclass
+class _CutPoint:
+    element: Element  # 需要切割的节点
+    location: _TextLocation  # text 或 tail
+    remaining_tokens: int  # 这个节点还能保留多少 tokens
 
 
 class TruncatableXML(Segment[Element]):
@@ -29,9 +36,6 @@ class TruncatableXML(Segment[Element]):
     def text(self) -> str:
         """返回 XML 树中所有文本内容的拼接结果"""
         fragments = list(self._iter_text_fragments(self._payload))
-        if not fragments:
-            return ""
-
         # 前面的片段 lstrip()，最后一个 strip()
         result_fragments = []
         for i, frag in enumerate(fragments):
@@ -58,66 +62,17 @@ class TruncatableXML(Segment[Element]):
         if remain_tokens >= self.tokens:
             return self
 
-        new_payload = copy.deepcopy(self._payload)
-        current_tokens = 0
+        new_payload = clone_element(self._payload)
 
-        def truncate_forward(element: Element, original: Element) -> bool:
-            """返回 True 表示已完成截断，应停止遍历"""
-            nonlocal current_tokens
+        # 1. 找到切割点
+        cut_point = self._find_cut_point(self._payload, remain_tokens, from_tail=False)
 
-            # 处理 element.text
-            if element.text:
-                text = self._normalize_whitespace(element.text).lstrip()
-                if text:
-                    # 从缓存中获取 tokens
-                    cache_key = (id(original), _TextLocation.TEXT)
-                    text_tokens_list = self._token_cache.get(cache_key, [])
-                    text_tokens = len(text_tokens_list)
+        # 2. 剪枝
+        self._prune_tree(new_payload, self._payload, cut_point, from_tail=False)
 
-                    if current_tokens + text_tokens <= remain_tokens:
-                        current_tokens += text_tokens
-                    else:
-                        # 需要截断这个 text
-                        remaining = remain_tokens - current_tokens
-                        element.text = self._decode_tokens(text_tokens_list[:remaining]).strip()
-                        # 删除所有子节点
-                        element[:] = []
-                        return True
+        # 3. 文本切割
+        self._apply_cut(new_payload, self._payload, cut_point, from_tail=False)
 
-            # 递归处理子节点
-            children_to_remove = []
-            for i, (child, original_child) in enumerate(zip(element, original)):
-                if truncate_forward(child, original_child):
-                    # 截断发生在这个子节点中，删除后续所有兄弟节点
-                    children_to_remove = list(range(i + 1, len(element)))
-                    break
-
-                # 处理 child.tail
-                if child.tail:
-                    tail = self._normalize_whitespace(child.tail).lstrip()
-                    if tail:
-                        # 从缓存中获取 tokens
-                        cache_key = (id(original_child), _TextLocation.TAIL)
-                        tail_tokens_list = self._token_cache.get(cache_key, [])
-                        tail_tokens = len(tail_tokens_list)
-
-                        if current_tokens + tail_tokens <= remain_tokens:
-                            current_tokens += tail_tokens
-                        else:
-                            # 需要截断这个 tail
-                            remaining = remain_tokens - current_tokens
-                            child.tail = self._decode_tokens(tail_tokens_list[:remaining]).strip()
-                            # 删除后续所有兄弟节点
-                            children_to_remove = list(range(i + 1, len(element)))
-                            return True
-
-            # 删除标记的子节点
-            for idx in reversed(children_to_remove):
-                del element[idx]
-
-            return len(children_to_remove) > 0
-
-        truncate_forward(new_payload, self._payload)
         return self.__class__(self._encoding, new_payload)
 
     def truncate_before_tail(self, remain_tokens: int) -> Self:
@@ -125,78 +80,186 @@ class TruncatableXML(Segment[Element]):
         if remain_tokens >= self.tokens:
             return self
 
-        new_payload = copy.deepcopy(self._payload)
+        new_payload = clone_element(self._payload)
+
+        # 1. 找到切割点
+        cut_point = self._find_cut_point(self._payload, remain_tokens, from_tail=True)
+
+        # 2. 剪枝
+        self._prune_tree(new_payload, self._payload, cut_point, from_tail=True)
+
+        # 3. 文本切割
+        self._apply_cut(new_payload, self._payload, cut_point, from_tail=True)
+
+        return self.__class__(self._encoding, new_payload)
+
+    def _find_cut_point(self, element: Element, remain_tokens: int, from_tail: bool) -> _CutPoint | None:
+        """找到切割点"""
         current_tokens = 0
 
-        def truncate_backward(element: Element, original: Element) -> bool:
-            """返回 True 表示已完成截断，应停止遍历"""
+        def search(elem: Element) -> _CutPoint | None:
             nonlocal current_tokens
 
-            # 从后往前处理子节点
-            children_to_remove = []
-            for i in range(len(element) - 1, -1, -1):
-                child = element[i]
-                original_child = original[i]
+            if not from_tail:
+                # 正向遍历：text -> children -> tail
+                if elem.text:
+                    cache_key = (id(elem), _TextLocation.TEXT)
+                    tokens_list = self._token_cache.get(cache_key, [])
+                    tokens_count = len(tokens_list)
 
-                # 先处理 child.tail
-                if child.tail:
-                    tail = self._normalize_whitespace(child.tail).lstrip()
-                    if tail:
-                        # 从缓存中获取 tokens
-                        cache_key = (id(original_child), _TextLocation.TAIL)
-                        tail_tokens_list = self._token_cache.get(cache_key, [])
-                        tail_tokens = len(tail_tokens_list)
+                    if current_tokens + tokens_count > remain_tokens:
+                        return _CutPoint(elem, _TextLocation.TEXT, remain_tokens - current_tokens)
+                    current_tokens += tokens_count
 
-                        if current_tokens + tail_tokens <= remain_tokens:
-                            current_tokens += tail_tokens
-                        else:
-                            # 需要截断这个 tail（从尾部保留）
-                            remaining = remain_tokens - current_tokens
-                            truncated = self._decode_tokens(tail_tokens_list[-remaining:])
-                            child.tail = truncated.lstrip()
-                            # 删除前面所有兄弟节点和 parent.text
-                            children_to_remove = list(range(0, i))
-                            element.text = None
-                            return True
+                for child in elem:
+                    result = search(child)
+                    if result:
+                        return result
 
-                # 递归处理子节点
-                if truncate_backward(child, original_child):
-                    # 截断发生在这个子节点中，删除前面所有兄弟节点
-                    children_to_remove = list(range(0, i))
-                    element.text = None
-                    break
+                    if child.tail:
+                        cache_key = (id(child), _TextLocation.TAIL)
+                        tokens_list = self._token_cache.get(cache_key, [])
+                        tokens_count = len(tokens_list)
 
-            # 删除标记的子节点
-            for idx in reversed(children_to_remove):
-                del element[idx]
+                        if current_tokens + tokens_count > remain_tokens:
+                            return _CutPoint(child, _TextLocation.TAIL, remain_tokens - current_tokens)
+                        current_tokens += tokens_count
 
-            if len(children_to_remove) > 0:
+            else:
+                # 反向遍历：tail (倒序) -> children (倒序) -> text
+                for i in range(len(elem) - 1, -1, -1):
+                    child = elem[i]
+
+                    if child.tail:
+                        cache_key = (id(child), _TextLocation.TAIL)
+                        tokens_list = self._token_cache.get(cache_key, [])
+                        tokens_count = len(tokens_list)
+
+                        if current_tokens + tokens_count > remain_tokens:
+                            return _CutPoint(child, _TextLocation.TAIL, remain_tokens - current_tokens)
+                        current_tokens += tokens_count
+
+                    result = search(child)
+                    if result:
+                        return result
+
+                if elem.text:
+                    cache_key = (id(elem), _TextLocation.TEXT)
+                    tokens_list = self._token_cache.get(cache_key, [])
+                    tokens_count = len(tokens_list)
+
+                    if current_tokens + tokens_count > remain_tokens:
+                        return _CutPoint(elem, _TextLocation.TEXT, remain_tokens - current_tokens)
+                    current_tokens += tokens_count
+
+            return None
+
+        return search(element)
+
+    def _prune_tree(
+        self,
+        new_element: Element,
+        original_element: Element,
+        cut_point: _CutPoint | None,
+        from_tail: bool,
+    ) -> None:
+        """根据切割点剪枝"""
+        if not cut_point:
+            return
+
+        def prune(new_elem: Element, orig_elem: Element) -> bool:
+            """返回 True 表示找到了切割点"""
+            if orig_elem is cut_point.element:
+                # 找到切割点
+                if cut_point.location == _TextLocation.TEXT:
+                    # 切割在 text 上，删除所有子节点
+                    new_elem[:] = []
                 return True
 
-            # 最后处理 element.text（如果还有剩余 tokens）
-            if element.text:
-                text = self._normalize_whitespace(element.text).lstrip()
-                if text:
-                    # 从缓存中获取 tokens
-                    cache_key = (id(original), _TextLocation.TEXT)
-                    text_tokens_list = self._token_cache.get(cache_key, [])
-                    text_tokens = len(text_tokens_list)
+            if not from_tail:
+                # 正向剪枝
+                children_to_remove = []
+                for i, (new_child, orig_child) in enumerate(zip(new_elem, orig_elem)):
+                    if orig_child is cut_point.element and cut_point.location == _TextLocation.TAIL:
+                        # 找到切割点在 tail 上，删除后续兄弟节点
+                        children_to_remove = list(range(i + 1, len(new_elem)))
+                        break
 
-                    if current_tokens + text_tokens <= remain_tokens:
-                        current_tokens += text_tokens
-                    else:
-                        # 需要截断这个 text（从尾部保留）
-                        remaining = remain_tokens - current_tokens
-                        truncated = self._decode_tokens(text_tokens_list[-remaining:])
-                        element.text = truncated.lstrip()
-                        return True
+                    if prune(new_child, orig_child):
+                        # 切割点在子节点内部，删除后续兄弟节点
+                        children_to_remove = list(range(i + 1, len(new_elem)))
+                        break
+
+                for idx in reversed(children_to_remove):
+                    del new_elem[idx]
+
+                return len(children_to_remove) > 0
+
+            else:
+                # 反向剪枝
+                children_to_remove = []
+                for i in range(len(new_elem) - 1, -1, -1):
+                    new_child = new_elem[i]
+                    orig_child = orig_elem[i]
+
+                    if orig_child is cut_point.element and cut_point.location == _TextLocation.TAIL:
+                        # 找到切割点在 tail 上，删除前面的兄弟节点和 parent.text
+                        children_to_remove = list(range(0, i))
+                        new_elem.text = None
+                        break
+
+                    if prune(new_child, orig_child):
+                        # 切割点在子节点内部，删除前面的兄弟节点和 parent.text
+                        children_to_remove = list(range(0, i))
+                        new_elem.text = None
+                        break
+
+                for idx in reversed(children_to_remove):
+                    del new_elem[idx]
+
+                return len(children_to_remove) > 0
+
+        prune(new_element, original_element)
+
+    def _apply_cut(
+        self,
+        new_element: Element,
+        original_element: Element,
+        cut_point: _CutPoint | None,
+        from_tail: bool,
+    ) -> None:
+        """对切割点进行文本截断"""
+        if not cut_point:
+            return
+
+        def apply(new_elem: Element, orig_elem: Element) -> bool:
+            """返回 True 表示找到并处理了切割点"""
+            if orig_elem is cut_point.element:
+                # 找到切割点，进行文本截断
+                cache_key = (id(orig_elem), cut_point.location)
+                tokens_list = self._token_cache.get(cache_key, [])
+
+                if from_tail:
+                    # 从尾部保留
+                    truncated = self._decode_tokens(tokens_list[-cut_point.remaining_tokens :]).lstrip()
+                else:
+                    # 从头部保留
+                    truncated = self._decode_tokens(tokens_list[: cut_point.remaining_tokens]).strip()
+
+                text_attr = "text" if cut_point.location == _TextLocation.TEXT else "tail"
+                setattr(new_elem, text_attr, truncated)
+                return True
+
+            # 递归查找
+            for new_child, orig_child in zip(new_elem, orig_elem):
+                if apply(new_child, orig_child):
+                    return True
 
             return False
 
-        truncate_backward(new_payload, self._payload)
-        return self.__class__(self._encoding, new_payload)
+        apply(new_element, original_element)
 
-    def _iter_text_fragments(self, element: Element):
+    def _iter_text_fragments(self, element: Element) -> Generator[str, None, None]:
         """按照先序遍历收集所有文本片段（text 和 tail）"""
         if element.text:
             yield self._normalize_whitespace(element.text)
