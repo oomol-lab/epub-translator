@@ -30,6 +30,8 @@ class Zip:
             if _exc_type is None:
                 all_files = self._source_zip.namelist()
                 for file_path in all_files:
+                    if file_path.endswith("/"):
+                        continue
                     if Path(file_path) not in self._processed_files:
                         self.migrate(Path(file_path))
         finally:
