@@ -37,5 +37,7 @@ def strip_namespace(elem: Element) -> None:
 
 def extract_namespace(tag: str) -> str | None:
     if tag.startswith("{"):
-        return tag[1 : tag.index("}")]
+        parts = tag.split("}", 1)
+        if len(parts) == 2:
+            return parts[0][1:]
     return None
