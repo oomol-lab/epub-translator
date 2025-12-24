@@ -34,6 +34,7 @@ def _translate_chapter(translator: Translator, chapter: Chapter):
             transform=lambda elements: _translate_paragraphs(translator, elements),
             max_group_tokens=100,  # TODO: make configurable
         ),
+        strict=True,
     ):
         paragraph.submit(translated_element)
 
