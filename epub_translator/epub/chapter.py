@@ -1,6 +1,6 @@
 from xml.etree.ElementTree import Element
 
-from ..tools import clone_element, plain_text
+from ..xml import clone_element, plain_text
 
 
 class Chapter:

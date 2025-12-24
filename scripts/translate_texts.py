@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
 from pathlib import Path
 from epub_translator import LLM, Language
-from epub_translator.translation import translate, Incision, Fragment
+from epub_translator.translation2 import translate, Incision, Fragment
 
 
 def main() -> None:
