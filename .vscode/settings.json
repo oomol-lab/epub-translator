@@ -56,6 +56,7 @@
     "signum",
     "tiktoken",
     "tobytes",
+    "Truncatable",
     "updation",
     "venv",
     "Zeyu",
