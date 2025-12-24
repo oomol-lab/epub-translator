@@ -1,1 +1,2 @@
-from .segment import Segment, split
+from .segment import ST, S, Segment, T
+from .splitter import split
