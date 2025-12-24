@@ -179,25 +179,29 @@ class TruncatableXML(Segment[Element]):
             if not from_tail:
                 # 正向剪枝
                 children_to_remove = []
+                found_cut_point = False
                 for i, (new_child, orig_child) in enumerate(zip(new_elem, orig_elem)):
                     if orig_child is cut_point.element and cut_point.location == _TextLocation.TAIL:
                         # 找到切割点在 tail 上，删除后续兄弟节点
                         children_to_remove = list(range(i + 1, len(new_elem)))
+                        found_cut_point = True
                         break
 
                     if prune(new_child, orig_child):
                         # 切割点在子节点内部，删除后续兄弟节点
                         children_to_remove = list(range(i + 1, len(new_elem)))
+                        found_cut_point = True
                         break
 
                 for idx in reversed(children_to_remove):
                     del new_elem[idx]
 
-                return len(children_to_remove) > 0
+                return found_cut_point
 
             else:
                 # 反向剪枝
                 children_to_remove = []
+                found_cut_point = False
                 for i in range(len(new_elem) - 1, -1, -1):
                     new_child = new_elem[i]
                     orig_child = orig_elem[i]
@@ -206,18 +210,20 @@ class TruncatableXML(Segment[Element]):
                         # 找到切割点在 tail 上，删除前面的兄弟节点和 parent.text
                         children_to_remove = list(range(0, i))
                         new_elem.text = None
+                        found_cut_point = True
                         break
 
                     if prune(new_child, orig_child):
                         # 切割点在子节点内部，删除前面的兄弟节点和 parent.text
                         children_to_remove = list(range(0, i))
                         new_elem.text = None
+                        found_cut_point = True
                         break
 
                 for idx in reversed(children_to_remove):
                     del new_elem[idx]
 
-                return len(children_to_remove) > 0
+                return found_cut_point
 
         prune(new_element, original_element)
 
