@@ -1,13 +1,16 @@
 from typing import Self
 from xml.etree.ElementTree import Element
 
+from tiktoken import Encoding
+
 from epub_translator.serial.segment import Segment
 
 
 class TruncatableXML(Segment[Element]):
     _payload: Element
 
-    def __init__(self, payload: Element) -> None:
+    def __init__(self, encoding: Encoding, payload: Element) -> None:
+        self._encoding: Encoding = encoding
         self._payload = payload
 
     @property
