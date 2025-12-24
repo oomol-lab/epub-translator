@@ -3,6 +3,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element
 
+from .common import extract_namespace, find_opf_path, strip_namespace
 from .zip import Zip
 
 
@@ -66,7 +67,7 @@ def write_toc(zip: Zip, toc: list[Toc]) -> None:
 
 
 def _detect_epub_version(zip: Zip) -> int:
-    opf_path = _find_opf_path(zip)
+    opf_path = find_opf_path(zip)
     with zip.read(opf_path) as f:
         content = f.read()
         root = ET.fromstring(content)
@@ -80,36 +81,14 @@ def _detect_epub_version(zip: Zip) -> int:
             return 2
 
 
-def _find_opf_path(zip: Zip) -> Path:
-    container_path = Path("META-INF", "container.xml")
-
-    with zip.read(container_path) as f:
-        content = f.read()
-        root = ET.fromstring(content)
-        ns = {"ns": "urn:oasis:names:tc:opendocument:xmlns:container"}
-        rootfile = root.find(".//ns:rootfile", ns)
-
-        if rootfile is None:
-            rootfile = root.find(".//rootfile")
-
-        if rootfile is None:
-            raise ValueError("Cannot find rootfile in container.xml")
-
-        full_path = rootfile.get("full-path")
-        if full_path is None:
-            raise ValueError("rootfile element has no full-path attribute")
-
-        return Path(full_path)
-
-
 def _find_toc_path(zip: Zip, version: int) -> Path | None:
-    opf_path = _find_opf_path(zip)
+    opf_path = find_opf_path(zip)
     opf_dir = opf_path.parent
 
     with zip.read(opf_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-        _strip_namespace(root)  # 移除命名空间前缀以简化 XPath
+        strip_namespace(root)  # 移除命名空间前缀以简化 XPath
 
         manifest = root.find(".//manifest")
         if manifest is None:
@@ -135,19 +114,11 @@ def _find_toc_path(zip: Zip, version: int) -> Path | None:
         return None
 
 
-def _strip_namespace(elem: Element) -> None:
-    if elem.tag.startswith("{"):
-        elem.tag = elem.tag.split("}", 1)[1]
-
-    for child in elem:
-        _strip_namespace(child)
-
-
 def _read_ncx_toc(zip: Zip, ncx_path: Path) -> list[Toc]:
     with zip.read(ncx_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-        _strip_namespace(root)  # 移除命名空间前缀以简化 XPath
+        strip_namespace(root)  # 移除命名空间前缀以简化 XPath
 
         nav_map = root.find(".//navMap")
         if nav_map is None:
@@ -202,7 +173,7 @@ def _write_ncx_toc(zip: Zip, ncx_path: Path, toc_list: list[Toc]) -> None:
     with zip.read(ncx_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-        ns = _extract_namespace(root.tag)
+        ns = extract_namespace(root.tag)
         nav_map = root.find(f".//{{{ns}}}navMap" if ns else ".//navMap")
         if nav_map is None:
             raise ValueError("Cannot find navMap in NCX file")
@@ -282,7 +253,7 @@ def _read_nav_toc(zip: Zip, nav_path: Path) -> list[Toc]:
         content = f.read()
         root = ET.fromstring(content)
 
-        _strip_namespace(root)
+        strip_namespace(root)
 
         nav_elem = None
         for nav in root.findall(".//nav"):
@@ -355,7 +326,7 @@ def _write_nav_toc(zip: Zip, nav_path: Path, toc_list: list[Toc]) -> None:
     with zip.read(nav_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-        ns = _extract_namespace(root.tag)
+        ns = extract_namespace(root.tag)
         nav_elem = None
         for nav in root.findall(f".//{{{ns}}}nav" if ns else ".//nav"):
             epub_type = nav.get("{http://www.idpf.org/2007/ops}type") or nav.get("type") or nav.get(f"{{{ns}}}type")
@@ -463,12 +434,6 @@ def _split_href(href: str) -> tuple[str | None, str | None]:
         return parts[0] if parts[0] else None, parts[1] if parts[1] else None
     else:
         return href, None
-
-
-def _extract_namespace(tag: str) -> str | None:
-    if tag.startswith("{"):
-        return tag[1 : tag.index("}")]
-    return None
 
 
 def _match_toc_with_elements(toc_list: list[Toc], elements: list[Element]) -> list[tuple[Toc, Element | None]]:
