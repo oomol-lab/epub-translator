@@ -3,6 +3,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element
 
+from ..tools.xml import plain_text
 from .common import extract_namespace, find_opf_path, strip_namespace
 from .zip import Zip
 
@@ -140,10 +141,12 @@ def _parse_nav_point(nav_point: Element) -> Toc | None:
         return None
 
     text_elem = nav_label.find("text")
-    if text_elem is None or text_elem.text is None:
+    if text_elem is None:
         return None
 
-    title = text_elem.text.strip()
+    title = plain_text(text_elem).strip()
+    if not title:
+        return None
 
     content_elem = nav_point.find("content")
     href = None
@@ -283,17 +286,19 @@ def _parse_nav_li(li: Element) -> Toc | None:
     a = li.find("a")
     if a is None:
         span = li.find("span")
-        if span is not None and span.text:
-            title = span.text.strip()
+        if span is not None:
+            title = plain_text(span).strip()
+            if not title:
+                return None
             href = None
             fragment = None
             a_id = None
         else:
             return None
     else:
-        if a.text is None:
+        title = plain_text(a).strip()
+        if not title:
             return None
-        title = a.text.strip()
 
         a_id = a.get("id")
         href_attr = a.get("href")
