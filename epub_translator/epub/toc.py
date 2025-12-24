@@ -3,7 +3,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element
 
-from ..tools.xml import plain_text
+from ..xml.xml import plain_text
 from .common import extract_namespace, find_opf_path, strip_namespace
 from .zip import Zip
 

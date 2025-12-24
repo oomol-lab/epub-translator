@@ -19,6 +19,16 @@ def iter_with_stack(element: Element) -> Generator[tuple[list[Element], Element]
             stack.append(child_path)
 
 
+def clone_element(element: Element) -> Element:
+    new_element = Element(element.tag, element.attrib)
+    new_element.text = element.text
+    for child in element:
+        new_child = clone_element(child)
+        new_child.tail = child.tail
+        new_element.append(new_child)
+    return new_element
+
+
 def plain_text(element: Element) -> str:
     return "".join(_iter_text_in(element))
 
