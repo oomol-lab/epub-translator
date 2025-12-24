@@ -186,7 +186,7 @@ def _write_ncx_toc(zip: Zip, ncx_path: Path, toc_list: list[Toc]) -> None:
             tree.write(out, encoding="utf-8", xml_declaration=True)
 
 
-def _update_nav_points(parent: Element, toc_list: list[Toc], ns: str | None) -> None:
+def _update_nav_points(parent: Element, toc_list: list[Toc], ns: str | None, start_play_order: int = 1) -> int:
     tag_prefix = f"{{{ns}}}" if ns else ""
     nav_point_tag = f"{tag_prefix}navPoint"
     existing_nav_points = [elem for elem in parent if elem.tag == nav_point_tag]
@@ -194,23 +194,27 @@ def _update_nav_points(parent: Element, toc_list: list[Toc], ns: str | None) -> 
     for nav_point in existing_nav_points:
         parent.remove(nav_point)
 
-    play_order = 1
+    play_order = start_play_order
     for toc, existing_elem in matched_pairs:
         if existing_elem is not None:
             nav_point = existing_elem
-            _update_nav_point_content(nav_point, toc, ns)
+            _update_nav_point_content(nav_point, toc, ns, play_order)
         else:
             nav_point = _create_nav_point(toc, ns, play_order)
-            play_order += 1
 
         parent.append(nav_point)
-        _update_nav_points(nav_point, toc.children, ns)
+        play_order += 1
+        play_order = _update_nav_points(nav_point, toc.children, ns, play_order)
+
+    return play_order
 
 
-def _update_nav_point_content(nav_point: Element, toc: Toc, ns: str | None) -> None:
+def _update_nav_point_content(nav_point: Element, toc: Toc, ns: str | None, play_order: int) -> None:
     tag_prefix = f"{{{ns}}}" if ns else ""
     if toc.id:
         nav_point.set("id", toc.id)
+
+    nav_point.set("playOrder", str(play_order))
 
     nav_label = nav_point.find(f"{tag_prefix}navLabel")
     if nav_label is not None:
