@@ -1,27 +1,13 @@
 # pylint: disable=redefined-outer-name
 
-import shutil
 from pathlib import Path
-
-import pytest
 
 from epub_translator.epub.spines import search_spine_paths
 from epub_translator.epub.zip import Zip
+from tests.utils import create_temp_dir_fixture
 
-
-@pytest.fixture
-def spines_temp_dir():
-    """创建并清理临时目录"""
-    temp_path = Path("tests/temp/spines")
-
-    # 每次测试前清空并创建目录
-    if temp_path.exists():
-        shutil.rmtree(temp_path)
-    temp_path.mkdir(parents=True, exist_ok=True)
-
-    yield temp_path
-
-    # 测试后不删除，方便用户查看结果
+# 创建 spines 专用的临时目录 fixture
+spines_temp_dir = create_temp_dir_fixture("spines")
 
 
 class TestSearchSpinePathsEpub2:
@@ -49,13 +35,13 @@ class TestSearchSpinePathsEpub2:
 
             # 验证第一个文档路径（spine 通常从标题页开始）
             first_spine = spine_paths[0]
-            assert first_spine.suffix in [".xhtml", ".html", ".htm"], \
+            assert first_spine.suffix in [".xhtml", ".html", ".htm"], (
                 f"第一个文档应该是 HTML/XHTML 格式，实际是 {first_spine}"
+            )
 
             # 验证包含主要章节文件
             spine_names = [p.name for p in spine_paths]
-            assert "7358.xhtml" in spine_names, \
-                f"应该包含 7358.xhtml（Chapter I），实际文件列表: {spine_names[:10]}"
+            assert "7358.xhtml" in spine_names, f"应该包含 7358.xhtml（Chapter I），实际文件列表: {spine_names[:10]}"
 
     def test_search_chinese_book_spines(self, spines_temp_dir):
         """测试读取治疗精神病.epub (EPUB 2.0) 的 spine"""
@@ -101,8 +87,7 @@ class TestSearchSpinePathsEpub3:
 
             # 验证是否包含封面和内容
             cover_found = any("cover" in str(path).lower() for path in spine_paths)
-            content_found = any("part" in str(path).lower() or "chapter" in str(path).lower()
-                              for path in spine_paths)
+            content_found = any("part" in str(path).lower() or "chapter" in str(path).lower() for path in spine_paths)
 
             assert cover_found or content_found, "应该包含封面或内容文档"
 
@@ -147,8 +132,7 @@ class TestSpineCompletenessComparison:
 
             # spine 应该包含更多文件（如版权页、封面等）
             # 这证明了从 spine 出发能找到更完整的内容
-            assert len(spine_files) >= len(toc_files), \
-                "Spine 应该包含至少与 TOC 相同数量的文件（通常更多）"
+            assert len(spine_files) >= len(toc_files), "Spine 应该包含至少与 TOC 相同数量的文件（通常更多）"
 
 
 class TestSpinePathStructure:
@@ -212,8 +196,9 @@ class TestEdgeCases:
             spine_paths = list(search_spine_paths(zip_file))
             unique_paths = set(spine_paths)
 
-            assert len(spine_paths) == len(unique_paths), \
+            assert len(spine_paths) == len(unique_paths), (
                 f"路径不应该重复，总数: {len(spine_paths)}, 唯一: {len(unique_paths)}"
+            )
 
 
 class TestSpineMediaTypes:
@@ -230,11 +215,9 @@ class TestSpineMediaTypes:
             # 验证所有文件扩展名
             valid_extensions = {".xhtml", ".html", ".htm"}
             for path in spine_paths:
-                assert path.suffix.lower() in valid_extensions, \
-                    f"文件 {path} 的扩展名应该是 {valid_extensions} 之一"
+                assert path.suffix.lower() in valid_extensions, f"文件 {path} 的扩展名应该是 {valid_extensions} 之一"
 
             # 验证不包含非文档文件
             invalid_extensions = {".css", ".js", ".jpg", ".png", ".gif", ".svg", ".ttf", ".otf"}
             for path in spine_paths:
-                assert path.suffix.lower() not in invalid_extensions, \
-                    f"不应该包含非文档文件: {path}"
+                assert path.suffix.lower() not in invalid_extensions, f"不应该包含非文档文件: {path}"

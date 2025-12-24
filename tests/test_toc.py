@@ -1,30 +1,16 @@
 # pylint: disable=redefined-outer-name
 
-import shutil
 from pathlib import Path
-
-import pytest
 
 from epub_translator.epub.toc import Toc, read_toc, write_toc
 from epub_translator.epub.zip import Zip
+from tests.utils import create_temp_dir_fixture
+
+# 创建 toc 专用的临时目录 fixture
+toc_temp_dir = create_temp_dir_fixture("toc")
 
 
-@pytest.fixture
-def toc_temp_dir():
-    """创建并清理临时目录"""
-    temp_path = Path("tests/temp/toc")
-
-    # 每次测试前清空并创建目录
-    if temp_path.exists():
-        shutil.rmtree(temp_path)
-    temp_path.mkdir(parents=True, exist_ok=True)
-
-    yield temp_path
-
-    # 测试后不删除，方便用户查看结果
-
-
-class TestReadTocEpub2:
+class TestReadTocEpub:
     """测试 EPUB 2.0 格式的目录读取"""
 
     def test_read_little_prince_toc(self, toc_temp_dir):
@@ -104,7 +90,7 @@ class TestReadTocEpub3:
             assert first_child.href == "Text/part02.xhtml"
 
 
-class TestWriteTocEpub2:
+class TestWriteTocEpub:
     """测试 EPUB 2.0 格式的目录写入"""
 
     def test_write_modified_toc_little_prince(self, toc_temp_dir):
@@ -371,7 +357,7 @@ class TestEdgeCases:
 class TestRoundTrip:
     """测试完整的读写往返"""
 
-    def test_roundtrip_epub2(self, toc_temp_dir):
+    def test_roundtrip_epub(self, toc_temp_dir):
         """测试 EPUB 2 的完整读写往返（不修改内容）"""
         source_path = Path("tests/assets/The little prince.epub")
         output_path = toc_temp_dir / "roundtrip_epub2.epub"
