@@ -42,7 +42,7 @@ def _translate_chapter(translator: Translator, chapter: Chapter):
 def _translate_paragraphs(translator: Translator, paragraph_elements: list[TruncatableXML]) -> list[Element]:
     root = Element("xml")
     for paragraph_element in paragraph_elements:
-        root.append(paragraph_element.payload)
+        root.append(paragraph_element._payload)
 
     return list(
         translator.translate(
