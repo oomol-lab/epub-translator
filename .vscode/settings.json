@@ -35,6 +35,7 @@
     "fitz",
     "frombytes",
     "idref",
+    "itemref",
     "iterchildren",
     "kwoa",
     "langchain",

@@ -5,7 +5,7 @@ from typing import IO
 _BUFFER_SIZE = 8192  # 8KB
 
 
-class ZipMigration:
+class Zip:
     def __init__(self, source_path: Path, target_path: Path) -> None:
         source_zip: zipfile.ZipFile | None = None
         target_zip: zipfile.ZipFile | None = None
@@ -30,6 +30,8 @@ class ZipMigration:
             if _exc_type is None:
                 all_files = self._source_zip.namelist()
                 for file_path in all_files:
+                    if file_path.endswith("/"):
+                        continue
                     if Path(file_path) not in self._processed_files:
                         self.migrate(Path(file_path))
         finally:
