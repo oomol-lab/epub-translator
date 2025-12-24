@@ -5,7 +5,7 @@ from typing import IO
 _BUFFER_SIZE = 8192  # 8KB
 
 
-class ZipMigration:
+class Zip:
     def __init__(self, source_path: Path, target_path: Path) -> None:
         source_zip: zipfile.ZipFile | None = None
         target_zip: zipfile.ZipFile | None = None
