@@ -1,18 +1,21 @@
-# pylint: disable=redefined-outer-name
-
-from dataclasses import dataclass
 from typing import Self
 
+from epub_translator.serial import Segment, split
 from epub_translator.serial.chunk import split_into_chunks
-from epub_translator.serial.splitter import split
 
 
-@dataclass
-class MockSegment:
-    """测试用的 Segment 实现，tokens 等于字符串长度"""
+class MockSegment(Segment[str]):
+    def __init__(self, payload: str, tokens: int) -> None:
+        self._payload = payload
+        self._tokens = tokens
 
-    payload: str
-    tokens: int
+    @property
+    def payload(self) -> str:
+        return self._payload
+
+    @property
+    def tokens(self) -> int:
+        return self._tokens
 
     @classmethod
     def from_text(cls, text: str) -> Self:
