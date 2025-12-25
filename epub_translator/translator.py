@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from tiktoken import Encoding, get_encoding
-
 from .epub import Chapter, Zip, search_spine_paths
 from .llm import LLM
 from .serial import split
@@ -9,8 +7,7 @@ from .translation import Translator
 from .xml import TruncatableXML, XMLLikeNode
 
 
-def translate(llm: LLM, source_path: Path, target_path: Path, token_encoding: str = "o200k_base") -> None:
-    encoding: Encoding = get_encoding(token_encoding)  # TODO: 以 llm 的形式
+def translate(llm: LLM, source_path: Path, target_path: Path) -> None:
     translator = Translator(
         llm=llm,
         ignore_translated_error=False,
@@ -28,8 +25,8 @@ def translate(llm: LLM, source_path: Path, target_path: Path, token_encoding: st
 
             chapter = Chapter(xml.element)
             _translate_chapter(
+                llm=llm,
                 translator=translator,
-                encoding=encoding,
                 chapter=chapter,
             )
             chapter.append_submit()
@@ -38,11 +35,11 @@ def translate(llm: LLM, source_path: Path, target_path: Path, token_encoding: st
                 xml.save(target_file, is_html_like=True)
 
 
-def _translate_chapter(translator: Translator, encoding: Encoding, chapter: Chapter):
+def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
     for paragraph, translated_element in zip(
         chapter.paragraphs,
         split(
-            segments=(TruncatableXML(encoding, p.clone_raw()) for p in chapter.paragraphs),
+            segments=(TruncatableXML(llm.encoding, p.clone_raw()) for p in chapter.paragraphs),
             transform=lambda paragraphs: translator.translate(p.payload for p in paragraphs),
             max_group_tokens=100,  # TODO: make configurable
         ),
