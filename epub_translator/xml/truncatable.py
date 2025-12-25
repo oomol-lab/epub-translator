@@ -1,4 +1,3 @@
-import re
 from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -9,6 +8,8 @@ from tiktoken import Encoding
 
 from epub_translator.serial.segment import Segment
 from epub_translator.xml.xml import clone_element
+
+from ..utils import normalize_whitespace
 
 
 class _TextLocation(Enum):
@@ -268,17 +269,17 @@ class TruncatableXML(Segment[Element]):
     def _iter_text_fragments(self, element: Element) -> Generator[str, None, None]:
         """按照先序遍历收集所有文本片段（text 和 tail）"""
         if element.text:
-            yield self._normalize_whitespace(element.text)
+            yield normalize_whitespace(element.text)
         for child in element:
             yield from self._iter_text_fragments(child)
             if child.tail:
-                yield self._normalize_whitespace(child.tail)
+                yield normalize_whitespace(child.tail)
 
     def _build_cache(self, element: Element) -> None:
         """递归构建 token 缓存"""
         # 处理 element.text
         if element.text:
-            text = self._normalize_whitespace(element.text).lstrip()
+            text = normalize_whitespace(element.text).lstrip()
             if text:
                 tokens = self._encoding.encode(text)
                 self._token_cache[(id(element), _TextLocation.TEXT)] = tokens
@@ -288,14 +289,10 @@ class TruncatableXML(Segment[Element]):
             self._build_cache(child)
             # 处理 child.tail
             if child.tail:
-                tail = self._normalize_whitespace(child.tail).lstrip()
+                tail = normalize_whitespace(child.tail).lstrip()
                 if tail:
                     tokens = self._encoding.encode(tail)
                     self._token_cache[(id(child), _TextLocation.TAIL)] = tokens
-
-    def _normalize_whitespace(self, text: str) -> str:
-        r"""将 \s+ 替换成单个空格"""
-        return re.sub(r"\s+", " ", text)
 
     def _decode_tokens(self, tokens: list[int]) -> str:
         """将 token 列表解码为文本"""

@@ -1,6 +1,8 @@
 import re
 from xml.etree.ElementTree import Element, ParseError, fromstring
 
+from ..utils import normalize_whitespace
+
 ID_KEY: str = "id"
 
 
@@ -196,7 +198,7 @@ class _ValidationContext:
 
     def _has_text_content(self, ele: Element) -> bool:
         text = "".join(self._plain_text(ele))
-        text = re.sub(r"\s+", "", text)
+        text = normalize_whitespace(text)
         text = text.strip()
         return len(text) > 0
 

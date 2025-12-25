@@ -2,6 +2,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
+from ..utils import normalize_whitespace
 from ..xml import iter_with_stack
 from .format import ID_KEY
 
@@ -82,8 +83,8 @@ class XMLProcessor:
             formatted_element = formatted_elements.get(node.id, None)
             if formatted_element is None:
                 continue
-            node.target.text = formatted_element.text
-            node.target.tail = formatted_element.tail
+            node.target.text = self._normalize_target_text(formatted_element.text)
+            node.target.tail = self._normalize_target_text(formatted_element.tail)
 
         for node in self._iter_nodes(self._root):
             for child_processed in node.processed:
@@ -109,3 +110,8 @@ class XMLProcessor:
             child_node = self._raw2node.get(id(raw_child), None)
             if child_node is not None:
                 yield from self._iter_nodes(child_node)
+
+    def _normalize_target_text(self, text: str | None) -> str | None:
+        if text is None:
+            return None
+        return normalize_whitespace(text)
