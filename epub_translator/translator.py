@@ -4,14 +4,15 @@ from xml.etree.ElementTree import Element
 from tiktoken import Encoding, get_encoding
 
 from .epub import Chapter, Zip, search_spine_paths
+from .llm import LLM
 from .serial import split
 from .translation import Translator
 from .xml import TruncatableXML, XMLLikeNode
 
 
-def translate(source_path: Path, target_path: Path, token_encoding: str = "o200k_base") -> None:
-    encoding: Encoding = get_encoding(token_encoding)
-    translator = Translator()
+def translate(llm: LLM, source_path: Path, target_path: Path, token_encoding: str = "o200k_base") -> None:
+    encoding: Encoding = get_encoding(token_encoding)  # TODO: 以 llm 的形式
+    translator = Translator(llm)
     with Zip(source_path, target_path) as zip:
         # TODO: Translate TOC...
 
