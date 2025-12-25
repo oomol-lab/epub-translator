@@ -7,9 +7,17 @@ from .translation import Translator
 from .xml import TruncatableXML, XMLLikeNode
 
 
-def translate(llm: LLM, source_path: Path, target_path: Path) -> None:
+def translate(
+    llm: LLM,
+    source_path: Path,
+    target_path: Path,
+    target_language: str,
+    user_prompt: str | None = None,
+) -> None:
     translator = Translator(
         llm=llm,
+        target_language=target_language,
+        user_prompt=user_prompt,
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,

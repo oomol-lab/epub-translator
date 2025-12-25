@@ -11,11 +11,15 @@ class Translator:
     def __init__(
         self,
         llm: LLM,
+        target_language: str,
+        user_prompt: str | None,
         ignore_translated_error: bool,
         max_retries: int,
         max_fill_displaying_errors: int,
     ) -> None:
         self._llm: LLM = llm
+        self._target_language: str = target_language
+        self._user_prompt: str | None = user_prompt
         self._ignore_translated_error: bool = ignore_translated_error
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
@@ -53,7 +57,10 @@ class Translator:
             input=[
                 Message(
                     role=MessageRole.SYSTEM,
-                    message=self._llm.template("translate").render(),
+                    message=self._llm.template("translate").render(
+                        target_language=self._target_language,
+                        user_prompt=self._user_prompt,
+                    ),
                 ),
                 Message(role=MessageRole.USER, message=text),
             ]
