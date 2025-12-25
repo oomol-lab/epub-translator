@@ -1,9 +1,8 @@
 from collections.abc import Callable
 from xml.etree.ElementTree import Element
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
 from ..llm import LLM
+from ..llm.types import Message, MessageRole
 from ..xml import encode_friendly
 from .format import ValidationError, format
 
@@ -21,9 +20,9 @@ class Filler:
         source_xml = encode_friendly(source_ele)
         user_content = f"```XML\n{source_xml}\n```\n\n{translated_text}"
 
-        messages: list[SystemMessage | HumanMessage | AIMessage] = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_content),
+        messages: list[Message] = [
+            Message(role=MessageRole.SYSTEM, message=system_prompt),
+            Message(role=MessageRole.USER, message=user_content),
         ]
 
         # Retry loop with validation feedback
@@ -43,16 +42,39 @@ class Filler:
                 )
             except ValidationError as e:
                 # Add error feedback to conversation and retry
-                messages.append(AIMessage(content=response))
-                messages.append(HumanMessage(content=str(e)))
+                messages.append(Message(role=MessageRole.ASSISTANT, message=response))
+                messages.append(Message(role=MessageRole.USER, message=str(e)))
                 if on_fail:
                     on_fail(str(e))
 
         # If all retries failed
         raise RuntimeError(f"Failed to get valid XML structure after {max_retries} attempts")
 
-    def _call_llm(self, messages: list[SystemMessage | HumanMessage | AIMessage]) -> str:
-        # Use the underlying ChatOpenAI model to invoke with message history
-        model = self.llm._executor._model
-        response = model.invoke(messages)
-        return str(response.content)
+    def _call_llm(self, messages: list[Message]) -> str:
+        # Convert messages to OpenAI format and call the client
+        client = self.llm._executor._client
+        model_name = self.llm._executor._model_name
+
+        openai_messages = [
+            {
+                "role": self._role_to_str(msg.role),
+                "content": msg.message,
+            }
+            for msg in messages
+        ]
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=openai_messages,
+        )
+        return response.choices[0].message.content or ""
+
+    def _role_to_str(self, role: MessageRole) -> str:
+        if role == MessageRole.SYSTEM:
+            return "system"
+        elif role == MessageRole.USER:
+            return "user"
+        elif role == MessageRole.ASSISTANT:
+            return "assistant"
+        else:
+            raise ValueError(f"Unknown role: {role}")
