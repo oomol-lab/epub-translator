@@ -28,6 +28,8 @@ def main() -> None:
     # Create Filler instance
     translator = Translator(
         llm=llm,
+        target_language="French",
+        user_prompt=None,
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,

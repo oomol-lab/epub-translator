@@ -16,6 +16,7 @@ def main() -> None:
     llm = LLM(**config, log_dir_path=temp_path / "logs")
     translate(
         llm=llm,
+        target_language="English",
         source_path=assets_path / "治疗精神病.epub",
         target_path=temp_path / "translated.epub",
     )
