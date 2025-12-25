@@ -3,13 +3,13 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
-import json
 from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
-from epub_translator.llm import LLM
+from epub_translator import LLM
 from epub_translator.translation import Translator
 from epub_translator.xml import encode_friendly
+from scripts.utils import read_format_json
 
 
 def main() -> None:
@@ -18,12 +18,12 @@ def main() -> None:
     print("=" * 60)
 
     # Read configuration from format.json
-    config = _read_format_json()
+    config = read_format_json()
     print("\n✓ Loaded configuration from format.json")
     print(f"  Model: {config['model']}")
 
     # Create LLM instance
-    llm = LLM(**config, log_dir_path=Path("temp/log"))
+    llm = LLM(**config, log_dir_path=Path(__file__).parent / ".." / "temp" / "logs")
     print("✓ Created LLM instance")
 
     # Create Filler instance
@@ -89,14 +89,6 @@ def _create_test_xml() -> Element:
 </xml>
 """.strip()
     return fromstring(xml_string)
-
-
-def _read_format_json() -> dict:
-    """Read configuration from format.json in the project root."""
-    path = Path(__file__).parent / ".." / "format.json"
-    path = path.resolve()
-    with open(path, encoding="utf-8") as file:
-        return json.load(file)
 
 
 if __name__ == "__main__":
