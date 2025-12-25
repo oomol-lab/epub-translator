@@ -1,7 +1,7 @@
-import re
-from xml.etree.ElementTree import Element, ParseError, fromstring
+from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
+from ..xml import decode_friendly
 
 ID_KEY: str = "id"
 
@@ -23,35 +23,24 @@ class ValidationError(Exception):
 
 
 def _extract_xml_element(text: str) -> Element:
-    xml_start_pattern = r"<xml(?:\s[^>]*)?>"
-    xml_starts = list(re.finditer(xml_start_pattern, text))
+    first_xml_element: Element | None = None
+    all_xml_elements: int = 0
 
-    if len(xml_starts) == 0:
-        raise ValidationError(
-            "No <xml> opening tag found. Please ensure the response contains a valid <xml> ... </xml> tag."
-        )
-    if len(xml_starts) > 1:
-        raise ValidationError(
-            "Multiple <xml> opening tags found. Please ensure the response contains only one <xml> tag."
-        )
-    xml_start = xml_starts[0]
-    start_pos = xml_start.start()
-    xml_end_pattern = r"</xml>"
-    xml_end = re.search(xml_end_pattern, text[start_pos:])
+    for xml_element in decode_friendly(text, tags="xml"):
+        if first_xml_element is None:
+            first_xml_element = xml_element
+        all_xml_elements += 1
 
-    if xml_end is None:
+    if first_xml_element is None:
         raise ValidationError(
-            "No </xml> closing tag found. Please ensure the XML structure is properly closed with </xml>."
+            "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
         )
-    end_pos = start_pos + xml_end.end()
-    xml_content = text[start_pos:end_pos]
-    try:
-        element = fromstring(xml_content)
-        return element
-    except ParseError as error:
+    if all_xml_elements > 1:
         raise ValidationError(
-            f"Failed to parse XML: {str(error)}. Please check the XML syntax and ensure it is well-formed."
-        ) from error
+            f"Found {all_xml_elements} <xml>...</xml> blocks. "
+            "Please return only one XML block without any examples or explanations."
+        )
+    return first_xml_element
 
 
 class _ValidationContext:
