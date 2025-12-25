@@ -1,7 +1,8 @@
 import re
-from xml.etree.ElementTree import Element, ParseError, fromstring
+from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
+from ..xml import decode_friendly
 
 ID_KEY: str = "id"
 
@@ -45,13 +46,17 @@ def _extract_xml_element(text: str) -> Element:
         )
     end_pos = start_pos + xml_end.end()
     xml_content = text[start_pos:end_pos]
+    xml_element: Element | None = None
     try:
-        element = fromstring(xml_content)
-        return element
-    except ParseError as error:
+        xml_element = next(decode_friendly(xml_content), None)
+    except Exception as error:
         raise ValidationError(
             f"Failed to parse XML: {str(error)}. Please check the XML syntax and ensure it is well-formed."
         ) from error
+
+    if xml_element is None:
+        raise ValidationError("Failed to extract XML element from the response.")
+    return xml_element
 
 
 class _ValidationContext:
