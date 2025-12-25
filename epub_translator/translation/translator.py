@@ -83,6 +83,8 @@ class Translator:
                     validated_text=response,
                     errors_limit=self._max_fill_displaying_errors,
                 )
+                break
+
             except ValidationError as error:
                 latest_error = error
                 if self._ignore_translated_error and error.validated_ele is not None:
