@@ -1,17 +1,19 @@
 from pathlib import Path
-from xml.etree.ElementTree import Element
-
-from tiktoken import Encoding, get_encoding
 
 from .epub import Chapter, Zip, search_spine_paths
+from .llm import LLM
 from .serial import split
 from .translation import Translator
 from .xml import TruncatableXML, XMLLikeNode
 
 
-def translate(source_path: Path, target_path: Path, token_encoding: str = "o200k_base") -> None:
-    encoding: Encoding = get_encoding(token_encoding)
-    translator = Translator()
+def translate(llm: LLM, source_path: Path, target_path: Path) -> None:
+    translator = Translator(
+        llm=llm,
+        ignore_translated_error=False,
+        max_retries=5,
+        max_fill_displaying_errors=10,
+    )
     with Zip(source_path, target_path) as zip:
         # TODO: Translate TOC...
 
@@ -23,8 +25,8 @@ def translate(source_path: Path, target_path: Path, token_encoding: str = "o200k
 
             chapter = Chapter(xml.element)
             _translate_chapter(
+                llm=llm,
                 translator=translator,
-                encoding=encoding,
                 chapter=chapter,
             )
             chapter.append_submit()
@@ -33,27 +35,14 @@ def translate(source_path: Path, target_path: Path, token_encoding: str = "o200k
                 xml.save(target_file, is_html_like=True)
 
 
-def _translate_chapter(translator: Translator, encoding: Encoding, chapter: Chapter):
+def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
     for paragraph, translated_element in zip(
         chapter.paragraphs,
         split(
-            segments=(TruncatableXML(encoding, p.clone_raw()) for p in chapter.paragraphs),
-            transform=lambda elements: _translate_paragraphs(translator, elements),
+            segments=(TruncatableXML(llm.encoding, p.clone_raw()) for p in chapter.paragraphs),
+            transform=lambda paragraphs: translator.translate(p.payload for p in paragraphs),
             max_group_tokens=100,  # TODO: make configurable
         ),
         strict=True,
     ):
         paragraph.submit(translated_element)
-
-
-def _translate_paragraphs(translator: Translator, paragraph_elements: list[TruncatableXML]) -> list[Element]:
-    root = Element("xml")
-    for paragraph_element in paragraph_elements:
-        root.append(paragraph_element.payload)
-
-    return list(
-        translator.translate(
-            text="\n\n".join(p.text for p in paragraph_elements),
-            element=root,
-        )
-    )

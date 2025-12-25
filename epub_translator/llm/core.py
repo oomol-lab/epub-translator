@@ -1,5 +1,5 @@
 import datetime
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Generator
 from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
 from os import PathLike
@@ -54,21 +54,9 @@ class LLM:
             create_logger=self._create_logger,
         )
 
-    def _create_logger(self) -> Logger | None:
-        if self._logger_save_path is None:
-            return None
-
-        now = datetime.datetime.now(datetime.timezone.utc)
-        timestamp = now.strftime("%Y-%m-%d %H-%M-%S %f")
-        file_path = self._logger_save_path / f"request {timestamp}.log"
-        logger = getLogger(f"LLM Request {timestamp}")
-        logger.setLevel(DEBUG)
-        handler = FileHandler(file_path, encoding="utf-8")
-        handler.setLevel(DEBUG)
-        handler.setFormatter(Formatter("%(asctime)s    %(message)s", "%H:%M:%S"))
-        logger.addHandler(handler)
-
-        return logger
+    @property
+    def encoding(self) -> Encoding:
+        return self._encoding
 
     def request(
         self,
@@ -93,21 +81,28 @@ class LLM:
         prompt = template.render(**params)
         return len(self._encoding.encode(prompt))
 
-    def encode_tokens(self, text: str) -> list[int]:
-        return self._encoding.encode(text)
-
-    def decode_tokens(self, tokens: Sequence[int]) -> str:
-        return self._encoding.decode(tokens)
-
-    def count_tokens_count(self, text: str) -> int:
-        return len(self._encoding.encode(text))
-
     def template(self, template_name: str) -> Template:
         template = self._templates.get(template_name, None)
         if template is None:
             template = self._env.get_template(template_name)
             self._templates[template_name] = template
         return template
+
+    def _create_logger(self) -> Logger | None:
+        if self._logger_save_path is None:
+            return None
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        timestamp = now.strftime("%Y-%m-%d %H-%M-%S %f")
+        file_path = self._logger_save_path / f"request {timestamp}.log"
+        logger = getLogger(f"LLM Request {timestamp}")
+        logger.setLevel(DEBUG)
+        handler = FileHandler(file_path, encoding="utf-8")
+        handler.setLevel(DEBUG)
+        handler.setFormatter(Formatter("%(asctime)s    %(message)s", "%H:%M:%S"))
+        logger.addHandler(handler)
+
+        return logger
 
     def _search_quotes(self, kind: str, response: str) -> Generator[str, None, None]:
         start_marker = f"```{kind}"
