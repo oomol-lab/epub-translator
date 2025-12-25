@@ -1,8 +1,7 @@
 from collections.abc import Callable
 from xml.etree.ElementTree import Element
 
-from ..llm import LLM
-from ..llm.types import Message, MessageRole
+from ..llm import LLM, Message, MessageRole
 from ..xml import encode_friendly
 from .format import ValidationError, format
 
@@ -13,7 +12,7 @@ class Filler:
 
     def fill(self, source_ele: Element, translated_text: str, on_fail: Callable[[str], None] | None = None) -> Element:
         # Load template and create system prompt
-        template = self.llm._template("fill")
+        template = self.llm.template("fill")
         system_prompt = template.render()
 
         # Create initial messages
@@ -30,10 +29,7 @@ class Filler:
         errors_limit = 10
 
         for _ in range(max_retries):
-            # Call LLM to get response
-            response = self._call_llm(messages)
-
-            # Try to validate and extract XML
+            response = self.llm.request(input=messages)
             try:
                 return format(
                     template_ele=source_ele,
@@ -49,32 +45,3 @@ class Filler:
 
         # If all retries failed
         raise RuntimeError(f"Failed to get valid XML structure after {max_retries} attempts")
-
-    def _call_llm(self, messages: list[Message]) -> str:
-        # Convert messages to OpenAI format and call the client
-        client = self.llm._executor._client
-        model_name = self.llm._executor._model_name
-
-        openai_messages = [
-            {
-                "role": self._role_to_str(msg.role),
-                "content": msg.message,
-            }
-            for msg in messages
-        ]
-
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=openai_messages,
-        )
-        return response.choices[0].message.content or ""
-
-    def _role_to_str(self, role: MessageRole) -> str:
-        if role == MessageRole.SYSTEM:
-            return "system"
-        elif role == MessageRole.USER:
-            return "user"
-        elif role == MessageRole.ASSISTANT:
-            return "assistant"
-        else:
-            raise ValueError(f"Unknown role: {role}")

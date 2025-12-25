@@ -2,14 +2,14 @@ from collections.abc import Callable
 from io import StringIO
 from logging import Logger
 from time import sleep
-from typing import Any
+from typing import cast
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
 from .increasable import Increasable, Increaser
-from .types import Message, MessageRole
+from .types import Message, MessageRole, R
 
 
 class LLMExecutor:
@@ -38,8 +38,8 @@ class LLMExecutor:
             timeout=timeout,
         )
 
-    def request(self, input: str | list[Message], parser: Callable[[str], Any], max_tokens: int | None) -> Any:
-        result: Any | None = None
+    def request(self, messages: list[Message], parser: Callable[[str], R], max_tokens: int | None) -> R:
+        result: R | None = None
         last_error: Exception | None = None
         did_success = False
         top_p: Increaser = self._top_p.context()
@@ -47,13 +47,13 @@ class LLMExecutor:
         logger = self._create_logger()
 
         if logger is not None:
-            logger.debug(f"[[Request]]:\n{self._input2str(input)}\n")
+            logger.debug(f"[[Request]]:\n{self._input2str(messages)}\n")
 
         try:
             for i in range(self._retry_times + 1):
                 try:
                     response = self._invoke_model(
-                        input=input,
+                        input_messages=messages,
                         top_p=top_p.current,
                         temperature=temperature.current,
                         max_tokens=max_tokens,
@@ -99,7 +99,7 @@ class LLMExecutor:
             else:
                 raise last_error
 
-        return result
+        return cast(R, result)
 
     def _input2str(self, input: str | list[Message]) -> str:
         if isinstance(input, str):
@@ -129,35 +129,32 @@ class LLMExecutor:
 
     def _invoke_model(
         self,
-        input: str | list[Message],
+        input_messages: list[Message],
         top_p: float | None,
         temperature: float | None,
         max_tokens: int | None,
     ):
-        if isinstance(input, str):
-            input = [Message(role=MessageRole.USER, message=input)]
-
         messages: list[ChatCompletionMessageParam] = []
-        for message in input:
-            if message.role == MessageRole.SYSTEM:
+        for item in input_messages:
+            if item.role == MessageRole.SYSTEM:
                 messages.append(
                     {
                         "role": "system",
-                        "content": message.message,
+                        "content": item.message,
                     }
                 )
-            elif message.role == MessageRole.USER:
+            elif item.role == MessageRole.USER:
                 messages.append(
                     {
                         "role": "user",
-                        "content": message.message,
+                        "content": item.message,
                     }
                 )
-            elif message.role == MessageRole.ASSISTANT:
+            elif item.role == MessageRole.ASSISTANT:
                 messages.append(
                     {
                         "role": "assistant",
-                        "content": message.message,
+                        "content": item.message,
                     }
                 )
 

@@ -11,8 +11,8 @@ from xml.etree.ElementTree import Element, fromstring
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..")))
 
-from epub_translator import LLM
 from epub_translator.fill import Filler
+from epub_translator.llm import LLM
 from epub_translator.xml import encode_friendly
 
 
