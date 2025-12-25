@@ -1,15 +1,11 @@
-"""
-Test script for the Filler class.
-This script demonstrates how to use the Filler to fill translated text into XML structure.
-"""
-
-import json
 import os
 import sys
+
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
+
+import json
 from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
-
-sys.path.append(os.path.abspath(os.path.join(__file__, "..")))
 
 from epub_translator.llm import LLM
 from epub_translator.translation import Translator
@@ -47,14 +43,12 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_ele = translator.translate(list(source_ele))
-        if translated_ele is None:
-            raise RuntimeError("Filler returned None as the result XML element")
+        translated_ele = Element("xml")
+        translated_ele.extend(translator.translate(list(source_ele)))
 
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
-        for i, child_ele in enumerate(translated_ele):
-            print(f"\n{i + 1}:\n{encode_friendly(child_ele)}\n")
+        print(f"\n{encode_friendly(translated_ele)}\n")
 
         # Pretty print the result
         print("=" * 60)
@@ -99,7 +93,7 @@ def _create_test_xml() -> Element:
 
 def _read_format_json() -> dict:
     """Read configuration from format.json in the project root."""
-    path = Path(__file__).parent / "format.json"
+    path = Path(__file__).parent / ".." / "format.json"
     path = path.resolve()
     with open(path, encoding="utf-8") as file:
         return json.load(file)
