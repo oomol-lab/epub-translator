@@ -10,13 +10,14 @@ def format(template_ele: Element, validated_text: str, errors_limit: int) -> Ele
     context.validate(raw_ele=template_ele, validated_ele=validated_ele)
     error_message = context.errors(limit=errors_limit)
     if error_message:
-        raise ValidationError(message=error_message)
+        raise ValidationError(message=error_message, validated_ele=validated_ele)
     return validated_ele
 
 
 class ValidationError(Exception):
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, validated_ele: Element | None = None) -> None:
         super().__init__(message)
+        self.validated_ele = validated_ele
 
 
 def _extract_xml_element(text: str) -> Element:

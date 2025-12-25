@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from ..xml import iter_with_stack
-from .format import ID_KEY, format
+from .format import ID_KEY
 
 
 @dataclass
@@ -68,18 +68,12 @@ class XMLProcessor:
             return None
         return self._root.processed
 
-    def format(self, validated_text: str, errors_limit: int) -> Element | None:
+    def fill(self, formatted_root_element: Element) -> Element | None:
         if self._root is None:
             return None
 
         formatted_elements: dict[int, Element] = {}
-        for _, element in iter_with_stack(
-            element=format(
-                template_ele=self._root.processed,
-                validated_text=validated_text,
-                errors_limit=errors_limit,
-            )
-        ):
+        for _, element in iter_with_stack(formatted_root_element):
             node_id = self._node_id(element)
             if node_id >= 0:
                 formatted_elements[node_id] = element

@@ -31,7 +31,12 @@ def main() -> None:
     print("✓ Created LLM instance")
 
     # Create Filler instance
-    translator = Translator(llm)
+    translator = Translator(
+        llm=llm,
+        ignore_translated_error=False,
+        max_retries=5,
+        max_fill_displaying_errors=10,
+    )
     print("✓ Created Filler instance")
 
     # Create a test XML structure with nested elements

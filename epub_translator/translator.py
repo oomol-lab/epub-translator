@@ -12,7 +12,12 @@ from .xml import TruncatableXML, XMLLikeNode
 
 def translate(llm: LLM, source_path: Path, target_path: Path, token_encoding: str = "o200k_base") -> None:
     encoding: Encoding = get_encoding(token_encoding)  # TODO: 以 llm 的形式
-    translator = Translator(llm)
+    translator = Translator(
+        llm=llm,
+        ignore_translated_error=False,
+        max_retries=5,
+        max_fill_displaying_errors=10,
+    )
     with Zip(source_path, target_path) as zip:
         # TODO: Translate TOC...
 
@@ -51,10 +56,7 @@ def _translate_paragraphs(translator: Translator, paragraph_elements: list[Trunc
     root = Element("xml")
     for paragraph_element in paragraph_elements:
         root.append(paragraph_element.payload)
-
-    return list(
-        translator.translate(
-            text="\n\n".join(p.text for p in paragraph_elements),
-            element=root,
-        )
-    )
+    translated_root = translator.translate(root)
+    if translated_root is None:
+        return []
+    return list(translated_root)

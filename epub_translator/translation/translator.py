@@ -2,13 +2,22 @@ from xml.etree.ElementTree import Element
 
 from ..llm import LLM, Message, MessageRole
 from ..xml import encode_friendly, plain_text
-from .format import ValidationError
+from .format import ValidationError, format
 from .xml_processor import XMLProcessor
 
 
 class Translator:
-    def __init__(self, llm: LLM) -> None:
+    def __init__(
+        self,
+        llm: LLM,
+        ignore_translated_error: bool,
+        max_retries: int,
+        max_fill_displaying_errors: int,
+    ) -> None:
         self._llm: LLM = llm
+        self._ignore_translated_error: bool = ignore_translated_error
+        self._max_retries: int = max_retries
+        self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
     def translate(self, element: Element) -> Element | None:
         xml_processor = XMLProcessor(root=element)
@@ -47,17 +56,30 @@ class Translator:
                 message=f"```XML\n{encode_friendly(processed)}\n```\n\n{translated_text}",
             ),
         ]
-        max_retries = 5
-        errors_limit = 10
+        formatted_element: Element | None = None
+        latest_error: ValidationError | None = None
 
-        for _ in range(max_retries):
+        for _ in range(self._max_retries):
             response = self._llm.request(input=messages)
             try:
-                return xml_processor.format(validated_text=response, errors_limit=errors_limit)
-
+                formatted_element = format(
+                    template_ele=processed,
+                    validated_text=response,
+                    errors_limit=self._max_fill_displaying_errors,
+                )
             except ValidationError as error:
+                latest_error = error
+                if self._ignore_translated_error and error.validated_ele is not None:
+                    formatted_element = error.validated_ele
                 messages.append(Message(role=MessageRole.ASSISTANT, message=response))
                 messages.append(Message(role=MessageRole.USER, message=str(error)))
                 # print(f"  ✗ Validation error: {error}")
 
-        raise RuntimeError(f"Failed to get valid XML structure after {max_retries} attempts")
+        if formatted_element is None:
+            message = f"Failed to get valid XML structure after {self._max_retries} attempts"
+            if latest_error is None:
+                raise ValueError(message)
+            else:
+                raise ValueError(message) from latest_error
+
+        return xml_processor.fill(formatted_element)
