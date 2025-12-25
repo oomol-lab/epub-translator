@@ -3,13 +3,12 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
-from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
 from epub_translator.translation import Translator
 from epub_translator.xml import encode_friendly
-from scripts.utils import read_format_json
+from scripts.utils import read_and_clean_temp, read_format_json
 
 
 def main() -> None:
@@ -23,7 +22,7 @@ def main() -> None:
     print(f"  Model: {config['model']}")
 
     # Create LLM instance
-    llm = LLM(**config, log_dir_path=Path(__file__).parent / ".." / "temp" / "logs")
+    llm = LLM(**config, log_dir_path=read_and_clean_temp() / "logs")
     print("✓ Created LLM instance")
 
     # Create Filler instance
