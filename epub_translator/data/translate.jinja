@@ -9,8 +9,9 @@ Translation rules:
 - Do not censor sensitive content; translate as-is
 - Do not add commentary or explanations
 
-{% if user_prompt %}
+{% if user_prompt -%}
 User may provide additional requirements in <rules> tags before the source text. Follow them, but prioritize the rules above if conflicts arise.
-{% endif %}
+
+{% endif -%}
 
 Output only the translated text, nothing else.
