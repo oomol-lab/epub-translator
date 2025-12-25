@@ -1,6 +1,8 @@
 import re
 from xml.etree.ElementTree import Element, ParseError, fromstring
 
+ID_KEY: str = "id"
+
 
 def format(template_ele: Element, validated_text: str, errors_limit: int) -> Element:
     context = _ValidationContext()
@@ -47,9 +49,6 @@ def _extract_xml_element(text: str) -> Element:
         raise ValidationError(
             f"Failed to parse XML: {str(error)}. Please check the XML syntax and ensure it is well-formed."
         ) from error
-
-
-_ID_KEY = "id"
 
 
 class _ValidationContext:
@@ -185,7 +184,7 @@ class _ValidationContext:
     def _build_id_map(self, ele: Element):
         id_map: dict[int, Element] = {}
         for child_ele in ele:
-            id_text = child_ele.get(_ID_KEY, None)
+            id_text = child_ele.get(ID_KEY, None)
             if id_text is not None:
                 id = int(id_text)
                 if id < 0:
@@ -204,13 +203,13 @@ class _ValidationContext:
         if ele.text:
             yield ele.text
         for child in ele:
-            if child.get(_ID_KEY, None) is not None:
+            if child.get(ID_KEY, None) is not None:
                 yield from self._plain_text(child)
             if child.tail:
                 yield child.tail
 
     def _str_tag(self, ele: Element) -> str:
-        ele_id = ele.get(_ID_KEY)
+        ele_id = ele.get(ID_KEY)
         content: str
         if ele_id is not None:
             content = f'<{ele.tag} id="{ele_id}"'
