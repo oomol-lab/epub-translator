@@ -1,13 +1,13 @@
 from xml.etree.ElementTree import Element
 
-from ..xml import clone_element, plain_text
+from ..xml import clone_element, find_first, plain_text
 
 
 class Chapter:
     def __init__(self, root: Element) -> None:
         self._root: Element = root
         self._paragraph_items: list[tuple[Element, Paragraph]] = []
-        for child in self._root:
+        for child in find_first(self._root, "body") or ():
             if plain_text(child).strip():
                 self._paragraph_items.append((child, Paragraph(child)))
 
