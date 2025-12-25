@@ -4,19 +4,15 @@ from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
 from os import PathLike
 from pathlib import Path
-from typing import Any, TypeVar
-from xml.etree.ElementTree import Element
+from typing import Any
 
 from jinja2 import Environment, Template
 from tiktoken import Encoding, get_encoding
 
 from ..template import create_env
-from ..xml import decode_friendly, encode_friendly
 from .executor import LLMExecutor
 from .increasable import Increasable
-from .types import Message, MessageRole
-
-R = TypeVar("R")
+from .types import Message, MessageRole, R
 
 
 class LLM:
@@ -74,70 +70,26 @@ class LLM:
 
         return logger
 
-    def request_text(
+    def request(
         self,
-        template_name: str,
-        text_tag: str,
-        user_data: Element | str,
-        parser: Callable[[str], R],
+        input: str | list[Message],
+        parser: Callable[[str], R] = lambda x: x,
         max_tokens: int | None = None,
-        params: dict[str, Any] | None = None,
     ) -> R:
-        if params is None:
-            params = {}
-
-        def parse_response(response: str) -> R:
-            text = next(self._search_quotes(text_tag.lower(), response), None)
-            if text is None:
-                raise ValueError(f"No valid {text_tag} response found")
-            return parser(text)
-
-        return self._executor.request(
-            input=self._create_input(template_name, user_data, params),
-            parser=parse_response,
-            max_tokens=max_tokens,
-        )
-
-    def request_xml(
-        self,
-        template_name: str,
-        user_data: Element | str,
-        parser: Callable[[Element], R],
-        max_tokens: int | None = None,
-        params: dict[str, Any] | None = None,
-    ) -> R:
-        if params is None:
-            params = {}
-
-        def parse_response(response: str) -> R:
-            element = next(decode_friendly(response, "response"), None)
-            if element is None:
-                raise ValueError("No valid XML response found")
-            return parser(element)
-
-        return self._executor.request(
-            input=self._create_input(template_name, user_data, params),
-            parser=parse_response,
-            max_tokens=max_tokens,
-        )
-
-    def _create_input(self, template_name: str, user_data: Element | str, params: dict[str, Any]):
-        data: str
-        if isinstance(user_data, Element):
-            data = encode_friendly(user_data)
-            data = f"```XML\n{data}\n```"
+        messages: list[Message]
+        if isinstance(input, str):
+            messages = [Message(role=MessageRole.USER, message=input)]
         else:
-            data = user_data
+            messages = input
 
-        template = self._template(template_name)
-        prompt = template.render(**params)
-        return [
-            Message(role=MessageRole.SYSTEM, message=prompt),
-            Message(role=MessageRole.USER, message=data),
-        ]
+        return self._executor.request(
+            messages=messages,
+            parser=parser,
+            max_tokens=max_tokens,
+        )
 
     def prompt_tokens_count(self, template_name: str, params: dict[str, Any]) -> int:
-        template = self._template(template_name)
+        template = self.template(template_name)
         prompt = template.render(**params)
         return len(self._encoding.encode(prompt))
 
@@ -150,7 +102,7 @@ class LLM:
     def count_tokens_count(self, text: str) -> int:
         return len(self._encoding.encode(text))
 
-    def _template(self, template_name: str) -> Template:
+    def template(self, template_name: str) -> Template:
         template = self._templates.get(template_name, None)
         if template is None:
             template = self._env.get_template(template_name)
