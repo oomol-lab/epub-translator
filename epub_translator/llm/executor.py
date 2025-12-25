@@ -2,21 +2,20 @@ from collections.abc import Callable
 from io import StringIO
 from logging import Logger
 from time import sleep
-from typing import Any, cast
+from typing import Any
 
-from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-from pydantic import SecretStr
+from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
 from .increasable import Increasable, Increaser
+from .types import Message, MessageRole
 
 
 class LLMExecutor:
     def __init__(
         self,
-        api_key: SecretStr,
+        api_key: str,
         url: str,
         model: str,
         timeout: float | None,
@@ -26,20 +25,20 @@ class LLMExecutor:
         retry_interval_seconds: float,
         create_logger: Callable[[], Logger | None],
     ) -> None:
+        self._model_name: str = model
         self._timeout: float | None = timeout
         self._top_p: Increasable = top_p
         self._temperature: Increasable = temperature
         self._retry_times: int = retry_times
         self._retry_interval_seconds: float = retry_interval_seconds
         self._create_logger: Callable[[], Logger | None] = create_logger
-        self._model = ChatOpenAI(
-            api_key=cast(SecretStr, api_key),
+        self._client = OpenAI(
+            api_key=api_key,
             base_url=url,
-            model=model,
             timeout=timeout,
         )
 
-    def request(self, input: LanguageModelInput, parser: Callable[[str], Any], max_tokens: int | None) -> Any:
+    def request(self, input: str | list[Message], parser: Callable[[str], Any], max_tokens: int | None) -> Any:
         result: Any | None = None
         last_error: Exception | None = None
         did_success = False
@@ -102,7 +101,7 @@ class LLMExecutor:
 
         return result
 
-    def _input2str(self, input: LanguageModelInput) -> str:
+    def _input2str(self, input: str | list[Message]) -> str:
         if isinstance(input, str):
             return input
         if not isinstance(input, list):
@@ -113,15 +112,15 @@ class LLMExecutor:
         for message in input:
             if not is_first:
                 buffer.write("\n\n")
-            if isinstance(message, SystemMessage):
+            if message.role == MessageRole.SYSTEM:
                 buffer.write("System:\n")
-                buffer.write(message.content)
-            elif isinstance(message, HumanMessage):
+                buffer.write(message.message)
+            elif message.role == MessageRole.USER:
                 buffer.write("User:\n")
-                buffer.write(message.content)
-            elif isinstance(message, AIMessage):
+                buffer.write(message.message)
+            elif message.role == MessageRole.ASSISTANT:
                 buffer.write("Assistant:\n")
-                buffer.write(message.content)
+                buffer.write(message.message)
             else:
                 buffer.write(str(message))
             is_first = False
@@ -130,20 +129,48 @@ class LLMExecutor:
 
     def _invoke_model(
         self,
-        input: LanguageModelInput,
+        input: str | list[Message],
         top_p: float | None,
         temperature: float | None,
         max_tokens: int | None,
     ):
-        stream = self._model.stream(
-            input=input,
-            timeout=self._timeout,
+        if isinstance(input, str):
+            input = [Message(role=MessageRole.USER, message=input)]
+
+        messages: list[ChatCompletionMessageParam] = []
+        for message in input:
+            if message.role == MessageRole.SYSTEM:
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": message.message,
+                    }
+                )
+            elif message.role == MessageRole.USER:
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": message.message,
+                    }
+                )
+            elif message.role == MessageRole.ASSISTANT:
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": message.message,
+                    }
+                )
+
+        stream = self._client.chat.completions.create(
+            model=self._model_name,
+            messages=messages,
+            stream=True,
             top_p=top_p,
             temperature=temperature,
             max_tokens=max_tokens,
         )
         buffer = StringIO()
         for chunk in stream:
-            data = str(chunk.content)
-            buffer.write(data)
+            if chunk.choices and chunk.choices[0].delta.content:
+                buffer.write(chunk.choices[0].delta.content)
         return buffer.getvalue()

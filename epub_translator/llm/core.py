@@ -4,18 +4,17 @@ from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
 from os import PathLike
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 from xml.etree.ElementTree import Element
 
 from jinja2 import Environment, Template
-from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import SecretStr
 from tiktoken import Encoding, get_encoding
 
 from ..template import create_env
 from ..xml import decode_friendly, encode_friendly
 from .executor import LLMExecutor
 from .increasable import Increasable
+from .types import Message, MessageRole
 
 R = TypeVar("R")
 
@@ -50,7 +49,7 @@ class LLM:
         self._executor = LLMExecutor(
             url=url,
             model=model,
-            api_key=cast(SecretStr, key),
+            api_key=key,
             timeout=timeout,
             top_p=Increasable(top_p),
             temperature=Increasable(temperature),
@@ -132,7 +131,10 @@ class LLM:
 
         template = self._template(template_name)
         prompt = template.render(**params)
-        return [SystemMessage(content=prompt), HumanMessage(content=data)]
+        return [
+            Message(role=MessageRole.SYSTEM, message=prompt),
+            Message(role=MessageRole.USER, message=data),
+        ]
 
     def prompt_tokens_count(self, template_name: str, params: dict[str, Any]) -> int:
         template = self._template(template_name)
