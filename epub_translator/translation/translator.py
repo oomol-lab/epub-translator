@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM, Message, MessageRole
@@ -19,7 +20,22 @@ class Translator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate(self, element: Element) -> Element | None:
+    def translate(self, elements: Iterable[Element]) -> list[Element]:
+        raw_element = Element("xml")
+        raw_element.extend(elements)
+        translated_element = self._translate_element(raw_element)
+
+        if translated_element is None:
+            return [
+                Element(
+                    sub_raw_element.tag,
+                    sub_raw_element.attrib,
+                )
+                for sub_raw_element in raw_element
+            ]
+        return list(translated_element)
+
+    def _translate_element(self, element: Element) -> Element | None:
         xml_processor = XMLProcessor(root=element)
         if xml_processor.processed is None:
             return None

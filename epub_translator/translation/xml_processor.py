@@ -85,8 +85,9 @@ class XMLProcessor:
             node.target.text = formatted_element.text
             node.target.tail = formatted_element.tail
 
-            for child_formatted in formatted_element:
-                node_id = self._node_id(child_formatted)
+        for node in self._iter_nodes(self._root):
+            for child_processed in node.processed:
+                node_id = self._node_id(child_processed)
                 child_node = self._id2node.get(node_id, None)
                 if child_node is not None:
                     node.target.append(child_node.target)

@@ -1,5 +1,4 @@
 from pathlib import Path
-from xml.etree.ElementTree import Element
 
 from tiktoken import Encoding, get_encoding
 
@@ -44,19 +43,9 @@ def _translate_chapter(translator: Translator, encoding: Encoding, chapter: Chap
         chapter.paragraphs,
         split(
             segments=(TruncatableXML(encoding, p.clone_raw()) for p in chapter.paragraphs),
-            transform=lambda elements: _translate_paragraphs(translator, elements),
+            transform=lambda paragraphs: translator.translate(p.payload for p in paragraphs),
             max_group_tokens=100,  # TODO: make configurable
         ),
         strict=True,
     ):
         paragraph.submit(translated_element)
-
-
-def _translate_paragraphs(translator: Translator, paragraph_elements: list[TruncatableXML]) -> list[Element]:
-    root = Element("xml")
-    for paragraph_element in paragraph_elements:
-        root.append(paragraph_element.payload)
-    translated_root = translator.translate(root)
-    if translated_root is None:
-        return []
-    return list(translated_root)

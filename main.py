@@ -47,13 +47,14 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_ele = translator.translate(source_ele)
+        translated_ele = translator.translate(list(source_ele))
         if translated_ele is None:
             raise RuntimeError("Filler returned None as the result XML element")
 
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
-        print(f"\n{encode_friendly(translated_ele)}\n")
+        for i, child_ele in enumerate(translated_ele):
+            print(f"\n{i + 1}:\n{encode_friendly(child_ele)}\n")
 
         # Pretty print the result
         print("=" * 60)
