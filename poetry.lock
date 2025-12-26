@@ -928,14 +928,14 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "resource-segmentation"
-version = "0.0.5"
+version = "0.0.7"
 description = ""
 optional = false
-python-versions = "<3.14,>=3.10"
+python-versions = "<3.14,>=3.11"
 groups = ["main"]
 files = [
-    {file = "resource_segmentation-0.0.5-py3-none-any.whl", hash = "sha256:11bf8f775fb93a2246b15f483fada9f8921feaca1f65fd43080ff357b7ca721b"},
-    {file = "resource_segmentation-0.0.5.tar.gz", hash = "sha256:5a12da9bb1d9aa6663ea9b32e66f93ae094897d94d9173714866fd0a9b042e8f"},
+    {file = "resource_segmentation-0.0.7-py3-none-any.whl", hash = "sha256:6f7ec4083c26fb58e8f4a3204fdf239fb09df0437ed179c9f50ff512ad4e2fcf"},
+    {file = "resource_segmentation-0.0.7.tar.gz", hash = "sha256:e8385c9abe27455b8c2a5bf4a2ea9481cdc93401e1c20687ee0cb1d2da0baabb"},
 ]
 
 [[package]]
@@ -1109,4 +1109,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "7dc7bb5d24f3b98b3cad5f45260d8577bd94801ab3d606a61661ac7a988de5cd"
+content-hash = "7d93d35bc4b8cdb7d39bd99b41655433112e2ae36615386da3e8f63a7f9294c0"
