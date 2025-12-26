@@ -2,14 +2,20 @@ from xml.etree.ElementTree import Element
 
 from ..xml import clone_element, find_first, plain_text
 
+_ParagraphsInfo = tuple[Element, list[tuple[Element, "Paragraph"]]]
+
 
 class Chapter:
     def __init__(self, root: Element) -> None:
         self._root: Element = root
-        self._paragraph_items: list[tuple[Element, Paragraph]] = []
-        for child in find_first(self._root, "body") or ():
-            if plain_text(child).strip():
-                self._paragraph_items.append((child, Paragraph(child)))
+        self._paragraphs_info: _ParagraphsInfo | None = None
+        parent = find_first(self._root, "body")
+        if parent is not None:
+            items: list[tuple[Element, Paragraph]] = []
+            for child in parent:
+                if plain_text(child).strip():
+                    items.append((child, Paragraph(child)))
+            self._paragraphs_info = (parent, items)
 
     @property
     def element(self) -> Element:
@@ -17,28 +23,40 @@ class Chapter:
 
     @property
     def paragraphs(self) -> list["Paragraph"]:
-        return [p for _, p in self._paragraph_items]
+        paragraphs_info = self._paragraphs_info
+        if paragraphs_info is None:
+            return []
+        else:
+            return [p for _, p in paragraphs_info[1]]
 
     def replace_submit(self) -> "Chapter":
-        for raw_element, paragraph in self._paragraph_items:
+        paragraphs_info = self._paragraphs_info
+        if paragraphs_info is None:
+            return self
+        parent, items = paragraphs_info
+        for raw_element, paragraph in items:
             processed = paragraph.processed_element
             if processed is not None:
-                index = self._index_of_raw_element(raw_element)
-                self._root.remove(raw_element)
-                self._root.insert(index, processed)
+                index = self._index_of_raw_element(parent, raw_element)
+                parent.remove(raw_element)
+                parent.insert(index, processed)
         return self
 
     def append_submit(self) -> "Chapter":
-        for raw_element, paragraph in self._paragraph_items:
+        paragraphs_info = self._paragraphs_info
+        if paragraphs_info is None:
+            return self
+        parent, items = paragraphs_info
+        for raw_element, paragraph in items:
             processed = paragraph.processed_element
             if processed is not None:
-                index = self._index_of_raw_element(raw_element)
-                self._root.insert(index + 1, processed)
+                index = self._index_of_raw_element(parent, raw_element)
+                parent.insert(index + 1, processed)
         return self
 
-    def _index_of_raw_element(self, element: Element) -> int:
-        for i, (raw_element, _) in enumerate(self._paragraph_items):
-            if raw_element == element:
+    def _index_of_raw_element(self, parent: Element, checked_element: Element) -> int:
+        for i, raw_element in enumerate(parent):
+            if raw_element == checked_element:
                 return i
         raise ValueError("Element not found in paragraphs.")
 

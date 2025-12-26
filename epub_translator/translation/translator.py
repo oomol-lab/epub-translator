@@ -69,7 +69,9 @@ class Translator:
     def _fill_into_xml(self, xml_processor: XMLProcessor, translated_text: str) -> Element | None:
         processed = xml_processor.processed
         assert processed is not None
-        messages: list[Message] = [
+
+        last_error_messages: list[Message] = []
+        fixed_messages: list[Message] = [
             Message(
                 role=MessageRole.SYSTEM,
                 message=self._llm.template("fill").render(),
@@ -83,7 +85,9 @@ class Translator:
         latest_error: ValidationError | None = None
 
         for _ in range(self._max_retries):
-            response = self._llm.request(input=messages)
+            response = self._llm.request(
+                input=fixed_messages + last_error_messages,
+            )
             try:
                 formatted_element = format(
                     template_ele=processed,
@@ -96,8 +100,10 @@ class Translator:
                 latest_error = error
                 if self._ignore_translated_error and error.validated_ele is not None:
                     formatted_element = error.validated_ele
-                messages.append(Message(role=MessageRole.ASSISTANT, message=response))
-                messages.append(Message(role=MessageRole.USER, message=str(error)))
+                last_error_messages = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=str(error)),
+                ]
                 # print(f"  ✗ Validation error: {error}")
 
         if formatted_element is None:
