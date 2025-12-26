@@ -45,7 +45,7 @@ def main() -> None:
     print("→ Calling Filler.fill()...")
     try:
         translated_ele = Element("xml")
-        translated_ele.extend(translator.translate(list(source_ele)))
+        translated_ele.extend(translator.translate_elements(list(source_ele)))
 
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")

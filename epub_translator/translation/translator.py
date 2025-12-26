@@ -25,10 +25,10 @@ class Translator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate(self, elements: Iterable[Element]) -> list[Element | None]:
+    def translate_elements(self, elements: Iterable[Element]) -> list[Element | None]:
         raw_element = Element("xml")
         raw_element.extend(elements)
-        translated_element = self._translate_element(raw_element)
+        translated_element = self._do_translate_element(raw_element)
         translated_elements: list[Element | None]
 
         if translated_element is not None:
@@ -47,7 +47,13 @@ class Translator:
                 translated_elements[i] = self._process_translated_element(element)
         return translated_elements
 
-    def _translate_element(self, element: Element) -> Element | None:
+    def translate_element(self, element: Element) -> Element | None:
+        translated = self._do_translate_element(element)
+        if translated is None:
+            return None
+        return self._process_translated_element(translated)
+
+    def _do_translate_element(self, element: Element) -> Element | None:
         xml_processor = XMLProcessor(root=element)
         if xml_processor.processed is None:
             return None
