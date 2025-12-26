@@ -3,12 +3,13 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
-from ..xml import iter_with_stack
+from ..xml import iter_with_stack, plain_text
 from .format import ID_KEY
 from .math import xml_to_latex
 
 _MATH_TAG = "math"
 _EXPRESSION_TAG = "expression"
+_DATA_ORIGIN_LEN_KEY = "data-orig-len"
 
 
 @dataclass
@@ -67,6 +68,8 @@ class XMLProcessor:
             for node in self._iter_nodes(root):
                 node.id = next_id
                 node.processed.set(ID_KEY, str(next_id))
+                text = normalize_whitespace(plain_text(node.processed))
+                node.processed.set(_DATA_ORIGIN_LEN_KEY, str(len(text)))
                 id2node[next_id] = node
                 next_id += 1
         return id2node
