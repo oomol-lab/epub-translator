@@ -146,7 +146,7 @@ def _translate_metadata(translator: Translator, zip: Zip):
     # Fill back translated texts
     from builtins import zip as builtin_zip
 
-    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_elements):
+    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_elements, strict=True):
         if translated_elem is not None:
             translated_text = plain_text(translated_elem)
             if translated_text:
