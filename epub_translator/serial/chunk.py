@@ -21,7 +21,7 @@ class Chunk(Generic[ST]):
 def split_into_chunks(segments: Iterable[ST], max_group_tokens: int) -> Generator[Chunk[ST], None, None]:
     for group in split(
         max_segment_count=max_group_tokens,
-        gap_rate=0.15,
+        gap_rate=0.07,
         tail_rate=0.5,
         border_incision=_INCISION,
         resources=(
