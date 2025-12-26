@@ -5,7 +5,7 @@ from ..llm import LLM, Message, MessageRole
 from ..utils import normalize_whitespace
 from ..xml import encode_friendly, iter_with_stack, plain_text
 from .format import ValidationError, format
-from .xml_processor import EXPRESSION_TAG, XMLProcessor
+from .xml_processor import XMLProcessor
 
 
 class Translator:
@@ -129,7 +129,7 @@ class Translator:
         for _, element in iter_with_stack(root_element):
             element.text = self._normalize_text(element.text)
             element.tail = self._normalize_text(element.tail)
-            if self._is_visible_text(element.text) and element.tag != EXPRESSION_TAG:
+            if self._is_visible_text(element.text):
                 found_any_visible_text = True
             elif self._is_visible_text(element.tail) and element != root_element:
                 found_any_visible_text = True
