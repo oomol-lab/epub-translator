@@ -49,7 +49,7 @@ def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
         split(
             segments=(TruncatableXML(llm.encoding, p.clone_raw()) for p in chapter.paragraphs),
             transform=lambda paragraphs: translator.translate(p.payload for p in paragraphs),
-            max_group_tokens=1800,  # TODO: make configurable
+            max_group_tokens=1400,  # TODO: make configurable
         ),
         strict=True,
     ):

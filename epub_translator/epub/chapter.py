@@ -37,7 +37,7 @@ class Chapter:
         for raw_element, paragraph in items:
             processed = paragraph.processed_element
             if processed is not None:
-                index = self._index_of_raw_element(items, raw_element)
+                index = self._index_of_raw_element(parent, raw_element)
                 parent.remove(raw_element)
                 parent.insert(index, processed)
         return self
@@ -50,13 +50,13 @@ class Chapter:
         for raw_element, paragraph in items:
             processed = paragraph.processed_element
             if processed is not None:
-                index = self._index_of_raw_element(items, raw_element)
+                index = self._index_of_raw_element(parent, raw_element)
                 parent.insert(index + 1, processed)
         return self
 
-    def _index_of_raw_element(self, items: list[tuple[Element, "Paragraph"]], element: Element) -> int:
-        for i, (raw_element, _) in enumerate(items):
-            if raw_element == element:
+    def _index_of_raw_element(self, parent: Element, checked_element: Element) -> int:
+        for i, raw_element in enumerate(parent):
+            if raw_element == checked_element:
                 return i
         raise ValueError("Element not found in paragraphs.")
 
