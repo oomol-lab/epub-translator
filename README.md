@@ -143,3 +143,7 @@ llm = LLM(
 ## Related open source libraries
 
 [PDF Craft](https://github.com/oomol-lab/pdf-craft) can convert PDF files into various other formats. This project will focus on the processing of PDF files of scanned books. Use this library with the scanned PDF books to convert and translate them. For more information, please refer to [Video: Convert scanned PDF books to EPUB format and translate them into bilingual books](https://www.bilibili.com/video/BV1tMQZY5EYY/).
+
+## Acknowledgments
+
+- [mathml2latex](https://github.com/bowang/mathml2latex)

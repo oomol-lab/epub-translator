@@ -143,3 +143,7 @@ llm = LLM(
 ## 相关开源库
 
 [PDF Craft](https://github.com/oomol-lab/pdf-craft) 可以将 PDF 文件转化为各种其他格式。该项目将专注于扫描书籍的 PDF 文件的处理。与本库搭配，可将扫描 PDF 书籍转换并翻译。搭配使用可参考[ 视频：PDF 扫描件书籍转 EPUB 格式，翻译成双语书](https://www.bilibili.com/video/BV1tMQZY5EYY/)。
+
+## 鸣谢
+
+- [mathml2latex](https://github.com/bowang/mathml2latex)
