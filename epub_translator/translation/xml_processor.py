@@ -85,7 +85,7 @@ class XMLProcessor:
 
         formatted_elements: dict[int, Element] = {}
         for _, element in iter_with_stack(formatted_root_element):
-            if element.tag != _EXPRESSION_TAG:
+            if element.tag == _EXPRESSION_TAG:
                 continue
             node_id = self._node_id(element)
             if node_id >= 0:
