@@ -92,7 +92,7 @@ class _ValidationContext:
                     content.append(f"{indent}  - {error}.")
             remain_errors -= len(errors_list)
 
-        content.insert(0, f"Found {total_errors} error(s) in your response XML structure.\n")
+        content.insert(0, f"Found {total_errors} error(s) in your response XML structure.")
         if remain_errors > 0:
             content.append(f"\n... and {remain_errors} more error(s).")
 

@@ -3,8 +3,12 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
-from ..xml import iter_with_stack
+from ..xml import clone_element, iter_with_stack
 from .format import ID_KEY
+from .math import xml_to_latex
+
+_MATH_TAG = "math"
+_EXPRESSION_TAG = "expression"
 
 
 @dataclass
@@ -22,27 +26,33 @@ class XMLProcessor:
         self._id2node: dict[int, _Node] = self._fill_id_for_nodes(self._root)
 
     def _process(self, element: Element) -> _Node | None:
-        processed: Element = Element(element.tag)
-        processed.text = element.text
-        previous_element: Element | None = None
+        target: Element
+        if element.tag == _MATH_TAG:
+            processed: Element = Element(_EXPRESSION_TAG)
+            processed.text = f"<{_EXPRESSION_TAG}>{xml_to_latex(element)}</{_EXPRESSION_TAG}>"
+            target = clone_element(element)
+        else:
+            processed: Element = Element(element.tag)
+            processed.text = element.text
+            previous_element: Element | None = None
+            target = Element(element.tag, element.attrib)
 
-        for child in element:
-            child_node = self._process(child)
-            if child_node is not None:
-                child_processed = child_node.processed
-                processed.append(child_processed)
-                child_processed.tail = child.tail
-                previous_element = child_processed
-            elif child.tail:
-                if previous_element is None:
-                    processed.text = (processed.text or "") + child.tail
-                else:
-                    previous_element.tail = (previous_element.tail or "") + child.tail
+            for child in element:
+                child_node = self._process(child)
+                if child_node is not None:
+                    child_processed = child_node.processed
+                    processed.append(child_processed)
+                    child_processed.tail = child.tail
+                    previous_element = child_processed
+                elif child.tail:
+                    if previous_element is None:
+                        processed.text = (processed.text or "") + child.tail
+                    else:
+                        previous_element.tail = (previous_element.tail or "") + child.tail
 
         if len(processed) == 0 and not processed.text:
             return None
 
-        target = Element(element.tag, element.attrib)
         node = _Node(
             id=-1,  # placeholder
             raw=element,
@@ -75,6 +85,8 @@ class XMLProcessor:
 
         formatted_elements: dict[int, Element] = {}
         for _, element in iter_with_stack(formatted_root_element):
+            if element.tag != _EXPRESSION_TAG:
+                continue
             node_id = self._node_id(element)
             if node_id >= 0:
                 formatted_elements[node_id] = element

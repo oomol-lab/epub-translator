@@ -1,7 +1,5 @@
 from xml.etree.ElementTree import Element
 
-_MATH_TAG = "math"
-
 # 运算符映射表
 _OPERATOR_MAP = {
     "→": r"\rightarrow",
@@ -56,9 +54,7 @@ _OPERATOR_MAP = {
 
 
 def xml_to_latex(element: Element) -> str:
-    """递归转换 MathML 元素为 LaTeX 字符串"""
-    # 去除命名空间前缀
-    tag = element.tag.split("}")[-1] if "}" in element.tag else element.tag
+    tag = element.tag
 
     # 根据元素类型进行转换
     if tag == "math":
