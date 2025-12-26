@@ -29,7 +29,7 @@ class XMLProcessor:
         target = Element(element.tag, element.attrib)
         if element.tag == _MATH_TAG:
             processed: Element = Element(_EXPRESSION_TAG)
-            processed.text = f"\\({xml_to_latex(element)}\\)"
+            processed.text = xml_to_latex(element)
         else:
             processed: Element = Element(element.tag)
             processed.text = element.text
