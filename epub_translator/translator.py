@@ -4,7 +4,7 @@ from .epub import Chapter, Zip, search_spine_paths
 from .llm import LLM
 from .serial import split
 from .translation import Translator
-from .xml import TruncatableXML, XMLLikeNode
+from .xml import TruncatableXML, XMLLikeNode, deduplicate_ids_in_element
 
 
 def translate(
@@ -38,6 +38,7 @@ def translate(
                 chapter=chapter,
             )
             chapter.append_submit()
+            deduplicate_ids_in_element(xml.element)
 
             with zip.replace(chapter_path) as target_file:
                 xml.save(target_file, is_html_like=True)
@@ -49,8 +50,9 @@ def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
         split(
             segments=(TruncatableXML(llm.encoding, p.clone_raw()) for p in chapter.paragraphs),
             transform=lambda paragraphs: translator.translate(p.payload for p in paragraphs),
-            max_group_tokens=1400,  # TODO: make configurable
+            max_group_tokens=1000,  # TODO: make configurable
         ),
         strict=True,
     ):
-        paragraph.submit(translated_element)
+        if translated_element is not None:
+            paragraph.submit(translated_element)
