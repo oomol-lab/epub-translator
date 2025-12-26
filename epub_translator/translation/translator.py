@@ -2,9 +2,10 @@ from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM, Message, MessageRole
-from ..xml import encode_friendly, plain_text
+from ..utils import normalize_whitespace
+from ..xml import encode_friendly, iter_with_stack, plain_text
 from .format import ValidationError, format
-from .xml_processor import XMLProcessor
+from .xml_processor import EXPRESSION_TAG, XMLProcessor
 
 
 class Translator:
@@ -24,20 +25,27 @@ class Translator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate(self, elements: Iterable[Element]) -> list[Element]:
+    def translate(self, elements: Iterable[Element]) -> list[Element | None]:
         raw_element = Element("xml")
         raw_element.extend(elements)
         translated_element = self._translate_element(raw_element)
+        translated_elements: list[Element | None]
 
-        if translated_element is None:
-            return [
+        if translated_element is not None:
+            translated_elements = list(translated_element)
+        else:
+            translated_elements = [
                 Element(
                     sub_raw_element.tag,
                     sub_raw_element.attrib,
                 )
                 for sub_raw_element in raw_element
             ]
-        return list(translated_element)
+        for i in range(len(translated_elements)):
+            element = translated_elements[i]
+            if element is not None:
+                translated_elements[i] = self._process_translated_element(element)
+        return translated_elements
 
     def _translate_element(self, element: Element) -> Element | None:
         xml_processor = XMLProcessor(root=element)
@@ -114,3 +122,26 @@ class Translator:
                 raise ValueError(message) from latest_error
 
         return xml_processor.fill(formatted_element)
+
+    def _process_translated_element(self, root_element: Element) -> Element | None:
+        found_any_visible_text = False
+
+        for _, element in iter_with_stack(root_element):
+            element.text = self._normalize_text(element.text)
+            element.tail = self._normalize_text(element.tail)
+            if self._is_visible_text(element.text) and element.tag != EXPRESSION_TAG:
+                found_any_visible_text = True
+            elif self._is_visible_text(element.tail) and element != root_element:
+                found_any_visible_text = True
+
+        if not found_any_visible_text:
+            return None
+        return root_element
+
+    def _normalize_text(self, text: str | None) -> str | None:
+        if text is None:
+            return None
+        return normalize_whitespace(text)
+
+    def _is_visible_text(self, text: str | None) -> bool:
+        return text is not None and bool(text.strip())

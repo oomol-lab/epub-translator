@@ -7,8 +7,8 @@ from ..xml import clone_element, iter_with_stack
 from .format import ID_KEY
 from .math import xml_to_latex
 
-_MATH_TAG = "math"
-_EXPRESSION_TAG = "expression"
+MATH_TAG = "math"
+EXPRESSION_TAG = "expression"
 
 
 @dataclass
@@ -27,9 +27,9 @@ class XMLProcessor:
 
     def _process(self, element: Element) -> _Node | None:
         target: Element
-        if element.tag == _MATH_TAG:
-            processed: Element = Element(_EXPRESSION_TAG)
-            processed.text = f"<{_EXPRESSION_TAG}>{xml_to_latex(element)}</{_EXPRESSION_TAG}>"
+        if element.tag == MATH_TAG:
+            processed: Element = Element(EXPRESSION_TAG)
+            processed.text = f"<{EXPRESSION_TAG}>{xml_to_latex(element)}</{EXPRESSION_TAG}>"
             target = clone_element(element)
         else:
             processed: Element = Element(element.tag)
@@ -85,7 +85,7 @@ class XMLProcessor:
 
         formatted_elements: dict[int, Element] = {}
         for _, element in iter_with_stack(formatted_root_element):
-            if element.tag == _EXPRESSION_TAG:
+            if element.tag == EXPRESSION_TAG:
                 continue
             node_id = self._node_id(element)
             if node_id >= 0:
