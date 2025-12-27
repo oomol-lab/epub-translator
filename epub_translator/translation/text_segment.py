@@ -1,6 +1,5 @@
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from enum import Enum, auto
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
@@ -77,12 +76,6 @@ class TextSegment:
     index: int  # *.text is 0, the first *.tail is 1, and so on
     parent_stack: list[Element]
     block_depth: int
-    position: "TextSegmentPosition"
-
-
-class TextSegmentPosition(Enum):
-    TEXT = auto()
-    TAIL = auto()
 
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
@@ -123,7 +116,6 @@ def _search_text_segments(stack: list[Element], element: Element):
             index=0,
             parent_stack=next_stack,
             block_depth=next_block_depth,
-            position=TextSegmentPosition.TEXT,
         )
     for i, child_element in enumerate(element):
         yield from _search_text_segments(next_stack, child_element)
@@ -135,7 +127,6 @@ def _search_text_segments(stack: list[Element], element: Element):
                 index=i + 1,
                 parent_stack=next_stack,
                 block_depth=next_block_depth,
-                position=TextSegmentPosition.TAIL,
             )
 
 

@@ -2,7 +2,6 @@ import unittest
 from xml.etree.ElementTree import Element, SubElement, fromstring, tostring
 
 from epub_translator.translation.text_segment import (
-    TextSegmentPosition,
     combine_text_segments,
     search_text_segments,
 )
@@ -20,7 +19,6 @@ class TestSearchTextSegments(unittest.TestCase):
 
         self.assertEqual(len(segments), 1)
         self.assertEqual(segments[0].text, "Hello World")
-        self.assertEqual(segments[0].position, TextSegmentPosition.TEXT)
 
     def test_search_nested_element(self):
         """测试提取嵌套元素中的文本"""
@@ -32,7 +30,6 @@ class TestSearchTextSegments(unittest.TestCase):
 
         self.assertEqual(len(segments), 1)
         self.assertEqual(segments[0].text, "emphasized")
-        self.assertEqual(segments[0].position, TextSegmentPosition.TEXT)
 
     def test_search_text_and_tail(self):
         """测试提取 TEXT 和 TAIL 文本"""
@@ -46,11 +43,8 @@ class TestSearchTextSegments(unittest.TestCase):
 
         self.assertEqual(len(segments), 3)
         self.assertEqual(segments[0].text, "Before")
-        self.assertEqual(segments[0].position, TextSegmentPosition.TEXT)
         self.assertEqual(segments[1].text, "middle")
-        self.assertEqual(segments[1].position, TextSegmentPosition.TEXT)
         self.assertEqual(segments[2].text, "After")
-        self.assertEqual(segments[2].position, TextSegmentPosition.TAIL)
 
     def test_search_multiple_siblings(self):
         """测试提取兄弟元素"""
@@ -101,13 +95,6 @@ class TestSearchTextSegments(unittest.TestCase):
         self.assertEqual(len(segments), 6)
         texts = [seg.text for seg in segments]
         self.assertEqual(texts, ["A", "B", "C", "D", "E", "F"])
-        # 验证 position
-        self.assertEqual(segments[0].position, TextSegmentPosition.TEXT)  # A
-        self.assertEqual(segments[1].position, TextSegmentPosition.TEXT)  # B
-        self.assertEqual(segments[2].position, TextSegmentPosition.TEXT)  # C
-        self.assertEqual(segments[3].position, TextSegmentPosition.TAIL)  # D
-        self.assertEqual(segments[4].position, TextSegmentPosition.TAIL)  # E
-        self.assertEqual(segments[5].position, TextSegmentPosition.TAIL)  # F
 
 
 class TestCombineTextSegments(unittest.TestCase):
