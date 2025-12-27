@@ -157,28 +157,35 @@ def _normalize_text_in_element(text: str | None) -> str | None:
 
 
 def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element, None, None]:
-    stack: list[Element] = []
+    stack: list[tuple[Element, Element]] = []  # (raw, generated)
     last_popped: Element | None = None
 
     for segment in segments:
-        common_depth = _common_depth(stack, segment.parent_stack)
+        common_depth = _common_depth(
+            stack1=(raw for raw, _ in stack),
+            stack2=segment.parent_stack,
+        )
         if stack and common_depth == 0:
-            yield stack[0]
+            yield stack[0][1]
             stack = []
             last_popped = None
 
         while len(stack) > common_depth:
-            last_popped = stack.pop()
+            last_popped = stack.pop()[1]
         while len(stack) < len(segment.parent_stack):
-            next_index = len(stack)
-            next_parent = segment.parent_stack[next_index]
             last_popped = None
-            stack.append(Element(next_parent.tag, next_parent.attrib))
+            index = len(stack)
+            raw = segment.parent_stack[index]
+            generated = Element(raw.tag, raw.attrib)
+            if stack:
+                _, generated_parent = stack[-1]
+                generated_parent.append(generated)
+            stack.append((raw, generated))
 
         if last_popped is None:
             if stack:
-                stack[-1].text = _append_element_text(
-                    text=stack[-1].text,
+                stack[-1][1].text = _append_element_text(
+                    text=stack[-1][1].text,
                     appended=segment.text,
                 )
         else:
@@ -187,17 +194,15 @@ def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element,
                 appended=segment.text,
             )
     if stack:
-        yield stack[0]
+        yield stack[0][1]
 
 
-def _common_depth(stack1: list[Element], stack2: list[Element]) -> int:
+def _common_depth(stack1: Iterable[Element], stack2: Iterable[Element]) -> int:
     common_depth: int = 0
-    for i in range(min(len(stack1), len(stack2))):
-        parent1 = stack1[i]
-        parent2 = stack2[i]
+    for parent1, parent2 in zip(stack1, stack2):
         if id(parent1) != id(parent2):
             break
-        common_depth = i + 1
+        common_depth += 1
     return common_depth
 
 
