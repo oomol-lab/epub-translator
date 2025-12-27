@@ -17,15 +17,21 @@ class XMLGroup:
     body: list[TextSegment]
     tail: list[TextSegment]
 
+    def __iter__(self) -> Generator[TextSegment, None, None]:
+        yield from self.head
+        yield from self.body
+        yield from self.tail
+
 
 class XMLGroupContext:
     def __init__(self, encoding: Encoding, max_group_tokens: int) -> None:
         self._encoding: Encoding = encoding
         self._max_group_tokens: int = max_group_tokens
 
-    def split_groups(self, element: Element) -> Generator[XMLGroup, None, None]:
+    def split_groups(self, elements: Iterable[Element]) -> Generator[XMLGroup, None, None]:
+        # FIXME: 会把内存撑爆，将连续小片段 chapters 合并，但对于大 chapter 应该一对一 split
         for group in split(
-            resources=self._expand_text_segments_with_element(element),
+            resources=self._expend_text_segments(elements),
             max_segment_count=self._max_group_tokens,
             border_incision=_BORDER_INCISION,
         ):
@@ -46,6 +52,10 @@ class XMLGroupContext:
                     )
                 ),
             )
+
+    def _expend_text_segments(self, elements: Iterable[Element]):
+        for element in elements:
+            yield from self._expand_text_segments_with_element(element)
 
     def _expand_text_segments_with_element(self, element: Element) -> Generator[Resource[TextSegment], None, None]:
         generator = search_text_segments(element)
@@ -124,7 +134,12 @@ class XMLGroupContext:
             tokens = self._encoding.encode(segment.text)
             count = len(tokens)
             if count <= remain_count:
-                yield segment
+                yield TextSegment(
+                    text=segment.text,
+                    index=segment.index,
+                    parent_stack=segment.parent_stack,
+                    block_depth=segment.block_depth,
+                )
                 remain_count -= count
                 continue
 
@@ -146,21 +161,7 @@ class XMLGroupContext:
 
             yield TextSegment(
                 text=remain_text,
-                element=segment.element,
                 index=segment.index,
                 parent_stack=segment.parent_stack,
                 block_depth=segment.block_depth,
             )
-
-    def _unwrap_parents(self, element: Element) -> Element:
-        while True:
-            if len(element) != 1:
-                break
-            child = element[0]
-            if not element.text:
-                break
-            if not child.tail:
-                break
-            element = child
-            element.tail = None
-        return element
