@@ -1,35 +1,53 @@
 from collections.abc import Generator, Iterable
+from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from resource_segmentation import Group, Resource, Segment, split
 from tiktoken import Encoding
 
-from .text_segment import TextSegment, combine_text_segments, incision_between, search_text_segments
+from .text_segment import TextSegment, incision_between, search_text_segments
 
 _BORDER_INCISION = 0
 _ELLIPSIS = "..."
 
 
-class Translator2:
+@dataclass
+class XMLGroup:
+    head: list[TextSegment]
+    body: list[TextSegment]
+    tail: list[TextSegment]
+
+
+class XMLGroupContext:
     def __init__(self, encoding: Encoding, max_group_tokens: int) -> None:
         self._encoding: Encoding = encoding
         self._max_group_tokens: int = max_group_tokens
 
-    def translate(self, element: Element):
+    def split_groups(self, element: Element) -> Generator[XMLGroup, None, None]:
         for group in split(
-            resources=self._expand_truncatable(element),
+            resources=self._expand_text_segments_with_element(element),
             max_segment_count=self._max_group_tokens,
             border_incision=_BORDER_INCISION,
         ):
-            combined_generator = combine_text_segments(
-                segments=self._expand_text_segments_with_group(group),
+            yield XMLGroup(
+                head=list(
+                    self._truncate_text_segments(
+                        segments=self._expand_text_segments_with_items(group.head),
+                        remain_head=False,
+                        remain_count=group.head_remain_count,
+                    )
+                ),
+                body=list(self._expand_text_segments_with_items(group.body)),
+                tail=list(
+                    self._truncate_text_segments(
+                        segments=self._expand_text_segments_with_items(group.tail),
+                        remain_head=True,
+                        remain_count=group.tail_remain_count,
+                    )
+                ),
             )
-            combined_element = next(combined_generator, None)
-            if combined_element is None:
-                continue
-            # TODO: 翻译整个片段，然后将它们拼起来
 
-    def _expand_truncatable(self, element: Element) -> Generator[Resource[TextSegment], None, None]:
+    def _expand_text_segments_with_element(self, element: Element) -> Generator[Resource[TextSegment], None, None]:
         generator = search_text_segments(element)
         segment = next(generator, None)
         start_incision = _BORDER_INCISION
