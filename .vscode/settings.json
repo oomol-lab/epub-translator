@@ -51,6 +51,7 @@
     "rects",
     "rootfile",
     "rootfiles",
+    "samp",
     "sents",
     "signum",
     "tiktoken",
