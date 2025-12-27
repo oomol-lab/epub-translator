@@ -2,7 +2,7 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
-from resource_segmentation import Group, Resource, Segment, split
+from resource_segmentation import Resource, Segment, split
 from tiktoken import Encoding
 
 from .text_segment import TextSegment, incision_between, search_text_segments
@@ -31,7 +31,7 @@ class XMLGroupContext:
     def split_groups(self, elements: Iterable[Element]) -> Generator[XMLGroup, None, None]:
         # FIXME: 会把内存撑爆，将连续小片段 chapters 合并，但对于大 chapter 应该一对一 split
         for group in split(
-            resources=self._expend_text_segments(elements),
+            resources=self._expand_text_segments(elements),
             max_segment_count=self._max_group_tokens,
             border_incision=_BORDER_INCISION,
         ):
@@ -53,7 +53,7 @@ class XMLGroupContext:
                 ),
             )
 
-    def _expend_text_segments(self, elements: Iterable[Element]):
+    def _expand_text_segments(self, elements: Iterable[Element]):
         for element in elements:
             yield from self._expand_text_segments_with_element(element)
 
@@ -86,19 +86,6 @@ class XMLGroupContext:
             start_incision=start_incision,
             end_incision=_BORDER_INCISION,
             payload=segment,
-        )
-
-    def _expand_text_segments_with_group(self, group: Group[TextSegment]):
-        yield from self._truncate_text_segments(
-            segments=self._expand_text_segments_with_items(group.head),
-            remain_head=False,
-            remain_count=group.head_remain_count,
-        )
-        yield from self._expand_text_segments_with_items(group.body)
-        yield from self._truncate_text_segments(
-            segments=self._expand_text_segments_with_items(group.tail),
-            remain_head=True,
-            remain_count=group.tail_remain_count,
         )
 
     def _expand_text_segments_with_items(self, items: list[Resource[TextSegment] | Segment[TextSegment]]):
