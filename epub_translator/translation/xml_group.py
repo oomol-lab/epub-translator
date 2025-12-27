@@ -143,25 +143,16 @@ class XMLGroupContext:
                 remain_count -= count
                 continue
 
-            remain_count -= count
-            remain_text_tokens = segment.text
-            if remain_head:
-                remain_text_tokens = tokens[:remain_count]
-            else:
-                remain_text_tokens = tokens[-remain_count:]
-
-            remain_text = self._encoding.decode(remain_text_tokens)
-            if not remain_text.strip():
-                continue
-
-            if remain_head:
-                remain_text = f"{remain_text} {_ELLIPSIS}"
-            else:
-                remain_text = f"{_ELLIPSIS} {remain_text}"
-
-            yield TextSegment(
-                text=remain_text,
-                index=segment.index,
-                parent_stack=segment.parent_stack,
-                block_depth=segment.block_depth,
+            remain_count = 0
+            remain_text = self._encoding.decode(
+                # remain_count cannot be 0 here
+                tokens=tokens[:remain_count] if remain_head else tokens[-remain_count:],
             )
+            if remain_text.strip():
+                yield TextSegment(
+                    text=f"{remain_text} {_ELLIPSIS}" if remain_head else f"{_ELLIPSIS} {remain_text}",
+                    index=segment.index,
+                    parent_stack=segment.parent_stack,
+                    block_depth=segment.block_depth,
+                )
+            break
