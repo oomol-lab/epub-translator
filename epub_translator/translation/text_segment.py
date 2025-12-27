@@ -72,10 +72,17 @@ _HTML_INLINE_TAGS = frozenset(
 @dataclass
 class TextSegment:
     text: str
-    element: Element
     index: int  # *.text is 0, the first *.tail is 1, and so on
     parent_stack: list[Element]
     block_depth: int
+
+    @property
+    def block_parent(self) -> Element:
+        return self.parent_stack[self.block_depth - 1]
+
+    @property
+    def root(self) -> Element:
+        return self.parent_stack[0]
 
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
@@ -112,7 +119,6 @@ def _search_text_segments(stack: list[Element], element: Element):
     if text is not None:
         yield TextSegment(
             text=text,
-            element=element,
             index=0,
             parent_stack=next_stack,
             block_depth=next_block_depth,
@@ -123,7 +129,6 @@ def _search_text_segments(stack: list[Element], element: Element):
         if child_tail is not None:
             yield TextSegment(
                 text=child_tail,
-                element=child_element,
                 index=i + 1,
                 parent_stack=next_stack,
                 block_depth=next_block_depth,
@@ -135,7 +140,7 @@ def _find_block_depth(parent_stack: list[Element]) -> int:
         checked_tag = parent_stack[index].tag.lower()
         if checked_tag not in _HTML_INLINE_TAGS:
             return index
-    return 0  # The root element is considered a block element
+    return 1  # The root element is considered a block element
 
 
 def _normalize_text_in_element(text: str | None) -> str | None:
@@ -147,8 +152,9 @@ def _normalize_text_in_element(text: str | None) -> str | None:
     return text
 
 
-def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element, None, None]:
+def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[tuple[Element, dict[int, Element]], None, None]:
     stack: list[tuple[Element, Element]] = []  # (raw, generated)
+    raw2generated: dict[int, Element] = {}
     last_popped: Element | None = None
 
     for segment in segments:
@@ -157,8 +163,9 @@ def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element,
             stack2=segment.parent_stack,
         )
         if stack and common_depth == 0:
-            yield stack[0][1]
+            yield stack[0][1], raw2generated
             stack = []
+            raw2generated = {}
             last_popped = None
 
         while len(stack) > common_depth:
@@ -172,6 +179,7 @@ def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element,
                 _, generated_parent = stack[-1]
                 generated_parent.append(generated)
             stack.append((raw, generated))
+            raw2generated[id(raw)] = generated
 
         if last_popped is None:
             if stack:
@@ -185,7 +193,7 @@ def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[Element,
                 appended=segment.text,
             )
     if stack:
-        yield stack[0][1]
+        yield stack[0][1], raw2generated
 
 
 def _common_depth(stack1: Iterable[Element], stack2: Iterable[Element]) -> int:

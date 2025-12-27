@@ -1,0 +1,125 @@
+from collections.abc import Iterable
+from xml.etree.ElementTree import Element
+
+from ..iter_sync import IterSync
+from ..llm import LLM, Message, MessageRole
+from ..xml import encode_friendly
+from .format import ValidationError
+from .text_segment import TextSegment
+from .xml_fill import XMLFill
+from .xml_group import XMLGroupContext
+from .xml_submitter import submit_text_segments
+
+
+class XMLTranslator:
+    def __init__(
+        self,
+        llm: LLM,
+        group_context: XMLGroupContext,
+        target_language: str,
+        user_prompt: str | None,
+        ignore_translated_error: bool,
+        max_retries: int,
+        max_fill_displaying_errors: int,
+    ) -> None:
+        self._llm: LLM = llm
+        self._group_context: XMLGroupContext = group_context
+        self._target_language: str = target_language
+        self._user_prompt: str | None = user_prompt
+        self._ignore_translated_error: bool = ignore_translated_error
+        self._max_retries: int = max_retries
+        self._max_fill_displaying_errors: int = max_fill_displaying_errors
+
+    def translate(self, elements: Iterable[Element]):
+        for element, text_segments in self._translate_file_text_segments(elements):
+            submit_text_segments(element, text_segments)
+            yield element
+
+    def _translate_file_text_segments(self, elements: Iterable[Element]):
+        sync: IterSync[Element] = IterSync()
+        text_segments: list[TextSegment] = []
+
+        for text_segment in self._translate_text_segments(sync.iter(elements)):
+            while sync.tail is not None and id(sync.tail) != id(text_segment.root):
+                yield sync.take(), text_segments
+                text_segments = []
+            text_segments.append(text_segment)
+
+        while sync.tail is not None:
+            yield sync.take(), text_segments
+            text_segments = []
+
+    def _translate_text_segments(self, elements: Iterable[Element]):
+        for group in self._group_context.split_groups(elements):
+            text_segments = list(group)
+            fill = XMLFill(text_segments)
+            source_text = "".join(self._render_text_segments(text_segments))
+            self._fill_into_xml(
+                fill=fill,
+                translated_text=self._translate_text(source_text),
+            )
+            yield from group.body
+
+    def _render_text_segments(self, segments: Iterable[TextSegment]):
+        iterator = iter(segments)
+        segment = next(iterator, None)
+        if segment is None:
+            return
+        while True:
+            next_segment = next(iterator, None)
+            if next_segment is None:
+                break
+            yield segment.text
+            if id(segment.block_parent) != id(next_segment.block_parent):
+                yield "\n\n"
+            segment = next_segment
+        yield segment.text
+
+    def _translate_text(self, text: str) -> str:
+        return self._llm.request(
+            input=[
+                Message(
+                    role=MessageRole.SYSTEM,
+                    message=self._llm.template("translate").render(
+                        target_language=self._target_language,
+                        user_prompt=self._user_prompt,
+                    ),
+                ),
+                Message(role=MessageRole.USER, message=text),
+            ]
+        )
+
+    def _fill_into_xml(self, fill: XMLFill, translated_text: str) -> Element:
+        last_error_messages: list[Message] = []
+        fixed_messages: list[Message] = [
+            Message(
+                role=MessageRole.SYSTEM,
+                message=self._llm.template("fill").render(),
+            ),
+            Message(
+                role=MessageRole.USER,
+                message=f"```XML\n{encode_friendly(fill.request_element)}\n```\n\n{translated_text}",
+            ),
+        ]
+        latest_error: ValidationError | None = None
+
+        for _ in range(self._max_retries):
+            response = self._llm.request(
+                input=fixed_messages + last_error_messages,
+            )
+            try:
+                return fill.submit_response_text(text=response, errors_limit=self._max_fill_displaying_errors)
+
+            except ValidationError as error:
+                latest_error = error
+                last_error_messages = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=str(error)),
+                ]
+                # print(f"  ✗ Validation error: {error}")
+
+        message = f"Failed to get valid XML structure after {self._max_retries} attempts"
+        if latest_error is None:
+            raise ValueError(message)
+        else:
+            raise ValueError(message) from latest_error

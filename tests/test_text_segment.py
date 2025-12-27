@@ -106,7 +106,7 @@ class TestCombineTextSegments(unittest.TestCase):
         root.text = "Hello"
 
         segments = list(search_text_segments(root))
-        rebuilt = list(combine_text_segments(segments))
+        rebuilt = list(e for e, _ in combine_text_segments(segments))
 
         self.assertEqual(len(rebuilt), 1)
         self.assertEqual(rebuilt[0].tag, "p")
@@ -119,7 +119,7 @@ class TestCombineTextSegments(unittest.TestCase):
         em.text = "emphasized"
 
         segments = list(search_text_segments(root))
-        rebuilt = list(combine_text_segments(segments))
+        rebuilt = list(e for e, _ in combine_text_segments(segments))
 
         self.assertEqual(len(rebuilt), 1)
         self.assertEqual(rebuilt[0].tag, "p")
@@ -136,7 +136,7 @@ class TestCombineTextSegments(unittest.TestCase):
         root.text = "Content"
 
         segments = list(search_text_segments(root))
-        rebuilt = list(combine_text_segments(segments))
+        rebuilt = list(e for e, _ in combine_text_segments(segments))
 
         self.assertEqual(rebuilt[0].get("class"), "text")
         self.assertEqual(rebuilt[0].get("id"), "p1")
@@ -155,7 +155,7 @@ class TestCombineTextSegments(unittest.TestCase):
 
         # 组合来自两棵树的 segments
         combined_segments = segments1 + segments2
-        rebuilt = list(combine_text_segments(combined_segments))
+        rebuilt = list(e for e, _ in combine_text_segments(combined_segments))
 
         # 应该生成两个独立的根元素
         self.assertEqual(len(rebuilt), 2)
@@ -174,7 +174,7 @@ class TestSymmetry(unittest.TestCase):
         original_str = tostring(original, encoding="unicode")
 
         segments = list(search_text_segments(original))
-        rebuilt = list(combine_text_segments(segments))
+        rebuilt = list(e for e, _ in combine_text_segments(segments))
 
         self.assertEqual(len(rebuilt), 1)
         rebuilt_str = tostring(rebuilt[0], encoding="unicode")
@@ -226,7 +226,7 @@ class TestTrimmedSegments(unittest.TestCase):
 
         # 只保留 segment 2 (B, TAIL)
         trimmed = [segments[1]]
-        rebuilt = list(combine_text_segments(trimmed))
+        rebuilt = list(e for e, _ in combine_text_segments(trimmed))
 
         self.assertEqual(len(rebuilt), 1)
         self.assertEqual(rebuilt[0].tag, "div")
@@ -243,7 +243,7 @@ class TestTrimmedSegments(unittest.TestCase):
 
         # 保留 segments 1 (B) 和 3 (D)
         trimmed = [segments[1], segments[3]]
-        rebuilt = list(combine_text_segments(trimmed))
+        rebuilt = list(e for e, _ in combine_text_segments(trimmed))
 
         self.assertEqual(len(rebuilt), 1)
         self.assertEqual(rebuilt[0].tag, "div")
@@ -258,7 +258,7 @@ class TestTrimmedSegments(unittest.TestCase):
 
         # 保留 segments 1 (B, TAIL) 和 2 (C, TEXT)
         trimmed = [segments[1], segments[2]]
-        rebuilt = list(combine_text_segments(trimmed))
+        rebuilt = list(e for e, _ in combine_text_segments(trimmed))
 
         self.assertEqual(len(rebuilt), 1)
         result_str = tostring(rebuilt[0], encoding="unicode")
@@ -273,7 +273,7 @@ class TestTrimmedSegments(unittest.TestCase):
 
         # 保留 segments 0 (A) 和 2 (C)
         trimmed = [segments[0], segments[2]]
-        rebuilt = list(combine_text_segments(trimmed))
+        rebuilt = list(e for e, _ in combine_text_segments(trimmed))
 
         self.assertEqual(len(rebuilt), 1)
         self.assertEqual(rebuilt[0].tag, "div")
@@ -294,7 +294,7 @@ class TestTrimmedSegments(unittest.TestCase):
 
         # 保留 segments 1 (B) 和 3 (D)
         trimmed = [segments[1], segments[3]]
-        rebuilt = list(combine_text_segments(trimmed))
+        rebuilt = list(e for e, _ in combine_text_segments(trimmed))
 
         self.assertEqual(len(rebuilt), 1)
         result_str = tostring(rebuilt[0], encoding="unicode")
@@ -357,7 +357,7 @@ class TestEdgeCases(unittest.TestCase):
         em.tail = "结束"
 
         segments = list(search_text_segments(root))
-        rebuilt = list(combine_text_segments(segments))
+        rebuilt = list(e for e, _ in combine_text_segments(segments))
 
         self.assertEqual(len(segments), 3)
         result_str = tostring(rebuilt[0], encoding="unicode")
