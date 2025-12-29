@@ -1,4 +1,5 @@
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
+from typing import TypeVar
 from xml.etree.ElementTree import Element
 
 from ..iter_sync import IterSync
@@ -9,6 +10,8 @@ from .text_segment import TextSegment
 from .xml_fill import XMLFill
 from .xml_group import XMLGroupContext
 from .xml_submitter import submit_text_segments
+
+T = TypeVar("T")
 
 
 class XMLTranslator:
@@ -30,16 +33,23 @@ class XMLTranslator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate(self, elements: Iterable[Element]):
-        for element, text_segments in self._translate_file_text_segments(elements):
-            submit_text_segments(element, text_segments)
-            yield element
+    def translate_element(self, element: Element) -> Element:
+        for translated, _ in self.translate_items(((element, None),)):
+            return translated
+        raise RuntimeError("Translation failed unexpectedly")
 
-    def _translate_file_text_segments(self, elements: Iterable[Element]):
-        sync: IterSync[Element] = IterSync()
+    def translate_items(self, items: Iterable[tuple[Element, T]]) -> Generator[tuple[Element, T], None, None]:
+        for (element, payload), text_segments in self._translate_file_text_segments(items):
+            submit_text_segments(element, text_segments)
+            yield element, payload
+
+    def _translate_file_text_segments(self, items: Iterable[tuple[Element, T]]):
+        sync: IterSync[tuple[Element, T]] = IterSync()
         text_segments: list[TextSegment] = []
 
-        for text_segment in self._translate_text_segments(sync.iter(elements)):
+        for text_segment in self._translate_text_segments(
+            elements=(e for e, _ in sync.iter(items)),
+        ):
             while sync.tail is not None and id(sync.tail) != id(text_segment.root):
                 yield sync.take(), text_segments
                 text_segments = []
