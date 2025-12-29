@@ -5,10 +5,10 @@ from xml.etree.ElementTree import Element
 from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
 from ..xml import encode_friendly
+from .fill import XMLFill
 from .format import ValidationError
+from .group import XMLGroupContext
 from .text_segment import TextSegment
-from .xml_fill import XMLFill
-from .xml_group import XMLGroupContext
 
 T = TypeVar("T")
 
