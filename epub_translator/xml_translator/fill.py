@@ -32,9 +32,13 @@ class XMLFill:
                 raw2generated[raw_id] = generated_element
                 raw2generated_ids[raw_id] = generated_id
 
-                generated_text = normalize_whitespace(plain_text(generated_element))
-                generated_element.set(ID_KEY, str(generated_id))
-                generated_element.set(_DATA_ORIGIN_LEN_KEY, str(len(generated_text)))
+                generated_text = normalize_whitespace(
+                    text=plain_text(generated_element),
+                )
+                generated_element.attrib = {
+                    ID_KEY: str(generated_id),
+                    _DATA_ORIGIN_LEN_KEY: str(len(generated_text)),
+                }
 
         for text_segment in text_segments:
             generated_id_stack: list[int] = []
