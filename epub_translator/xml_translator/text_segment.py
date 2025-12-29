@@ -80,7 +80,6 @@ class TextPosition(Enum):
 class TextSegment:
     text: str
     index: int  # *.text is 0, the first *.tail is 1, and so on
-    host: Element
     parent_stack: list[Element]
     block_depth: int
     position: TextPosition
@@ -102,7 +101,6 @@ class TextSegment:
         return TextSegment(
             text=self.text,
             index=self.index,
-            host=self.host,
             parent_stack=list(self.parent_stack),
             block_depth=self.block_depth,
             position=self.position,
@@ -144,7 +142,6 @@ def _search_text_segments(stack: list[Element], element: Element):
         yield TextSegment(
             text=text,
             index=0,
-            host=element,
             parent_stack=next_stack,
             block_depth=next_block_depth,
             position=TextPosition.TEXT,
@@ -156,7 +153,6 @@ def _search_text_segments(stack: list[Element], element: Element):
             yield TextSegment(
                 text=child_tail,
                 index=i + 1,
-                host=child_element,
                 parent_stack=next_stack,
                 block_depth=next_block_depth,
                 position=TextPosition.TAIL,
