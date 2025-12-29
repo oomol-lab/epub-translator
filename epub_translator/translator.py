@@ -1,9 +1,8 @@
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Zip, search_spine_paths
+from .epub import Placeholder, Zip, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
-from .epub.toc import read_toc, write_toc
 from .llm import LLM
 from .translation import XMLGroupContext, XMLTranslator
 from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
@@ -35,7 +34,8 @@ def translate(
         # Translate metadata
         _translate_metadata(translator, zip)
 
-        for _, (chapter_path, xml) in translator.translate_items(_search_chapter_elements(zip)):
+        for _, (chapter_path, xml, placeholder) in translator.translate_items(_search_chapter_items(zip)):
+            placeholder.recover()
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
                 xml.save(target_file, is_html_like=True)
@@ -151,11 +151,12 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
         xml.save(f)
 
 
-def _search_chapter_elements(zip: Zip):
+def _search_chapter_items(zip: Zip):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(chapter_file)
-        yield xml.element, (chapter_path, xml)
+        placeholder = Placeholder(xml.element)
+        yield xml.element, (chapter_path, xml, placeholder)
 
 
 def _create_text_element(text: str) -> Element:
