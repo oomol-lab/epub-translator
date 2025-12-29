@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
-from epub_translator.translation import XMLGroupContext, XMLTranslator
+from epub_translator.xml_translator import XMLGroupContext, XMLTranslator
 from epub_translator.xml import encode_friendly
 from scripts.utils import read_and_clean_temp, read_format_json
 

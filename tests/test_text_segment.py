@@ -1,10 +1,7 @@
 import unittest
 from xml.etree.ElementTree import Element, SubElement, fromstring, tostring
 
-from epub_translator.translation.text_segment import (
-    combine_text_segments,
-    search_text_segments,
-)
+from epub_translator.xml_translator.text_segment import combine_text_segments, search_text_segments
 
 
 class TestSearchTextSegments(unittest.TestCase):
