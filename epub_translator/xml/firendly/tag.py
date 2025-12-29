@@ -70,27 +70,49 @@ class Tag:
             yield attr_name
 
 
+# XML Attribute Values: https://www.w3.org/TR/xml/#NT-AttValue
+# URI Syntax: https://www.rfc-editor.org/rfc/rfc3986
+# HTML Attributes: https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+_VALID_VALUE_CHARS = frozenset(
+    (
+        ",",
+        ".",
+        "/",
+        "#",
+        "?",
+        "&",
+        "=",
+        ":",
+        "%",
+        ";",
+        " ",
+    )
+)
+
+
+# XML Names: https://www.w3.org/TR/xml/#NT-Name
+# XML Namespaces: https://www.w3.org/TR/xml-names/#ns-qualnames
+# HTML Custom Data Attributes: https://html.spec.whatwg.org/multipage/dom.html#custom-data-attribute
+_VALID_NAME_CHARS = frozenset(("-", "_", ":", "."))
+
+
 def is_valid_value_char(char: str) -> bool:
     if is_valid_name_char(char):
         return True
-    if char == ",":
-        return True
-    if char == ".":
-        return True
-    if char == "/":
+    if char in _VALID_VALUE_CHARS:
         return True
     return False
 
 
 def is_valid_name_char(char: str) -> bool:
+    if char in _VALID_NAME_CHARS:
+        return True
+
+    # https://www.w3.org/TR/xml/#NT-Name
     if "a" <= char <= "z":
         return True
     if "A" <= char <= "Z":
         return True
     if "0" <= char <= "9":
-        return True
-    if char == "_":
-        return True
-    if char == "-":
         return True
     return False

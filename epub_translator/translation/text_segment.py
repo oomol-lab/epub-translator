@@ -1,5 +1,6 @@
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from typing import Self
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
@@ -77,12 +78,25 @@ class TextSegment:
     block_depth: int
 
     @property
+    def root(self) -> Element:
+        return self.parent_stack[0]
+
+    @property
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 
-    @property
-    def root(self) -> Element:
-        return self.parent_stack[0]
+    def strip_block_parents(self) -> Self:
+        self.parent_stack = self.parent_stack[self.block_depth - 1 :]
+        self.block_depth = 1
+        return self
+
+    def clone(self) -> "TextSegment":
+        return TextSegment(
+            text=self.text,
+            index=self.index,
+            parent_stack=list(self.parent_stack),
+            block_depth=self.block_depth,
+        )
 
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
@@ -136,11 +150,13 @@ def _search_text_segments(stack: list[Element], element: Element):
 
 
 def _find_block_depth(parent_stack: list[Element]) -> int:
-    for index in range(len(parent_stack) - 1, -1, -1):
-        checked_tag = parent_stack[index].tag.lower()
+    index: int = 0
+    for i in range(len(parent_stack) - 1, -1, -1):
+        checked_tag = parent_stack[i].tag.lower()
         if checked_tag not in _HTML_INLINE_TAGS:
-            return index
-    return 1  # The root element is considered a block element
+            index = i
+            break
+    return index + 1  # depth is a count not index
 
 
 def _normalize_text_in_element(text: str | None) -> str | None:

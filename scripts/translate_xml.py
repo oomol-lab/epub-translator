@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
-from epub_translator.translation import Translator
+from epub_translator.translation import XMLGroupContext, XMLTranslator
 from epub_translator.xml import encode_friendly
 from scripts.utils import read_and_clean_temp, read_format_json
 
@@ -26,13 +26,17 @@ def main() -> None:
     print("✓ Created LLM instance")
 
     # Create Filler instance
-    translator = Translator(
+    translator = XMLTranslator(
         llm=llm,
-        target_language="French",
+        target_language="Simplified Chinese",
         user_prompt=None,
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
+        group_context=XMLGroupContext(
+            encoding=llm.encoding,
+            max_group_tokens=1200,
+        ),
     )
     print("✓ Created Filler instance")
 
@@ -44,8 +48,7 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_ele = Element("xml")
-        translated_ele.extend(translator.translate_elements(list(source_ele)))
+        translated_ele = translator.translate_element(source_ele)
 
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
@@ -64,22 +67,22 @@ def main() -> None:
 
 def _create_test_xml() -> Element:
     xml_string = """
-<xml>
+<body>
     <title>Sigmund Freud</title>
     <description>
         "Freud" and "Freudian" redirect here. For other uses, see
-        <link>Freudian slip</link> and <bold>Freud</bold>
+        <a>Freudian slip</a> and <strong>Freud</strong>
         (disambiguation).
     </description>
-    <p>
-        Sigmund Freud[a] (born <bold>Sigismund Schlomo Freud;</bold> 6 May 1856 – 23 September 1939)
+    <p class="intro">
+        Sigmund Freud[a] (born <strong id="main">Sigismund Schlomo Freud;</strong> 6 May 1856 – 23 September 1939)
         was an Austrian neurologist and the founder of psychoanalysis, a clinical method
         for evaluating and treating pathologies seen as originating from conflicts
         in the psyche, through dialogue between patient and psychoanalyst,<sup>[3]</sup>
         and the distinctive theory of mind and human agency derived from it.<sup>[4]</sup>
     </p>
-    <div>
-        Freud was born to <link>Galician Jewish parents</link> in the Moravian town of Freiberg,
+    <div class="bio">
+        Freud was born to <a class="link">Galician Jewish parents</a> in the Moravian town of Freiberg,
         in the Austrian Empire. He qualified as a doctor of medicine in 1881
         at the University of Vienna.<sup>[5][6]</sup> Upon completing his habilitation in 1885,
         he was appointed a docent in neuropathology and became an affiliated professor
@@ -87,7 +90,7 @@ def _create_test_xml() -> Element:
         there in 1886. Following the German annexation of Austria in March 1938, Freud left
         Austria to escape Nazi persecution. He died in exile in the United Kingdom in September 1939.
     </div>
-</xml>
+</body>
 """.strip()
     return fromstring(xml_string)
 

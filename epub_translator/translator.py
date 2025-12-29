@@ -1,13 +1,12 @@
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Chapter, Zip, search_spine_paths
+from .epub import Zip, search_spine_paths
 from .epub.common import find_opf_path
 from .epub.toc import read_toc, write_toc
 from .llm import LLM
-from .serial import split
-from .translation import Translator
-from .xml import TruncatableXML, XMLLikeNode, deduplicate_ids_in_element, plain_text
+from .translation import XMLGroupContext, XMLTranslator
+from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
 
 
 def translate(
@@ -17,13 +16,17 @@ def translate(
     target_language: str,
     user_prompt: str | None = None,
 ) -> None:
-    translator = Translator(
+    translator = XMLTranslator(
         llm=llm,
         target_language=target_language,
         user_prompt=user_prompt,
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
+        group_context=XMLGroupContext(
+            encoding=llm.encoding,
+            max_group_tokens=1000,  # TODO: make configurable
+        ),
     )
     with Zip(source_path, target_path) as zip:
         # Translate TOC
@@ -32,24 +35,13 @@ def translate(
         # Translate metadata
         _translate_metadata(translator, zip)
 
-        for chapter_path in search_spine_paths(zip):
-            with zip.read(chapter_path) as chapter_file:
-                xml = XMLLikeNode(chapter_file)
-
-            chapter = Chapter(xml.element)
-            _translate_chapter(
-                llm=llm,
-                translator=translator,
-                chapter=chapter,
-            )
-            chapter.append_submit()
+        for _, (chapter_path, xml) in translator.translate_items(_search_chapter_elements(zip)):
             deduplicate_ids_in_element(xml.element)
-
             with zip.replace(chapter_path) as target_file:
                 xml.save(target_file, is_html_like=True)
 
 
-def _translate_toc(translator: Translator, zip: Zip):
+def _translate_toc(translator: XMLTranslator, zip: Zip):
     """Translate TOC (Table of Contents) titles."""
     toc_list = read_toc(zip)
     if not toc_list:
@@ -67,17 +59,18 @@ def _translate_toc(translator: Translator, zip: Zip):
     collect_titles(toc_list)
 
     # Create XML elements for translation
-    elements_to_translate = [_create_text_element(title) for title in titles_to_translate]
+    elements_to_translate = Element("toc")
+    elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
 
     # Translate all titles at once
-    translated_elements = translator.translate_elements(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Extract translated texts
     from builtins import zip as builtin_zip
 
     translated_titles = [
         plain_text(elem) if elem is not None else original
-        for elem, original in builtin_zip(translated_elements, titles_to_translate)
+        for elem, original in builtin_zip(translated_element, titles_to_translate)
     ]
 
     # Fill back translated titles
@@ -97,7 +90,7 @@ def _translate_toc(translator: Translator, zip: Zip):
     write_toc(zip, toc_list)
 
 
-def _translate_metadata(translator: Translator, zip: Zip):
+def _translate_metadata(translator: XMLTranslator, zip: Zip):
     """Translate metadata fields in OPF file."""
     opf_path = find_opf_path(zip)
 
@@ -138,15 +131,16 @@ def _translate_metadata(translator: Translator, zip: Zip):
         return
 
     # Create XML elements for translation
-    elements_to_translate = [_create_text_element(text) for _, text in fields_to_translate]
+    elements_to_translate = Element("metadata")
+    elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
 
     # Translate all metadata at once
-    translated_elements = translator.translate_elements(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Fill back translated texts
     from builtins import zip as builtin_zip
 
-    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_elements, strict=True):
+    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_element, strict=True):
         if translated_elem is not None:
             translated_text = plain_text(translated_elem)
             if translated_text:
@@ -157,21 +151,14 @@ def _translate_metadata(translator: Translator, zip: Zip):
         xml.save(f)
 
 
+def _search_chapter_elements(zip: Zip):
+    for chapter_path in search_spine_paths(zip):
+        with zip.read(chapter_path) as chapter_file:
+            xml = XMLLikeNode(chapter_file)
+        yield xml.element, (chapter_path, xml)
+
+
 def _create_text_element(text: str) -> Element:
     elem = Element("text")
     elem.text = text
     return elem
-
-
-def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
-    for paragraph, translated_element in zip(
-        chapter.paragraphs,
-        split(
-            segments=(TruncatableXML(llm.encoding, p.clone_raw()) for p in chapter.paragraphs),
-            transform=lambda paragraphs: translator.translate_elements(p.payload for p in paragraphs),
-            max_group_tokens=1000,  # TODO: make configurable
-        ),
-        strict=True,
-    ):
-        if translated_element is not None:
-            paragraph.submit(translated_element)
