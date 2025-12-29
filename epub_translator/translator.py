@@ -6,7 +6,7 @@ from .epub.common import find_opf_path
 from .epub.toc import read_toc, write_toc
 from .llm import LLM
 from .serial import split
-from .translation import Translator
+from .translation import XMLTranslator
 from .xml import TruncatableXML, XMLLikeNode, deduplicate_ids_in_element, plain_text
 
 
@@ -17,7 +17,7 @@ def translate(
     target_language: str,
     user_prompt: str | None = None,
 ) -> None:
-    translator = Translator(
+    translator = XMLTranslator(
         llm=llm,
         target_language=target_language,
         user_prompt=user_prompt,
@@ -49,7 +49,7 @@ def translate(
                 xml.save(target_file, is_html_like=True)
 
 
-def _translate_toc(translator: Translator, zip: Zip):
+def _translate_toc(translator: XMLTranslator, zip: Zip):
     """Translate TOC (Table of Contents) titles."""
     toc_list = read_toc(zip)
     if not toc_list:
@@ -97,7 +97,7 @@ def _translate_toc(translator: Translator, zip: Zip):
     write_toc(zip, toc_list)
 
 
-def _translate_metadata(translator: Translator, zip: Zip):
+def _translate_metadata(translator: TruncatableXML, zip: Zip):
     """Translate metadata fields in OPF file."""
     opf_path = find_opf_path(zip)
 
@@ -163,7 +163,7 @@ def _create_text_element(text: str) -> Element:
     return elem
 
 
-def _translate_chapter(llm: LLM, translator: Translator, chapter: Chapter):
+def _translate_chapter(llm: LLM, translator: XMLTranslator, chapter: Chapter):
     for paragraph, translated_element in zip(
         chapter.paragraphs,
         split(
