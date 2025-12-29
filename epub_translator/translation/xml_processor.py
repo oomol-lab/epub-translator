@@ -2,10 +2,10 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
+from ..epub.math import xml_to_latex
 from ..utils import normalize_whitespace
 from ..xml import iter_with_stack, plain_text
 from .format import ID_KEY
-from .math import xml_to_latex
 
 _MATH_TAG = "math"
 _EXPRESSION_TAG = "expression"

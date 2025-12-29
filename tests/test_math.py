@@ -1,6 +1,6 @@
 from xml.etree.ElementTree import fromstring
 
-from epub_translator.translation.math import xml_to_latex
+from epub_translator.epub.math import xml_to_latex
 
 
 def test_fraction_with_subscript():
