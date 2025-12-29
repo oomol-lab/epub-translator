@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element
 from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
-from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
+from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
 from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 
 
@@ -14,17 +14,19 @@ def translate(
     target_path: Path,
     target_language: str,
     user_prompt: str | None = None,
+    max_retries: int = 5,
+    max_group_tokens: int = 1200,
 ) -> None:
     translator = XMLTranslator(
         llm=llm,
         target_language=target_language,
         user_prompt=user_prompt,
         ignore_translated_error=False,
-        max_retries=5,
+        max_retries=max_retries,
         max_fill_displaying_errors=10,
         group_context=XMLGroupContext(
             encoding=llm.encoding,
-            max_group_tokens=1000,  # TODO: make configurable
+            max_group_tokens=max_group_tokens,
         ),
     )
     with Zip(source_path, target_path) as zip:
@@ -162,9 +164,10 @@ def _search_chapter_items(zip: Zip):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(chapter_file)
-        element = xml.element
-        placeholder = Placeholder(element)
-        yield element, (chapter_path, xml, placeholder)
+        body_element = find_first(xml.element, "body")
+        if body_element is not None:
+            placeholder = Placeholder(body_element)
+            yield body_element, (chapter_path, xml, placeholder)
 
 
 def _create_text_element(text: str) -> Element:
