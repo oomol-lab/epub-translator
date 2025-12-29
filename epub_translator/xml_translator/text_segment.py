@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from ..utils import normalize_whitespace
+from .utils import normalize_text_in_element
 
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
@@ -126,7 +126,7 @@ def search_text_segments(root: Element) -> Generator[TextSegment, None, None]:
 
 
 def _search_text_segments(stack: list[Element], element: Element):
-    text = _normalize_text_in_element(element.text)
+    text = normalize_text_in_element(element.text)
     next_stack = stack + [element]
     next_block_depth = _find_block_depth(next_stack)
 
@@ -139,7 +139,7 @@ def _search_text_segments(stack: list[Element], element: Element):
         )
     for i, child_element in enumerate(element):
         yield from _search_text_segments(next_stack, child_element)
-        child_tail = _normalize_text_in_element(child_element.tail)
+        child_tail = normalize_text_in_element(child_element.tail)
         if child_tail is not None:
             yield TextSegment(
                 text=child_tail,
@@ -157,15 +157,6 @@ def _find_block_depth(parent_stack: list[Element]) -> int:
             index = i
             break
     return index + 1  # depth is a count not index
-
-
-def _normalize_text_in_element(text: str | None) -> str | None:
-    if text is None:
-        return None
-    text = normalize_whitespace(text)
-    if not text.strip():
-        return None
-    return text
 
 
 def combine_text_segments(segments: Iterable[TextSegment]) -> Generator[tuple[Element, dict[int, Element]], None, None]:
