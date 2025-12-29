@@ -90,6 +90,14 @@ class TextSegment:
         self.block_depth = 1
         return self
 
+    def clone(self) -> "TextSegment":
+        return TextSegment(
+            text=self.text,
+            index=self.index,
+            parent_stack=list(self.parent_stack),
+            block_depth=self.block_depth,
+        )
+
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
     common_depth = _common_depth(

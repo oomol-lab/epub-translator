@@ -91,10 +91,10 @@ class XMLGroupContext:
     def _expand_text_segments_with_items(self, items: list[Resource[TextSegment] | Segment[TextSegment]]):
         for item in items:
             if isinstance(item, Resource):
-                yield item.payload
+                yield item.payload.clone()
             elif isinstance(item, Segment):
                 for resource in item.resources:
-                    yield resource.payload
+                    yield resource.payload.clone()
 
     def _truncate_text_segments(self, segments: Iterable[TextSegment], remain_head: bool, remain_count: int):
         if remain_head:
@@ -121,12 +121,7 @@ class XMLGroupContext:
             tokens = self._encoding.encode(segment.text)
             count = len(tokens)
             if count <= remain_count:
-                yield TextSegment(
-                    text=segment.text,
-                    index=segment.index,
-                    parent_stack=segment.parent_stack,
-                    block_depth=segment.block_depth,
-                )
+                yield segment
                 remain_count -= count
                 continue
 
@@ -136,10 +131,9 @@ class XMLGroupContext:
                 tokens=tokens[:remain_count] if remain_head else tokens[-remain_count:],
             )
             if remain_text.strip():
-                yield TextSegment(
-                    text=f"{remain_text} {_ELLIPSIS}" if remain_head else f"{_ELLIPSIS} {remain_text}",
-                    index=segment.index,
-                    parent_stack=segment.parent_stack,
-                    block_depth=segment.block_depth,
-                )
+                if remain_head:
+                    segment.text = f"{remain_text} {_ELLIPSIS}"
+                else:
+                    segment.text = f"{_ELLIPSIS} {remain_text}"
+                yield segment
             break

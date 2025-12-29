@@ -118,7 +118,10 @@ class XMLTranslator:
                 input=fixed_messages + last_error_messages,
             )
             try:
-                return fill.submit_response_text(text=response, errors_limit=self._max_fill_displaying_errors)
+                return fill.submit_response_text(
+                    text=response,
+                    errors_limit=self._max_fill_displaying_errors,
+                )
 
             except ValidationError as error:
                 latest_error = error
