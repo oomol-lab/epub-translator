@@ -37,6 +37,7 @@ pylint = "^3.3.7"
 tqdm = "^4.67.1"
 ruff = "^0.14.10"
 pytest = "^9.0.2"
+pyright = "^1.1.407"
 
 [tool.ruff]
 line-length = 120
