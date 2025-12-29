@@ -1,8 +1,11 @@
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
+from ..xml import plain_text
 from .format import ID_KEY, format
 from .text_segment import TextSegment, combine_text_segments
+
+_DATA_ORIGIN_LEN_KEY = "data-orig-len"
 
 
 class XMLFill:
@@ -28,7 +31,10 @@ class XMLFill:
                 generated_id = len(raw2generated)
                 raw2generated[raw_id] = generated_element
                 raw2generated_ids[raw_id] = generated_id
+
+                generated_text = normalize_whitespace(plain_text(generated_element))
                 generated_element.set(ID_KEY, str(generated_id))
+                generated_element.set(_DATA_ORIGIN_LEN_KEY, str(len(generated_text)))
 
         for text_segment in text_segments:
             generated_id_stack: list[int] = []

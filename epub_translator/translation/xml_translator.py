@@ -9,7 +9,6 @@ from .format import ValidationError
 from .text_segment import TextSegment
 from .xml_fill import XMLFill
 from .xml_group import XMLGroupContext
-from .xml_submitter import submit_text_segments
 
 T = TypeVar("T")
 
@@ -33,17 +32,14 @@ class XMLTranslator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate_element(self, element: Element) -> Element:
-        for translated, _ in self.translate_items(((element, None),)):
+    def translate_to_element(self, element: Element) -> Element:
+        for translated, _, _ in self.translate_to_text_segments(((element, None),)):
             return translated
         raise RuntimeError("Translation failed unexpectedly")
 
-    def translate_items(self, items: Iterable[tuple[Element, T]]) -> Generator[tuple[Element, T], None, None]:
-        for (element, payload), text_segments in self._translate_file_text_segments(items):
-            submit_text_segments(element, text_segments)
-            yield element, payload
-
-    def _translate_file_text_segments(self, items: Iterable[tuple[Element, T]]):
+    def translate_to_text_segments(
+        self, items: Iterable[tuple[Element, T]]
+    ) -> Generator[tuple[Element, list[TextSegment], T], None, None]:
         sync: IterSync[tuple[Element, T]] = IterSync()
         text_segments: list[TextSegment] = []
 
@@ -56,12 +52,14 @@ class XMLTranslator:
                 tail_element, _ = sync.tail
                 if id(tail_element) == id(text_segment.root):
                     break
-                yield sync.take(), text_segments
+                tail_element, payload = sync.take()
+                yield tail_element, text_segments, payload
                 text_segments = []
             text_segments.append(text_segment)
 
         while sync.tail is not None:
-            yield sync.take(), text_segments
+            tail_element, payload = sync.take()
+            yield tail_element, text_segments, payload
             text_segments = []
 
     def _translate_text_segments(self, elements: Iterable[Element]):

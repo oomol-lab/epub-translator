@@ -1,11 +1,10 @@
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Zip, search_spine_paths
+from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
-from .epub.toc import read_toc, write_toc
 from .llm import LLM
-from .translation import XMLGroupContext, XMLTranslator
+from .translation import XMLGroupContext, XMLTranslator, submit_text_segments
 from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
 
 
@@ -29,13 +28,21 @@ def translate(
         ),
     )
     with Zip(source_path, target_path) as zip:
-        # Translate TOC
         _translate_toc(translator, zip)
-
-        # Translate metadata
         _translate_metadata(translator, zip)
 
-        for _, (chapter_path, xml) in translator.translate_items(_search_chapter_elements(zip)):
+        for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
+            items=_search_chapter_items(zip),
+        ):
+            submit_text_segments(
+                element=element,
+                text_segments=(
+                    segment
+                    for segment in text_segments
+                    if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
+                ),
+            )
+            placeholder.recover()
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
                 xml.save(target_file, is_html_like=True)
@@ -63,7 +70,7 @@ def _translate_toc(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
 
     # Translate all titles at once
-    translated_element = translator.translate_element(elements_to_translate)
+    translated_element = translator.translate_to_element(elements_to_translate)
 
     # Extract translated texts
     from builtins import zip as builtin_zip
@@ -135,7 +142,7 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
 
     # Translate all metadata at once
-    translated_element = translator.translate_element(elements_to_translate)
+    translated_element = translator.translate_to_element(elements_to_translate)
 
     # Fill back translated texts
     from builtins import zip as builtin_zip
@@ -151,11 +158,12 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
         xml.save(f)
 
 
-def _search_chapter_elements(zip: Zip):
+def _search_chapter_items(zip: Zip):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(chapter_file)
-        yield xml.element, (chapter_path, xml)
+        placeholder = Placeholder(xml.element)
+        yield xml.element, (chapter_path, xml, placeholder)
 
 
 def _create_text_element(text: str) -> Element:
