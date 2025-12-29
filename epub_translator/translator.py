@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element
 from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
-from .translation import XMLGroupContext, XMLTranslator, submit_text_segments
+from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
 
 
