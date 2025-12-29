@@ -4,8 +4,8 @@ from xml.etree.ElementTree import Element
 from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
-from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
+from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 
 
 def translate(
@@ -162,8 +162,9 @@ def _search_chapter_items(zip: Zip):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(chapter_file)
-        placeholder = Placeholder(xml.element)
-        yield xml.element, (chapter_path, xml, placeholder)
+        element = xml.element
+        placeholder = Placeholder(element)
+        yield element, (chapter_path, xml, placeholder)
 
 
 def _create_text_element(text: str) -> Element:
