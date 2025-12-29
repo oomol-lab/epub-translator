@@ -156,6 +156,33 @@ class _ValidationContext:
     def _validate_id_ele(self, ids_path: list[int], id: int, raw_ele: Element, validated_ele: Element):
         if raw_ele.tag == validated_ele.tag:
             self._tag_text_dict[id] = self._str_tag(raw_ele)
+            raw_has_text = self._has_direct_text(raw_ele.text)
+            validated_has_text = self._has_direct_text(validated_ele.text)
+
+            if raw_has_text and not validated_has_text:
+                self._add_error(
+                    ids_path=ids_path + [id],
+                    message="missing text content before child elements",
+                )
+            elif not raw_has_text and validated_has_text:
+                self._add_error(
+                    ids_path=ids_path + [id],
+                    message="shouldn't have text content before child elements",
+                )
+            raw_has_tail = self._has_direct_text(raw_ele.tail)
+            validated_has_tail = self._has_direct_text(validated_ele.tail)
+
+            if raw_has_tail and not validated_has_tail:
+                self._add_error(
+                    ids_path=ids_path + [id],
+                    message="missing text content after the element",
+                )
+            elif not raw_has_tail and validated_has_tail:
+                self._add_error(
+                    ids_path=ids_path + [id],
+                    message="shouldn't have text content after the element",
+                )
+
             self._validate_ele(
                 ids_path=ids_path + [id],
                 raw_ele=raw_ele,
@@ -190,6 +217,12 @@ class _ValidationContext:
         text = normalize_whitespace(text)
         text = text.strip()
         return len(text) > 0
+
+    def _has_direct_text(self, text: str | None) -> bool:
+        if text is None:
+            return False
+        normalized = normalize_whitespace(text).strip()
+        return len(normalized) > 0
 
     def _plain_text(self, ele: Element):
         if ele.text:
