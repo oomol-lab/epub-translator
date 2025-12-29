@@ -74,6 +74,8 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
         if combined is not None:
             combined_element, _ = combined
             parent.insert(index + 1, combined_element)
+            combined_element.tail = child_element.tail
+            child_element.tail = None
 
 
 def _index_of_parent(parent: Element, checked_element: Element) -> int:

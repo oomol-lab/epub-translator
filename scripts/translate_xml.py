@@ -6,8 +6,9 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
-from epub_translator.xml_translator import XMLGroupContext, XMLTranslator
+from epub_translator.epub import is_placeholder_tag
 from epub_translator.xml import encode_friendly
+from epub_translator.xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 from scripts.utils import read_and_clean_temp, read_format_json
 
 
@@ -48,11 +49,20 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_ele = translator.translate_to_element(source_ele)
-
+        translated_element, translated_text_segments, _ = next(
+            translator.translate_to_text_segments(((source_ele, None),))
+        )
+        submit_text_segments(
+            element=translated_element,
+            text_segments=(
+                segment
+                for segment in translated_text_segments
+                if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
+            ),
+        )
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
-        print(f"\n{encode_friendly(translated_ele)}\n")
+        print(f"\n{encode_friendly(translated_element)}\n")
 
         # Pretty print the result
         print("=" * 60)
@@ -68,12 +78,13 @@ def main() -> None:
 def _create_test_xml() -> Element:
     xml_string = """
 <body>
-    <title>Sigmund Freud</title>
+    Sigmund Freud
     <description>
         "Freud" and "Freudian" redirect here. For other uses, see
         <a>Freudian slip</a> and <strong>Freud</strong>
         (disambiguation).
     </description>
+    The main text begins:
     <p class="intro">
         Sigmund Freud[a] (born <strong id="main">Sigismund Schlomo Freud;</strong> 6 May 1856 – 23 September 1939)
         was an Austrian neurologist and the founder of psychoanalysis, a clinical method
