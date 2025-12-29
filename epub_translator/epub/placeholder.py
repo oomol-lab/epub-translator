@@ -6,6 +6,12 @@ from .math import xml_to_latex
 _MATH_TAG = "math"
 _EXPRESSION_TAG = "expression"
 
+_PLACEHOLDER_TAGS = frozenset((_EXPRESSION_TAG,))
+
+
+def is_placeholder_tag(tag: str) -> bool:
+    return tag in _PLACEHOLDER_TAGS
+
 
 class Placeholder:
     def __init__(self, root: Element):

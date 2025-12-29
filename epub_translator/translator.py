@@ -1,7 +1,7 @@
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Placeholder, Zip, read_toc, search_spine_paths, write_toc
+from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
 from .translation import XMLGroupContext, XMLTranslator, submit_text_segments
@@ -34,7 +34,14 @@ def translate(
         for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
             items=_search_chapter_items(zip),
         ):
-            submit_text_segments(element, text_segments)
+            submit_text_segments(
+                element=element,
+                text_segments=(
+                    segment
+                    for segment in text_segments
+                    if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
+                ),
+            )
             placeholder.recover()
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
