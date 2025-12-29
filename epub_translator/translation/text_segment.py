@@ -142,11 +142,13 @@ def _search_text_segments(stack: list[Element], element: Element):
 
 
 def _find_block_depth(parent_stack: list[Element]) -> int:
-    for index in range(len(parent_stack) - 1, -1, -1):
-        checked_tag = parent_stack[index].tag.lower()
+    index: int = 0
+    for i in range(len(parent_stack) - 1, -1, -1):
+        checked_tag = parent_stack[i].tag.lower()
         if checked_tag not in _HTML_INLINE_TAGS:
-            return index
-    return 1  # The root element is considered a block element
+            index = i
+            break
+    return index + 1  # depth is a count not index
 
 
 def _normalize_text_in_element(text: str | None) -> str | None:

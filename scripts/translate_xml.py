@@ -74,15 +74,15 @@ def _create_test_xml() -> Element:
         <a>Freudian slip</a> and <strong>Freud</strong>
         (disambiguation).
     </description>
-    <p>
-        Sigmund Freud[a] (born <strong>Sigismund Schlomo Freud;</strong> 6 May 1856 – 23 September 1939)
+    <p class="intro">
+        Sigmund Freud[a] (born <strong id="main">Sigismund Schlomo Freud;</strong> 6 May 1856 – 23 September 1939)
         was an Austrian neurologist and the founder of psychoanalysis, a clinical method
         for evaluating and treating pathologies seen as originating from conflicts
         in the psyche, through dialogue between patient and psychoanalyst,<sup>[3]</sup>
         and the distinctive theory of mind and human agency derived from it.<sup>[4]</sup>
     </p>
-    <div>
-        Freud was born to <a>Galician Jewish parents</a> in the Moravian town of Freiberg,
+    <div class="bio">
+        Freud was born to <a class="link">Galician Jewish parents</a> in the Moravian town of Freiberg,
         in the Austrian Empire. He qualified as a doctor of medicine in 1881
         at the University of Vienna.<sup>[5][6]</sup> Upon completing his habilitation in 1885,
         he was appointed a docent in neuropathology and became an affiliated professor
