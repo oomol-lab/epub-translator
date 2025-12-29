@@ -50,7 +50,12 @@ class XMLTranslator:
         for text_segment in self._translate_text_segments(
             elements=(e for e, _ in sync.iter(items)),
         ):
-            while sync.tail is not None and id(sync.tail) != id(text_segment.root):
+            while True:
+                if sync.tail is None:
+                    break
+                tail_element, _ = sync.tail
+                if id(tail_element) == id(text_segment.root):
+                    break
                 yield sync.take(), text_segments
                 text_segments = []
             text_segments.append(text_segment)
