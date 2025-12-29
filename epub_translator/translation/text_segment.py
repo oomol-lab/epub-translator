@@ -1,5 +1,6 @@
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from typing import Self
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
@@ -77,12 +78,17 @@ class TextSegment:
     block_depth: int
 
     @property
+    def root(self) -> Element:
+        return self.parent_stack[0]
+
+    @property
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 
-    @property
-    def root(self) -> Element:
-        return self.parent_stack[0]
+    def strip_block_parents(self) -> Self:
+        self.parent_stack = self.parent_stack[self.block_depth - 1 :]
+        self.block_depth = 1
+        return self
 
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
