@@ -1,10 +1,11 @@
+from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
 from ..xml import iter_with_stack
 from .text_segment import TextSegment, combine_text_segments
 
 
-def submit_text_segments(element: Element, text_segments: list[TextSegment]):
+def submit_text_segments(element: Element, text_segments: Iterable[TextSegment]):
     # FIXME: 当前方案不区分 text 和 tail，会将 text 错误地插入到更后面，阅读起来顺序会错乱
     grouped_map = dict(_group_text_segments(text_segments))
     for parents, child_element in iter_with_stack(element):
@@ -26,7 +27,7 @@ def submit_text_segments(element: Element, text_segments: list[TextSegment]):
             parent.insert(index + 1, combined_element)
 
 
-def _group_text_segments(text_segments: list[TextSegment]):
+def _group_text_segments(text_segments: Iterable[TextSegment]):
     iterator = iter(text_segments)
     text_segment = next(iterator, None)
     if text_segment is None:

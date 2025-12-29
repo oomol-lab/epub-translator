@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element
 from .epub import Placeholder, Zip, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
-from .translation import XMLGroupContext, XMLTranslator
+from .translation import XMLGroupContext, XMLTranslator, submit_text_segments
 from .xml import XMLLikeNode, deduplicate_ids_in_element, plain_text
 
 
@@ -28,13 +28,13 @@ def translate(
         ),
     )
     with Zip(source_path, target_path) as zip:
-        # Translate TOC
         _translate_toc(translator, zip)
-
-        # Translate metadata
         _translate_metadata(translator, zip)
 
-        for _, (chapter_path, xml, placeholder) in translator.translate_items(_search_chapter_items(zip)):
+        for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
+            items=_search_chapter_items(zip),
+        ):
+            submit_text_segments(element, text_segments)
             placeholder.recover()
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
@@ -63,7 +63,7 @@ def _translate_toc(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
 
     # Translate all titles at once
-    translated_element = translator.translate_element(elements_to_translate)
+    translated_element = translator.translate_to_element(elements_to_translate)
 
     # Extract translated texts
     from builtins import zip as builtin_zip
@@ -135,7 +135,7 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
 
     # Translate all metadata at once
-    translated_element = translator.translate_element(elements_to_translate)
+    translated_element = translator.translate_to_element(elements_to_translate)
 
     # Fill back translated texts
     from builtins import zip as builtin_zip
