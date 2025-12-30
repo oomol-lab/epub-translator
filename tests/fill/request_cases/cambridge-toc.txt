@@ -1,0 +1,246 @@
+Source text:
+CONTENTS
+
+List of figures
+
+List of contributors
+
+Preface
+
+Introduction
+
+I. Bernard Cohen and George E. Smith
+
+1 Newton's philosophical analysis of space and time
+
+Robert Disalle
+
+2 Newton's concepts of force and mass, with notes on the Laws of Motion
+
+I. Bernard Cohen
+
+3 Curvature in Newton's dynamics
+
+J. Bruce Brackenridge and Michael Nauenberg
+
+4 The methodology of the Principia
+
+George E. Smith
+
+5 Newton's argument for universal gravitation
+
+William Harper
+
+6 Newton and celestial mechanics
+
+Curtis Wilson
+
+7 Newton's optics and atomism
+
+Alan E. Shapiro
+
+8 Newton's metaphysics
+
+Howard Stein
+
+9 Analysis and synthesis in Newton's mathematical work
+
+Niccolò Guicciardini
+
+10 Newton, active powers, and the mechanical philosophy
+
+Alan Gabbey
+
+11 The background to Newton's chymistry
+
+William Newman
+
+12 Newton's alchemy
+
+Karin Figala
+
+13 Newton on prophecy and the Apocalypse
+
+XML template:
+```XML
+<xml>
+  <body data-orig-len="820" id="0">
+    <div data-orig-len="820" id="1">
+      <h2 data-orig-len="8" id="2">
+        <span data-orig-len="8" id="3">CONTENTS</span>
+      </h2>
+      <div data-orig-len="15" id="4">
+        <a data-orig-len="15" id="5">List of figures</a>
+      </div>
+      <div data-orig-len="20" id="6">
+        <a data-orig-len="20" id="7">List of contributors</a>
+      </div>
+      <div data-orig-len="7" id="8">
+        <a data-orig-len="7" id="9">Preface</a>
+      </div>
+      <div data-orig-len="48" id="10">
+        <a data-orig-len="12" id="11">Introduction</a>
+        <div data-orig-len="36" id="12">
+          I. Bernard Cohen and George E. Smith
+        </div>
+      </div>
+      <div data-orig-len="65" id="13">
+        <a data-orig-len="51" id="14">
+          <span data-orig-len="1" id="15">1</span>
+          Newton's philosophical analysis of space and time
+        </a>
+        <div data-orig-len="14" id="16">Robert Disalle</div>
+      </div>
+      <div data-orig-len="87" id="17">
+        <a data-orig-len="71" id="18">
+          <span data-orig-len="1" id="19">2</span>
+          Newton's concepts of force and mass, with notes on the Laws of Motion
+        </a>
+        <div data-orig-len="16" id="20">I. Bernard Cohen</div>
+      </div>
+      <div data-orig-len="75" id="21">
+        <a data-orig-len="32" id="22">
+          <span data-orig-len="1" id="23">3</span>
+          Curvature in Newton's dynamics
+        </a>
+        <div data-orig-len="43" id="24">
+          J. Bruce Brackenridge and Michael Nauenberg
+        </div>
+      </div>
+      <div data-orig-len="49" id="25">
+        <a data-orig-len="34" id="26">
+          <span data-orig-len="1" id="27">4</span>
+          The methodology of the
+          <span data-orig-len="9" id="28">Principia</span>
+        </a>
+        <div data-orig-len="15" id="29">George E. Smith</div>
+      </div>
+      <div data-orig-len="59" id="30">
+        <a data-orig-len="45" id="31">
+          <span data-orig-len="1" id="32">5</span>
+          Newton's argument for universal gravitation
+        </a>
+        <div data-orig-len="14" id="33">William Harper</div>
+      </div>
+      <div data-orig-len="45" id="34">
+        <a data-orig-len="32" id="35">
+          <span data-orig-len="1" id="36">6</span>
+          Newton and celestial mechanics
+        </a>
+        <div data-orig-len="13" id="37">Curtis Wilson</div>
+      </div>
+      <div data-orig-len="44" id="38">
+        <a data-orig-len="29" id="39">
+          <span data-orig-len="1" id="40">7</span>
+          Newton's optics and atomism
+        </a>
+        <div data-orig-len="15" id="41">Alan E. Shapiro</div>
+      </div>
+      <div data-orig-len="34" id="42">
+        <a data-orig-len="22" id="43">
+          <span data-orig-len="1" id="44">8</span>
+          Newton's metaphysics
+        </a>
+        <div data-orig-len="12" id="45">Howard Stein</div>
+      </div>
+      <div data-orig-len="74" id="46">
+        <a data-orig-len="54" id="47">
+          <span data-orig-len="1" id="48">9</span>
+          Analysis and synthesis in Newton's mathematical work
+        </a>
+        <div data-orig-len="20" id="49">Niccolò Guicciardini</div>
+      </div>
+      <div data-orig-len="66" id="50">
+        <a data-orig-len="55" id="51">
+          <span data-orig-len="2" id="52">10</span>
+          Newton, active powers, and the mechanical philosophy
+        </a>
+        <div data-orig-len="11" id="53">Alan Gabbey</div>
+      </div>
+      <div data-orig-len="53" id="54">
+        <a data-orig-len="39" id="55">
+          <span data-orig-len="2" id="56">11</span>
+          The background to Newton's chymistry
+        </a>
+        <div data-orig-len="14" id="57">William Newman</div>
+      </div>
+      <div data-orig-len="31" id="58">
+        <a data-orig-len="19" id="59">
+          <span data-orig-len="2" id="60">12</span>
+          Newton's alchemy
+        </a>
+        <div data-orig-len="12" id="61">Karin Figala</div>
+      </div>
+      <div data-orig-len="40" id="62">
+        <a data-orig-len="40" id="63">
+          <span data-orig-len="2" id="64">13</span>
+          Newton on prophecy and the Apocalypse
+        </a>
+      </div>
+    </div>
+  </body>
+</xml>
+```
+
+Translated text:
+目录
+
+插图列表
+
+撰稿人列表
+
+前言
+
+引言
+
+I. 伯纳德·科恩与乔治·E·史密斯
+
+1 牛顿对空间与时间的哲学分析
+
+罗伯特·迪萨尔
+
+2 牛顿的力与质量概念，附运动定律注释
+
+I. 伯纳德·科恩
+
+3 牛顿动力学中的曲率问题
+
+J·布鲁斯·布拉肯里奇与迈克尔·瑙恩伯格
+
+4 《自然哲学的数学原理》的方法论
+
+乔治·E·史密斯
+
+5 牛顿对万有引力的论证
+
+威廉·哈珀
+
+6 牛顿与天体力学
+
+柯蒂斯·威尔逊
+
+7 牛顿的光学与原子论
+
+艾伦·E·夏皮罗
+
+8 牛顿的形而上学
+
+霍华德·斯坦
+
+9 牛顿数学工作中的分析与综合方法
+
+尼科洛·圭恰尔迪尼
+
+10 牛顿、主动力与机械论哲学
+
+艾伦·加贝
+
+11 牛顿化学思想的背景
+
+威廉·纽曼
+
+12 牛顿的炼金术
+
+卡琳·菲加拉
+
+13 牛顿论预言与《启示录》

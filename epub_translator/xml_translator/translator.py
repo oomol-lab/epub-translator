@@ -6,8 +6,9 @@ from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
 from ..xml import encode_friendly
 from .fill import XMLFill
-from .format import ValidationError
+from .format import ValidationError, _extract_xml_element
 from .group import XMLGroupContext
+from .progressive_locking import ProgressiveLockingValidator
 from .text_segment import TextSegment
 
 T = TypeVar("T")
@@ -67,9 +68,11 @@ class XMLTranslator:
             text_segments = list(group)
             fill = XMLFill(text_segments)
             source_text = "".join(self._render_text_segments(text_segments))
+            translated_text = self._translate_text(source_text)
             self._fill_into_xml(
                 fill=fill,
-                translated_text=self._translate_text(source_text),
+                source_text=source_text,
+                translated_text=translated_text,
             )
             yield from group.body
 
@@ -102,8 +105,12 @@ class XMLTranslator:
             ]
         )
 
-    def _fill_into_xml(self, fill: XMLFill, translated_text: str) -> Element:
-        last_error_messages: list[Message] = []
+    def _fill_into_xml(self, fill: XMLFill, source_text: str, translated_text: str) -> Element:
+        user_message = (
+            f"Source text:\n{source_text}\n\n"
+            f"XML template:\n```XML\n{encode_friendly(fill.request_element)}\n```\n\n"
+            f"Translated text:\n{translated_text}"
+        )
         fixed_messages: list[Message] = [
             Message(
                 role=MessageRole.SYSTEM,
@@ -111,28 +118,58 @@ class XMLTranslator:
             ),
             Message(
                 role=MessageRole.USER,
-                message=f"```XML\n{encode_friendly(fill.request_element)}\n```\n\n{translated_text}",
+                message=user_message,
             ),
         ]
+
+        validator = ProgressiveLockingValidator()
+        conversation_history: list[Message] = []
         latest_error: ValidationError | None = None
 
         for _ in range(self._max_retries):
+            # Request LLM response
             response = self._llm.request(
-                input=fixed_messages + last_error_messages,
+                input=fixed_messages + conversation_history,
             )
+
             try:
-                return fill.submit_response_text(
-                    text=response,
+                # Extract XML from response
+                validated_element = _extract_xml_element(response)
+
+                # Validate with progressive locking
+                is_complete, error_message, newly_locked = validator.validate_with_locking(
+                    template_ele=fill.request_element,
+                    validated_ele=validated_element,
                     errors_limit=self._max_fill_displaying_errors,
                 )
 
+                if is_complete:
+                    # All nodes locked, fill successful
+                    fill._fill_submitted_texts(  # pylint: disable=protected-access
+                        generated_ids_stack=[],
+                        element=validated_element,
+                    )
+                    return validated_element
+
+                # Not complete yet, construct error message with progress info
+                progress_msg = f"Progress: {len(validator.locked_ids)} nodes locked"
+                if newly_locked:
+                    progress_msg += f", {len(newly_locked)} newly locked this round"
+
+                full_error_message = f"{progress_msg}\n\n{error_message}"
+
+                conversation_history = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=full_error_message),
+                ]
+
             except ValidationError as error:
+                # XML extraction or basic validation failed
                 latest_error = error
-                last_error_messages = [
+                conversation_history = [
                     Message(role=MessageRole.ASSISTANT, message=response),
                     Message(role=MessageRole.USER, message=str(error)),
                 ]
-                # print(f"  ✗ Validation error: {error}")
 
         message = f"Failed to get valid XML structure after {self._max_retries} attempts"
         if latest_error is None:
