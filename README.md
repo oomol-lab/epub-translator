@@ -46,7 +46,7 @@ The easiest way to use EPUB Translator is through OOMOL Studio with a visual int
 
 ```python
 from pathlib import Path
-from epub_translator import LLM, translate
+from epub_translator import LLM, translate, language
 
 # Initialize LLM with your API credentials
 llm = LLM(
@@ -56,12 +56,12 @@ llm = LLM(
     token_encoding="o200k_base",
 )
 
-# Translate EPUB file
+# Translate EPUB file using language constants
 translate(
     llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
-    target_language="English",
+    target_language=language.ENGLISH,
 )
 ```
 
@@ -124,6 +124,30 @@ translate(
     max_retries: int = 5,              # Maximum retries for failed translations
     max_group_tokens: int = 1200,      # Maximum tokens per translation group
     on_progress: Callable[[float], None] | None = None,  # Progress callback (0.0-1.0)
+)
+```
+
+#### Language Constants
+
+EPUB Translator provides predefined language constants for convenience. You can use these constants instead of writing language names as strings:
+
+```python
+from epub_translator import language
+
+# Usage example:
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.ENGLISH,
+)
+
+# You can also use custom language strings:
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language="Icelandic",  # For languages not in the constants
 )
 ```
 

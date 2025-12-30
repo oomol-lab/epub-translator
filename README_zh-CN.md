@@ -46,7 +46,7 @@ pip install epub-translator
 
 ```python
 from pathlib import Path
-from epub_translator import LLM, translate
+from epub_translator import LLM, translate, language
 
 # 使用 API 凭证初始化 LLM
 llm = LLM(
@@ -56,12 +56,12 @@ llm = LLM(
     token_encoding="o200k_base",
 )
 
-# 翻译 EPUB 文件
+# 使用语言常量翻译 EPUB 文件
 translate(
     llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
-    target_language="Chinese",
+    target_language=language.CHINESE,
 )
 ```
 
@@ -124,6 +124,30 @@ translate(
     max_retries: int = 5,              # 翻译失败的最大重试次数
     max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
     on_progress: Callable[[float], None] | None = None,  # 进度回调函数 (0.0-1.0)
+)
+```
+
+#### 语言常量
+
+EPUB Translator 提供了预定义的语言常量供用户使用，您可以使用这些常量而不是直接编写语言名称字符串：
+
+```python
+from epub_translator import language
+
+# 使用示例：
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+)
+
+# 您也可以使用自定义的语言字符串：
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language="Icelandic",  # 对于不在常量列表中的语言
 )
 ```
 
