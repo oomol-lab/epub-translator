@@ -1,9 +1,10 @@
 from collections.abc import Generator, Iterable, Iterator
+from enum import Enum, auto
 from xml.etree.ElementTree import Element
 
 from tiktoken import Encoding
 
-from .utils import normalize_text_in_element
+from .utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
 
 
 def group_fragmented_elements(
@@ -46,6 +47,11 @@ def group_fragmented_elements(
         yield elements_buffer
 
 
+class _TextItemKind(Enum):
+    TEXT = auto()
+    XML_TAG = auto()
+
+
 class _XMLCounter:
     def __init__(self, encoding: Encoding, root: Element) -> None:
         self._encoding: Encoding = encoding
@@ -61,14 +67,33 @@ class _XMLCounter:
         return self._next_text_buffer is not None
 
     def _expand_texts(self, element: Element) -> Generator[str, None, None]:
+        xml_tags_buffer: list[str] = []  # 这类过于碎片化，需拼凑避免 encoding 失效
+        for kind, text in self._expand_text_items(element):
+            if kind == _TextItemKind.XML_TAG:
+                xml_tags_buffer.append(text)
+            elif kind == _TextItemKind.TEXT:
+                if xml_tags_buffer:
+                    yield "".join(xml_tags_buffer)
+                    xml_tags_buffer = []
+                yield text
+        if xml_tags_buffer:
+            yield "".join(xml_tags_buffer)
+
+    def _expand_text_items(self, element: Element) -> Generator[tuple[_TextItemKind, str], None, None]:
+        for text in expand_left_element_texts(element):
+            yield _TextItemKind.XML_TAG, text
+
         text = normalize_text_in_element(element.text)
         if text is not None:
-            yield text
+            yield _TextItemKind.TEXT, text
         for child in element:
-            yield from self._expand_texts(child)
+            yield from self._expand_text_items(child)
             tail = normalize_text_in_element(child.tail)
             if tail is not None:
-                yield tail
+                yield _TextItemKind.TEXT, tail
+
+        for text in expand_right_element_texts(element):
+            yield _TextItemKind.XML_TAG, text
 
     def advance_tokens(self, max_tokens_count: int) -> int:
         tokens_count: int = 0

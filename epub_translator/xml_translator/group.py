@@ -78,7 +78,7 @@ class XMLGroupContext:
                 segment2=next_segment,
             )
             yield Resource(
-                count=len(self._encoding.encode(segment.text)),
+                count=len(self._encoding.encode(segment.xml_text)),
                 start_incision=start_incision,
                 end_incision=incision1,
                 payload=segment,
@@ -87,7 +87,7 @@ class XMLGroupContext:
             start_incision = incision2
 
         yield Resource(
-            count=len(self._encoding.encode(segment.text)),
+            count=len(self._encoding.encode(segment.xml_text)),
             start_incision=start_incision,
             end_incision=_BORDER_INCISION,
             payload=segment,
@@ -123,22 +123,61 @@ class XMLGroupContext:
         for segment in segments:
             if remain_count <= 0:
                 break
-            tokens = self._encoding.encode(segment.text)
-            count = len(tokens)
-            if count <= remain_count:
-                yield segment
-                remain_count -= count
-                continue
+            raw_xml_text = segment.xml_text
+            tokens = self._encoding.encode(raw_xml_text)
+            tokens_count = len(tokens)
 
-            remain_count = 0
-            remain_text = self._encoding.decode(
-                # remain_count cannot be 0 here
-                tokens=tokens[:remain_count] if remain_head else tokens[-remain_count:],
-            )
-            if remain_text.strip():
-                if remain_head:
-                    segment.text = f"{remain_text} {_ELLIPSIS}"
-                else:
-                    segment.text = f"{_ELLIPSIS} {remain_text}"
-                yield segment
-            break
+            if tokens_count > remain_count:
+                truncated_segment = self._truncate_text_segment(
+                    segment=segment,
+                    tokens=tokens,
+                    raw_xml_text=raw_xml_text,
+                    remain_head=remain_head,
+                    remain_count=remain_count,
+                )
+                if truncated_segment is not None:
+                    yield truncated_segment
+                break
+
+            yield segment
+            remain_count -= tokens_count
+
+    def _truncate_text_segment(
+        self,
+        segment: TextSegment,
+        tokens: list[int],
+        raw_xml_text: str,
+        remain_head: bool,
+        remain_count: int,
+    ) -> TextSegment | None:
+        # 典型的 xml_text: <tag id="99" data-origin-len="999">Some text</tag>
+        # 如果切割点在前缀 XML 区，则整体舍弃
+        # 如果切割点在后缀 XML 区，则整体保留
+        # 只有刚好切割在正文区，才执行文本截断操作
+        remain_text: str
+        xml_text_head_length = raw_xml_text.find(segment.text)
+
+        if remain_head:
+            remain_xml_text = self._encoding.decode(tokens[:remain_count])  # remain_count cannot be 0 here
+            if len(remain_xml_text) <= xml_text_head_length:
+                return
+            if len(remain_xml_text) >= xml_text_head_length + len(segment.text):
+                return segment
+            remain_text = remain_xml_text[xml_text_head_length:]
+        else:
+            xml_text_tail_length = len(raw_xml_text) - (xml_text_head_length + len(segment.text))
+            remain_xml_text = self._encoding.decode(tokens[-remain_count:])
+            if len(remain_xml_text) <= xml_text_tail_length:
+                return
+            if len(remain_xml_text) >= xml_text_tail_length + len(segment.text):
+                return segment
+            remain_text = remain_xml_text[: len(remain_xml_text) - xml_text_tail_length]
+
+        if not remain_text.strip():
+            return
+
+        if remain_head:
+            segment.text = f"{remain_text} {_ELLIPSIS}"
+        else:
+            segment.text = f"{_ELLIPSIS} {remain_text}"
+        return segment

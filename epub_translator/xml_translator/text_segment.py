@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from .utils import normalize_text_in_element
+from .utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
 
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
@@ -94,6 +94,10 @@ class TextSegment:
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 
+    @property
+    def xml_text(self) -> str:
+        return "".join(_expand_xml_texts(self))
+
     def strip_block_parents(self) -> Self:
         self.parent_stack = self.parent_stack[self.block_depth - 1 :]
         self.block_depth = 1
@@ -109,6 +113,14 @@ class TextSegment:
             block_depth=self.block_depth,
             position=self.position,
         )
+
+
+def _expand_xml_texts(segment: TextSegment):
+    for i in range(segment.left_common_depth, len(segment.parent_stack)):
+        yield from expand_left_element_texts(segment.parent_stack[i])
+    yield segment.text
+    for i in range(len(segment.parent_stack) - 1, segment.right_common_depth - 1, -1):
+        yield from expand_right_element_texts(segment.parent_stack[i])
 
 
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
