@@ -23,7 +23,12 @@ def main() -> None:
     print(f"  Model: {config['model']}")
 
     # Create LLM instance
-    llm = LLM(**config, log_dir_path=read_and_clean_temp() / "logs")
+    temp_path = read_and_clean_temp()
+    llm = LLM(
+        **config,
+        log_dir_path=temp_path / "logs",
+        cache_path=temp_path / "cache",
+    )
     print("✓ Created LLM instance")
 
     # Create Filler instance
