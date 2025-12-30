@@ -8,6 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from epub_translator import LLM, translate
+from epub_translator.language import ENGLISH
 from scripts.utils import read_and_clean_temp, read_format_json
 
 
@@ -31,7 +32,7 @@ def main() -> None:
 
         translate(
             llm=llm,
-            target_language="English",
+            target_language=ENGLISH,
             source_path=assets_path / "治疗精神病.epub",
             target_path=temp_path / "translated.epub",
             on_progress=on_progress,

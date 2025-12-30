@@ -7,6 +7,7 @@ from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
 from epub_translator.epub import is_placeholder_tag
+from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
 from epub_translator.xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
 from scripts.utils import read_and_clean_temp, read_format_json
@@ -34,7 +35,7 @@ def main() -> None:
     # Create Filler instance
     translator = XMLTranslator(
         llm=llm,
-        target_language="Simplified Chinese",
+        target_language=CHINESE,
         user_prompt=None,
         ignore_translated_error=False,
         max_retries=5,
