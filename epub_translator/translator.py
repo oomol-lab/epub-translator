@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
@@ -16,6 +17,7 @@ def translate(
     user_prompt: str | None = None,
     max_retries: int = 5,
     max_group_tokens: int = 1200,
+    on_progress: Callable[[float], None] | None = None,
 ) -> None:
     translator = XMLTranslator(
         llm=llm,
@@ -30,9 +32,31 @@ def translate(
         ),
     )
     with Zip(source_path, target_path) as zip:
-        _translate_toc(translator, zip)
-        _translate_metadata(translator, zip)
+        # Progress distribution: TOC 3%, metadata 2%, chapters 95%
+        TOC_PROGRESS = 0.03
+        METADATA_PROGRESS = 0.02
+        CHAPTERS_PROGRESS = 0.95
 
+        # Count total chapters for progress calculation (lightweight, no content loading)
+        total_chapters = _count_chapters(zip)
+        chapter_progress_step = CHAPTERS_PROGRESS / total_chapters if total_chapters > 0 else 0
+
+        current_progress = 0.0
+
+        # Translate TOC
+        _translate_toc(translator, zip)
+        current_progress += TOC_PROGRESS
+        if on_progress:
+            on_progress(current_progress)
+
+        # Translate metadata
+        _translate_metadata(translator, zip)
+        current_progress += METADATA_PROGRESS
+        if on_progress:
+            on_progress(current_progress)
+
+        # Translate chapters
+        processed_chapters = 0
         for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
             items=_search_chapter_items(zip),
         ):
@@ -48,6 +72,12 @@ def translate(
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
                 xml.save(target_file, is_html_like=True)
+
+            # Update progress after each chapter
+            processed_chapters += 1
+            current_progress = TOC_PROGRESS + METADATA_PROGRESS + (processed_chapters * chapter_progress_step)
+            if on_progress:
+                on_progress(current_progress)
 
 
 def _translate_toc(translator: XMLTranslator, zip: Zip):
@@ -158,6 +188,11 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
     # Write back the modified OPF file
     with zip.replace(opf_path) as f:
         xml.save(f)
+
+
+def _count_chapters(zip: Zip) -> int:
+    """Count total chapters without loading content (lightweight)."""
+    return sum(1 for _ in search_spine_paths(zip))
 
 
 def _search_chapter_items(zip: Zip):
