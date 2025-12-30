@@ -1,8 +1,8 @@
 [project]
 name = "epub-translator"
-version = "0.0.7"
+version = "0.1.0"
 description = "Translate the epub book using LLM. The translated book will retain the original text and list the translated text side by side with the original text."
-keywords=["epub", "llm", "translation", "translator"]
+keywords = ["epub", "llm", "translation", "translator"]
 authors = [
     {name = "Tao Zeyu", email = "i@taozeyu.com"}
 ]
@@ -11,23 +11,39 @@ maintainers = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
-dependencies = [
-    "tiktoken (>=0.9.0,<0.10.0)",
-    "jinja2 (>=3.1.5,<4.0.0)",
-    "resource-segmentation (>=0.0.7, <0.1.0)",
-    "openai (>=2.14.0,<3.0.0)",
+requires-python = ">=3.11,<3.14"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Localization",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+dependencies = [
+    "tiktoken>=0.12.0,<1.0.0",
+    "jinja2>=3.1.6,<4.0.0",
+    "resource-segmentation>=0.0.7,<0.1.0",
+    "openai>=2.14.0,<3.0.0",
+]
+
+[project.urls]
+Homepage = "https://hub.oomol.com/package/books-translator"
+Repository = "https://github.com/oomol-lab/epub-translator"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-license = "MIT"
-readme = "README.md"
-homepage = "https://hub.oomol.com/package/book-translator"
-repository = "https://github.com/oomol-flows/books-translator"
 packages = [
     {include = "epub_translator" }
 ]
@@ -41,7 +57,7 @@ pyright = "^1.1.407"
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
