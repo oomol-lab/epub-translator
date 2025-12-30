@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from .utils import normalize_text_in_element
+from .utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
 
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
@@ -81,6 +81,8 @@ class TextSegment:
     text: str
     index: int  # *.text is 0, the first *.tail is 1, and so on
     parent_stack: list[Element]
+    left_common_depth: int
+    right_common_depth: int
     block_depth: int
     position: TextPosition
 
@@ -92,6 +94,10 @@ class TextSegment:
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 
+    @property
+    def xml_text(self) -> str:
+        return "".join(_expand_xml_texts(self))
+
     def strip_block_parents(self) -> Self:
         self.parent_stack = self.parent_stack[self.block_depth - 1 :]
         self.block_depth = 1
@@ -102,19 +108,25 @@ class TextSegment:
             text=self.text,
             index=self.index,
             parent_stack=list(self.parent_stack),
+            left_common_depth=self.left_common_depth,
+            right_common_depth=self.right_common_depth,
             block_depth=self.block_depth,
             position=self.position,
         )
 
 
+def _expand_xml_texts(segment: TextSegment):
+    for i in range(segment.left_common_depth, len(segment.parent_stack)):
+        yield from expand_left_element_texts(segment.parent_stack[i])
+    yield segment.text
+    for i in range(len(segment.parent_stack) - 1, segment.right_common_depth - 1, -1):
+        yield from expand_right_element_texts(segment.parent_stack[i])
+
+
 def incision_between(segment1: TextSegment, segment2: TextSegment) -> tuple[int, int]:
-    common_depth = _common_depth(
-        stack1=segment1.parent_stack,
-        stack2=segment2.parent_stack,
-    )
     return (
-        _incision_of(segment1, common_depth),
-        _incision_of(segment2, common_depth),
+        _incision_of(segment1, segment1.right_common_depth),
+        _incision_of(segment2, segment2.left_common_depth),
     )
 
 
@@ -130,10 +142,28 @@ def _incision_of(segment: TextSegment, common_depth: int) -> int:
 
 
 def search_text_segments(root: Element) -> Generator[TextSegment, None, None]:
-    yield from _search_text_segments([], root)
+    generator = _search_text_segments([], root)
+    text_segment = next(generator, None)
+    if text_segment is None:
+        return
+
+    while True:
+        next_text_segment = next(generator, None)
+        if next_text_segment is None:
+            break
+        common_depth = _common_depth(
+            stack1=text_segment.parent_stack,
+            stack2=next_text_segment.parent_stack,
+        )
+        text_segment.right_common_depth = common_depth
+        yield text_segment
+        text_segment = next_text_segment
+        text_segment.left_common_depth = common_depth
+
+    yield text_segment
 
 
-def _search_text_segments(stack: list[Element], element: Element):
+def _search_text_segments(stack: list[Element], element: Element) -> Generator[TextSegment, None, None]:
     text = normalize_text_in_element(element.text)
     next_stack = stack + [element]
     next_block_depth = _find_block_depth(next_stack)
@@ -143,6 +173,8 @@ def _search_text_segments(stack: list[Element], element: Element):
             text=text,
             index=0,
             parent_stack=next_stack,
+            left_common_depth=0,
+            right_common_depth=0,
             block_depth=next_block_depth,
             position=TextPosition.TEXT,
         )
@@ -154,6 +186,8 @@ def _search_text_segments(stack: list[Element], element: Element):
                 text=child_tail,
                 index=i + 1,
                 parent_stack=next_stack,
+                left_common_depth=0,
+                right_common_depth=0,
                 block_depth=next_block_depth,
                 position=TextPosition.TAIL,
             )
