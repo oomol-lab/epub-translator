@@ -126,7 +126,11 @@ class _ValidationContext:
 
             if lost_ids:
                 tags = [self._str_tag(raw_id_map[id]) for id in lost_ids]
+                # Provide context from source XML
+                context_info = self._get_source_context(raw_ele, lost_ids, raw_id_map)
                 messages.append(f"lost sub-tags {' '.join(tags)}")
+                if context_info:
+                    messages.append(f"Source structure was: {context_info}")
 
             if extra_ids:
                 tags = [self._str_tag(validated_id_map[id]) for id in extra_ids]
@@ -244,3 +248,35 @@ class _ValidationContext:
         else:
             content += " />"
         return content
+
+    def _get_source_context(self, parent: Element, lost_ids: list[int], id_map: dict[int, Element]) -> str:
+        """Generate context showing where lost tags appeared in source XML."""
+        if not lost_ids:
+            return ""
+
+        # Build a simple representation of the source structure
+        children_with_ids = []
+        for child in parent:
+            child_id_str = child.get(ID_KEY)
+            if child_id_str is not None:
+                child_id = int(child_id_str)
+                is_lost = child_id in lost_ids
+                tag_str = f'<{child.tag} id="{child_id}">'
+
+                # Show text before/inside/after
+                parts = []
+                if child.text and child.text.strip():
+                    preview = child.text.strip()[:20]
+                    if is_lost:
+                        parts.append(f'[{preview}...]')
+                    else:
+                        parts.append(f'{preview}...')
+
+                if is_lost:
+                    children_with_ids.append(f'{tag_str}*MISSING*')
+                else:
+                    children_with_ids.append(tag_str)
+
+        if children_with_ids:
+            return f"[{' '.join(children_with_ids)}]"
+        return ""
