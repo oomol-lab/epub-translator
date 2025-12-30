@@ -4,7 +4,6 @@ from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
 from os import PathLike
 from pathlib import Path
-from typing import Any
 
 from jinja2 import Environment, Template
 from tiktoken import Encoding, get_encoding
@@ -75,11 +74,6 @@ class LLM:
             parser=parser,
             max_tokens=max_tokens,
         )
-
-    def prompt_tokens_count(self, template_name: str, params: dict[str, Any]) -> int:
-        template = self.template(template_name)
-        prompt = template.render(**params)
-        return len(self._encoding.encode(prompt))
 
     def template(self, template_name: str) -> Template:
         template = self._templates.get(template_name, None)
