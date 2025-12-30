@@ -15,26 +15,44 @@ Your task: Map the translated text back into the XML structure by comparing with
 
 ---
 
-KEY RULE FOR INLINE TAGS:
+CRITICAL RULE - Tags with NO tail:
 
-When an inline tag (like <span>) has NO text after its closing tag in the XML template:
-→ Put ALL remaining text INSIDE that tag, NOT after it
+When a tag has NO text after its closing tag in XML template:
+→ Put ALL remaining text INSIDE that tag
 
-Example:
-XML: <p id="1"><span id="2">5</span> Introduction to <span id="3">Robotics</span></p>
-Source: "5 Introduction to Robotics"
-Translated: "5 机器人学导论"
+EXAMPLE (MOST COMMON ERROR):
 
-Analysis:
-- <span id="3"> has NO text after </span> (the <p> ends immediately)
-- So ALL remaining text must go INSIDE id="3"
+XML template:
+```xml
+<a id="1">
+  <span id="2">4</span>
+  The methodology of the
+  <span id="3">Principia</span>
+</a>
+```
 
-Correct output:
-<p id="1"><span id="2">5</span><span id="3">机器人学导论</span></p>
+Source: "4 The methodology of the Principia"
+Translated: "4 《自然哲学的数学原理》的方法论"
 
-Wrong output:
-<p id="1"><span id="2">5</span><span id="3">机器人学</span>导论</p>  ❌ (adds tail to id="3")
-<p id="1"><span id="2">5</span> 机器人学导论</p>  ❌ (drops id="3")
+ANALYSIS:
+- <span id="3"> has NO text after </span> (the </a> comes immediately)
+- So ALL remaining text after id="2" must go into id="3"
+
+CORRECT output:
+```xml
+<a id="1">
+  <span id="2">4</span>
+  《
+  <span id="3">自然哲学的数学原理》的方法论</span>
+</a>
+```
+
+WRONG outputs:
+❌ <a id="1"><span id="2">4</span> 《自然哲学的数学原理》的方法论</a>
+   (Missing id="3" completely!)
+
+❌ <a id="1"><span id="2">4</span> 《<span id="3">自然哲学的数学原理</span>》的方法论</a>
+   (Added tail "》的方法论" to id="3", but source has no tail!)
 
 ---
 
