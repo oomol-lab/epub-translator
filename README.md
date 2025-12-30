@@ -24,7 +24,7 @@ Translate EPUB books using Large Language Models while preserving the original t
 - **Complete Translation**: Translates chapter content, table of contents, and metadata
 - **Progress Tracking**: Monitor translation progress with built-in callbacks
 - **Flexible LLM Support**: Works with any OpenAI-compatible API endpoint
-- **Caching**: Built-in caching to reduce costs and improve performance
+- **Caching**: Built-in caching for progress recovery when translation fails
 
 ## Installation
 
@@ -53,7 +53,7 @@ llm = LLM(
     key="your-api-key",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 
 # Translate EPUB file
@@ -99,7 +99,7 @@ LLM(
     key: str,                          # API key
     url: str,                          # API endpoint URL
     model: str,                        # Model name (e.g., "gpt-4")
-    token_encoding: str,               # Token encoding (e.g., "cl100k_base")
+    token_encoding: str,               # Token encoding (e.g., "o200k_base")
     cache_path: PathLike | None = None,           # Cache directory path
     timeout: float | None = None,                  # Request timeout in seconds
     top_p: float | tuple[float, float] | None = None,
@@ -136,7 +136,7 @@ llm = LLM(
     key="sk-...",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 ```
 
@@ -147,7 +147,7 @@ llm = LLM(
     key="your-azure-key",
     url="https://your-resource.openai.azure.com/openai/deployments/your-deployment",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 ```
 
@@ -160,7 +160,7 @@ llm = LLM(
     key="your-api-key",
     url="https://your-service.com/v1",
     model="your-model",
-    token_encoding="cl100k_base",  # Match your model's encoding
+    token_encoding="o200k_base",  # Match your model's encoding
 )
 ```
 
@@ -187,16 +187,16 @@ translate(
 )
 ```
 
-### Caching for Cost Efficiency
+### Caching for Progress Recovery
 
-Enable caching to avoid re-translating identical content:
+Enable caching to resume translation progress after failures:
 
 ```python
 llm = LLM(
     key="your-api-key",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
     cache_path="./translation_cache",  # Translations are cached here
 )
 ```

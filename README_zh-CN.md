@@ -24,7 +24,7 @@
 - **全面翻译**: 翻译章节内容、目录和元数据
 - **进度追踪**: 内置回调函数监控翻译进度
 - **灵活的 LLM 支持**: 兼容任何 OpenAI 风格的 API 端点
-- **缓存机制**: 内置缓存功能降低成本并提升性能
+- **缓存机制**: 内置缓存功能用于翻译失败后恢复进度
 
 ## 安装
 
@@ -53,7 +53,7 @@ llm = LLM(
     key="your-api-key",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 
 # 翻译 EPUB 文件
@@ -99,7 +99,7 @@ LLM(
     key: str,                          # API 密钥
     url: str,                          # API 端点 URL
     model: str,                        # 模型名称 (例如 "gpt-4")
-    token_encoding: str,               # Token 编码方式 (例如 "cl100k_base")
+    token_encoding: str,               # Token 编码方式 (例如 "o200k_base")
     cache_path: PathLike | None = None,           # 缓存目录路径
     timeout: float | None = None,                  # 请求超时时间(秒)
     top_p: float | tuple[float, float] | None = None,
@@ -136,7 +136,7 @@ llm = LLM(
     key="sk-...",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 ```
 
@@ -147,7 +147,7 @@ llm = LLM(
     key="your-azure-key",
     url="https://your-resource.openai.azure.com/openai/deployments/your-deployment",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
 )
 ```
 
@@ -160,7 +160,7 @@ llm = LLM(
     key="your-api-key",
     url="https://your-service.com/v1",
     model="your-model",
-    token_encoding="cl100k_base",  # 匹配您模型的编码方式
+    token_encoding="o200k_base",  # 匹配您模型的编码方式
 )
 ```
 
@@ -187,16 +187,16 @@ translate(
 )
 ```
 
-### 缓存以节省成本
+### 缓存用于进度恢复
 
-启用缓存以避免重复翻译相同内容:
+启用缓存以在翻译失败后恢复进度:
 
 ```python
 llm = LLM(
     key="your-api-key",
     url="https://api.openai.com/v1",
     model="gpt-4",
-    token_encoding="cl100k_base",
+    token_encoding="o200k_base",
     cache_path="./translation_cache",  # 翻译结果缓存在此
 )
 ```
