@@ -2,8 +2,7 @@ from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
 from ..xml import decode_friendly
-
-ID_KEY: str = "id"
+from .const import ID_KEY
 
 
 def format(template_ele: Element, validated_text: str, errors_limit: int) -> Element:

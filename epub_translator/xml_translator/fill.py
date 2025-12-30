@@ -2,10 +2,9 @@ from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
 from ..xml import plain_text
-from .format import ID_KEY, format
+from .const import DATA_ORIGIN_LEN_KEY, ID_KEY
+from .format import format
 from .text_segment import TextSegment, combine_text_segments
-
-_DATA_ORIGIN_LEN_KEY = "data-orig-len"
 
 
 class XMLFill:
@@ -37,7 +36,7 @@ class XMLFill:
                 )
                 generated_element.attrib = {
                     ID_KEY: str(generated_id),
-                    _DATA_ORIGIN_LEN_KEY: str(len(generated_text)),
+                    DATA_ORIGIN_LEN_KEY: str(len(generated_text)),
                 }
 
         for text_segment in text_segments:
