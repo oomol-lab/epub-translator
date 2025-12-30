@@ -1,4 +1,9 @@
-"""快速测试 LLM fill 功能的集成测试"""
+"""快速测试 LLM fill 功能的集成测试
+
+注意：这些测试需要调用 LLM，运行时间较长，默认跳过以避免 CI 超时。
+如需运行，请使用脚本: python scripts/test_fill_cases.py
+或手动运行特定测试: pytest tests/test_fill_integration.py -v -s -k test_cambridge_toc
+"""
 
 import json
 import unittest
@@ -9,7 +14,10 @@ from epub_translator.llm import LLM
 
 
 class TestFillIntegration(unittest.TestCase):
-    """直接测试 LLM fill 功能，用于快速迭代 prompt"""
+    """直接测试 LLM fill 功能，用于快速迭代 prompt
+
+    注意：所有测试默认跳过，请使用 scripts/test_fill_cases.py 运行完整测试
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -65,27 +73,8 @@ class TestFillIntegration(unittest.TestCase):
 
         return source_text, xml_template, translated_text
 
-    def _extract_source_text(self, element) -> str:
-        """从 XML 元素中提取源文本"""
-        # 简单方法：遍历所有带有 id 的元素，提取它们的文本内容
-        texts = []
-
-        def extract_text(elem):
-            # 提取元素的直接文本
-            if elem.text and elem.text.strip():
-                texts.append(elem.text.strip())
-            # 递归处理子元素
-            for child in elem:
-                extract_text(child)
-                # 提取子元素的 tail 文本
-                if child.tail and child.tail.strip():
-                    texts.append(child.tail.strip())
-
-        extract_text(element)
-        return "\n\n".join(texts)
-
     def _test_fill_case(self, case_name: str):
-        """测试单个 fill 案例"""
+        """测试单个 fill 案例（单次请求）"""
         case_file = self.test_cases_dir / f"{case_name}.txt"
         if not case_file.exists():
             self.skipTest(f"Test case file not found: {case_file}")
@@ -130,115 +119,18 @@ class TestFillIntegration(unittest.TestCase):
             print(f"LLM Response:\n{response}")
             raise
 
-    def _test_fill_case_with_progressive_locking(self, case_name: str, max_retries: int = 10):
-        """测试单个 fill 案例（使用渐进式锁定，允许多轮迭代）"""
-        case_file = self.test_cases_dir / f"{case_name}.txt"
-        if not case_file.exists():
-            self.skipTest(f"Test case file not found: {case_file}")
-
-        source_text, xml_template, translated_text = self._parse_test_case(case_file)
-        template_element = fromstring(xml_template)
-
-        from epub_translator.llm import Message, MessageRole
-        from epub_translator.xml import encode_friendly
-        from epub_translator.xml_translator.format import ValidationError, _extract_xml_element
-        from epub_translator.xml_translator.progressive_locking import ProgressiveLockingValidator
-
-        # 构造初始请求
-        request_xml = encode_friendly(template_element)
-        fixed_messages = [
-            Message(
-                role=MessageRole.SYSTEM,
-                message=self.llm.template("fill").render(),
-            ),
-            Message(
-                role=MessageRole.USER,
-                message=(
-                    f"Source text:\n{source_text}\n\n"
-                    f"XML template:\n```XML\n{request_xml}\n```\n\n"
-                    f"Translated text:\n{translated_text}"
-                ),
-            ),
-        ]
-
-        validator = ProgressiveLockingValidator()
-        conversation_history = []
-        total_nodes = sum(1 for elem in template_element.iter() if elem.get("id") is not None)
-
-        print(f"\n{'=' * 60}")
-        print(f"Testing '{case_name}' with progressive locking")
-        print(f"Total nodes: {total_nodes}")
-        print(f"{'=' * 60}")
-
-        for attempt in range(max_retries):
-            print(f"\n--- Round {attempt + 1}/{max_retries} ---")
-
-            response = self.llm.request(input=fixed_messages + conversation_history)
-
-            try:
-                validated_element = _extract_xml_element(response)
-                is_complete, error_message, newly_locked = validator.validate_with_locking(
-                    template_ele=template_element,
-                    validated_ele=validated_element,
-                    errors_limit=10,
-                )
-
-                print(f"Locked: {len(validator.locked_ids)}/{total_nodes} nodes", end="")
-                if newly_locked:
-                    print(f" (+{len(newly_locked)} this round)")
-                else:
-                    print(" (no progress)")
-
-                if is_complete:
-                    print(f"\n{'=' * 60}")
-                    print(f"✅ Test case '{case_name}' CONVERGED in {attempt + 1} rounds")
-                    print(f"{'=' * 60}")
-                    return validated_element
-
-                # 构造下一轮的错误提示
-                progress_msg = f"Progress: {len(validator.locked_ids)} nodes locked"
-                if newly_locked:
-                    progress_msg += f", {len(newly_locked)} newly locked this round"
-                full_error_message = f"{progress_msg}\n\n{error_message}"
-
-                print(f"Errors: {error_message[:100]}...")
-
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=full_error_message),
-                ]
-
-            except ValidationError as error:
-                print(f"Validation error: {error}")
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=str(error)),
-                ]
-
-        # 达到最大重试次数
-        print(f"\n{'=' * 60}")
-        print(f"❌ Test case '{case_name}' FAILED to converge after {max_retries} rounds")
-        print(f"Final progress: {len(validator.locked_ids)}/{total_nodes} nodes locked")
-        print(f"{'=' * 60}")
-        self.fail(f"Failed to converge after {max_retries} attempts")
-
+    @unittest.skip("Skipped in CI - use scripts/test_fill_cases.py instead")
     def test_cambridge_toc(self):
         """测试剑桥目录案例（单次请求，用于快速调试 prompt）"""
         self._test_fill_case("cambridge-toc")
 
+    @unittest.skip("Skipped in CI - use scripts/test_fill_cases.py instead")
     def test_cambridge_toc_2(self):
         """测试剑桥目录案例2（单次请求，用于快速调试 prompt）"""
         self._test_fill_case("cambridge-toc-2")
 
-    def test_cambridge_toc_progressive(self):
-        """测试剑桥目录案例（渐进式锁定，允许多轮迭代）"""
-        self._test_fill_case_with_progressive_locking("cambridge-toc", max_retries=10)
-
-    def test_cambridge_toc_2_progressive(self):
-        """测试剑桥目录案例2（渐进式锁定，允许多轮迭代）"""
-        self._test_fill_case_with_progressive_locking("cambridge-toc-2", max_retries=10)
-
 
 if __name__ == "__main__":
-    # 运行单个测试
+    # 运行单个测试（手动运行时可以用）
     unittest.main(verbosity=2)
+
