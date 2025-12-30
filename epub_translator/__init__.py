@@ -1,5 +1,4 @@
-import language
-
+from . import language
 from .llm import LLM
 from .translator import translate
 
