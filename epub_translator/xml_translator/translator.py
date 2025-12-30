@@ -67,9 +67,11 @@ class XMLTranslator:
             text_segments = list(group)
             fill = XMLFill(text_segments)
             source_text = "".join(self._render_text_segments(text_segments))
+            translated_text = self._translate_text(source_text)
             self._fill_into_xml(
                 fill=fill,
-                translated_text=self._translate_text(source_text),
+                source_text=source_text,
+                translated_text=translated_text,
             )
             yield from group.body
 
@@ -102,8 +104,13 @@ class XMLTranslator:
             ]
         )
 
-    def _fill_into_xml(self, fill: XMLFill, translated_text: str) -> Element:
+    def _fill_into_xml(self, fill: XMLFill, source_text: str, translated_text: str) -> Element:
         last_error_messages: list[Message] = []
+        user_message = (
+            f"Source text:\n{source_text}\n\n"
+            f"XML template:\n```XML\n{encode_friendly(fill.request_element)}\n```\n\n"
+            f"Translated text:\n{translated_text}"
+        )
         fixed_messages: list[Message] = [
             Message(
                 role=MessageRole.SYSTEM,
@@ -111,7 +118,7 @@ class XMLTranslator:
             ),
             Message(
                 role=MessageRole.USER,
-                message=f"```XML\n{encode_friendly(fill.request_element)}\n```\n\n{translated_text}",
+                message=user_message,
             ),
         ]
         latest_error: ValidationError | None = None
