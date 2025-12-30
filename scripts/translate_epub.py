@@ -13,7 +13,11 @@ def main() -> None:
     config = read_format_json()
     assets_path = Path(__file__).parent / ".." / "tests" / "assets"
     temp_path = read_and_clean_temp()
-    llm = LLM(**config, log_dir_path=temp_path / "logs")
+    llm = LLM(
+        **config,
+        log_dir_path=temp_path / "logs",
+        cache_path=temp_path / "cache",
+    )
     translate(
         llm=llm,
         target_language="English",

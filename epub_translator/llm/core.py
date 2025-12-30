@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import json
 from collections.abc import Callable, Generator
 from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
@@ -21,6 +23,7 @@ class LLM:
         url: str,
         model: str,
         token_encoding: str,
+        cache_path: PathLike | None = None,
         timeout: float | None = None,
         top_p: float | tuple[float, float] | None = None,
         temperature: float | tuple[float, float] | None = None,
@@ -33,6 +36,14 @@ class LLM:
         self._encoding: Encoding = get_encoding(token_encoding)
         self._env: Environment = create_env(prompts_path)
         self._logger_save_path: Path | None = None
+        self._cache_path: Path | None = None
+
+        if cache_path is not None:
+            self._cache_path = Path(cache_path)
+            if not self._cache_path.exists():
+                self._cache_path.mkdir(parents=True, exist_ok=True)
+            elif not self._cache_path.is_dir():
+                self._cache_path = None
 
         if log_dir_path is not None:
             self._logger_save_path = Path(log_dir_path)
@@ -69,11 +80,29 @@ class LLM:
         else:
             messages = input
 
-        return self._executor.request(
+        # Check cache if cache_path is set
+        if self._cache_path is not None:
+            cache_key = self._compute_messages_hash(messages)
+            cache_file = self._cache_path / f"{cache_key}.txt"
+
+            if cache_file.exists():
+                cached_content = cache_file.read_text(encoding="utf-8")
+                return parser(cached_content)
+
+        # Make the actual request
+        response = self._executor.request(
             messages=messages,
-            parser=parser,
+            parser=lambda x: x,
             max_tokens=max_tokens,
         )
+
+        # Save to cache if cache_path is set
+        if self._cache_path is not None:
+            cache_key = self._compute_messages_hash(messages)
+            cache_file = self._cache_path / f"{cache_key}.txt"
+            cache_file.write_text(response, encoding="utf-8")
+
+        return parser(response)
 
     def template(self, template_name: str) -> Template:
         template = self._templates.get(template_name, None)
@@ -81,6 +110,12 @@ class LLM:
             template = self._env.get_template(template_name)
             self._templates[template_name] = template
         return template
+
+    def _compute_messages_hash(self, messages: list[Message]) -> str:
+        """Compute SHA-512 hash of m·essages for cache key."""
+        messages_dict = [{"role": msg.role.value, "message": msg.message} for msg in messages]
+        messages_json = json.dumps(messages_dict, ensure_ascii=False, sort_keys=True)
+        return hashlib.sha512(messages_json.encode("utf-8")).hexdigest()
 
     def _create_logger(self) -> Logger | None:
         if self._logger_save_path is None:
