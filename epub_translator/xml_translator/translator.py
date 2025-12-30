@@ -126,7 +126,7 @@ class XMLTranslator:
         conversation_history: list[Message] = []
         latest_error: ValidationError | None = None
 
-        for attempt in range(self._max_retries):
+        for _ in range(self._max_retries):
             # Request LLM response
             response = self._llm.request(
                 input=fixed_messages + conversation_history,
@@ -145,7 +145,7 @@ class XMLTranslator:
 
                 if is_complete:
                     # All nodes locked, fill successful
-                    fill._fill_submitted_texts(
+                    fill._fill_submitted_texts(  # pylint: disable=protected-access
                         generated_ids_stack=[],
                         element=validated_element,
                     )

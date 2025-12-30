@@ -127,7 +127,7 @@ class _ValidationContext:
             if lost_ids:
                 tags = [self._str_tag(raw_id_map[id]) for id in lost_ids]
                 # Provide context from source XML
-                context_info = self._get_source_context(raw_ele, lost_ids, raw_id_map)
+                context_info = self._get_source_context(raw_ele, lost_ids)
                 messages.append(f"lost sub-tags {' '.join(tags)}")
                 if context_info:
                     messages.append(f"Source structure was: {context_info}")
@@ -249,7 +249,7 @@ class _ValidationContext:
             content += " />"
         return content
 
-    def _get_source_context(self, parent: Element, lost_ids: list[int], id_map: dict[int, Element]) -> str:
+    def _get_source_context(self, parent: Element, lost_ids: list[int]) -> str:
         """Generate context showing where lost tags appeared in source XML."""
         if not lost_ids:
             return ""

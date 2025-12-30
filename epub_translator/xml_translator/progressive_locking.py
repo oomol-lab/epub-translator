@@ -1,4 +1,5 @@
 """渐进式锁定验证器 - 引导 LLM 逐步收敛到正确结果"""
+# pylint: disable=protected-access  # Intentional access to _ValidationContext internals
 
 from xml.etree.ElementTree import Element
 
