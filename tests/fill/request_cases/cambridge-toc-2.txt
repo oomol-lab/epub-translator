@@ -1,0 +1,178 @@
+Source text:
+... 7 Principia.
+
+3.9 The triangles SAB and SBc have equal bases AB = Bc and a common slant height. The triangles SBC and SBc have a common base SB and equal slant heights.
+
+3.10 Taken from Proposition 6, Book 1, 1687 Principia.
+
+3.11 Taken from Lemma 11, Book 1, 1687 Principia.
+
+3.12 Taken from Lemma 11, Book 1, 1687 Principia.
+
+3.13 Taken from Proposition 6, Book 1, 1713 Principia.
+
+3.14 An enhanced version of Newton’s diagram shown in Fig. 3.13.
+
+3.15 Figure in Proposition 15, Book 2, describing an equiangular spiral curve PQRr for an orbit under the action of a gravitational force centered at S and a resistance force.
+
+3.16 Figure in Proposition 28, Book 3, for an ellipse CPADB representing a hypothetical orbit of the Moon around the Earth.
+
+5.1 Log mean distances versus log periodic times for the planets.
+
+7.1 Refraction at the surface EG decomposes a ray of sunlight OF into rays of different degrees of refrangibility and color.
+
+7.2 Newton’s dispersion model from his Optical Lectures.
+
+7.3 Newton’s derivation of Snell’s law of refraction in the Principia, Book 1, Proposition 94.
+
+XML template:
+```XML
+<xml>
+  <body data-orig-len="1077" id="0">
+    <div data-orig-len="1077" id="1">
+      <div data-orig-len="16" id="2">
+        <a data-orig-len="16" id="3">
+          ... 7
+          <span data-orig-len="9" id="4">Principia</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="154" id="5">
+        <a data-orig-len="154" id="6">
+          <span data-orig-len="3" id="7">3.9</span>
+          The triangles
+          <span data-orig-len="3" id="8">SAB</span>
+          and
+          <span data-orig-len="3" id="9">SBc</span>
+          have equal bases
+          <span data-orig-len="2" id="10">AB</span>
+          =
+          <span data-orig-len="2" id="11">Bc</span>
+          and a common slant height. The triangles
+          <span data-orig-len="3" id="12">SBC</span>
+          and
+          <span data-orig-len="3" id="13">SBc</span>
+          have a common base
+          <span data-orig-len="2" id="14">SB</span>
+          and equal slant heights.
+        </a>
+      </div>
+      <div data-orig-len="54" id="15">
+        <a data-orig-len="54" id="16">
+          <span data-orig-len="4" id="17">3.10</span>
+          Taken from Proposition 6, Book 1, 1687
+          <span data-orig-len="9" id="18">Principia</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="49" id="19">
+        <a data-orig-len="49" id="20">
+          <span data-orig-len="4" id="21">3.11</span>
+          Taken from Lemma 11, Book 1, 1687
+          <span data-orig-len="9" id="22">Principia</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="49" id="23">
+        <a data-orig-len="49" id="24">
+          <span data-orig-len="4" id="25">3.12</span>
+          Taken from Lemma 11, Book 1, 1687
+          <span data-orig-len="9" id="26">Principia</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="54" id="27">
+        <a data-orig-len="54" id="28">
+          <span data-orig-len="4" id="29">3.13</span>
+          Taken from Proposition 6, Book 1, 1713
+          <span data-orig-len="9" id="30">Principia</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="64" id="31">
+        <a data-orig-len="64" id="32">
+          <span data-orig-len="4" id="33">3.14</span>
+          An enhanced version of Newton’s diagram shown in Fig. 3.13.
+        </a>
+      </div>
+      <div data-orig-len="175" id="34">
+        <a data-orig-len="175" id="35">
+          <span data-orig-len="4" id="36">3.15</span>
+          Figure in Proposition 15, Book 2, describing an equiangular spiral curve
+          <span data-orig-len="4" id="37">PQRr</span>
+          for an orbit under the action of a gravitational force centered at
+          <span data-orig-len="1" id="38">S</span>
+          and a resistance force.
+        </a>
+      </div>
+      <div data-orig-len="123" id="39">
+        <a data-orig-len="123" id="40">
+          <span data-orig-len="4" id="41">3.16</span>
+          Figure in Proposition 28, Book 3, for an ellipse
+          <span data-orig-len="5" id="42">CPADB</span>
+          representing a hypothetical orbit of the Moon around the Earth.
+        </a>
+      </div>
+      <div data-orig-len="65" id="43">
+        <a data-orig-len="65" id="44">
+          <span data-orig-len="3" id="45">5.1</span>
+          Log mean distances versus log periodic times for the planets.
+        </a>
+      </div>
+      <div data-orig-len="124" id="46">
+        <a data-orig-len="124" id="47">
+          <span data-orig-len="3" id="48">7.1</span>
+          Refraction at the surface
+          <span data-orig-len="2" id="49">EG</span>
+          decomposes a ray of sunlight
+          <span data-orig-len="2" id="50">OF</span>
+          into rays of different degrees of refrangibility and color.
+        </a>
+      </div>
+      <div data-orig-len="56" id="51">
+        <a data-orig-len="56" id="52">
+          <span data-orig-len="3" id="53">7.2</span>
+          Newton’s dispersion model from his
+          <span data-orig-len="16" id="54">Optical Lectures</span>
+          .
+        </a>
+      </div>
+      <div data-orig-len="94" id="55">
+        <a data-orig-len="94" id="56">
+          <span data-orig-len="3" id="57">7.3</span>
+          Newton’s derivation of Snell’s law of refraction in the
+          <span data-orig-len="9" id="58">Principia</span>
+          , Book 1, Proposition 94.
+        </a>
+      </div>
+    </div>
+  </body>
+</xml>
+```
+
+Translated text:
+... 7 《自然哲学的数学原理》。
+
+3.9 三角形SAB与三角形SBc具有相等的底边AB = Bc和共同的斜高。三角形SBC与三角形SBc具有共同的底边SB和相等的斜高。
+
+3.10 取自1687年《原理》第一卷命题6。
+
+3.11 取自1687年《原理》第一卷引理11。
+
+3.12 取自1687年《原理》第一卷引理11。
+
+3.13 取自1713年《原理》第一卷命题6。
+
+3.14 图3.13所示牛顿图表的增强版本。
+
+3.15 第二卷命题15中的图，描述了在指向S的引力与阻力作用下，轨道上的等角螺线曲线PQRr。
+
+3.16 第三卷命题28中的图，表示月球绕地球运行假设轨道的椭圆CPADB。
+
+5.1 行星的对数平均距离与对数周期时间的关系。
+
+7.1 在表面EG处的折射将太阳光线OF分解为不同折射程度和颜色的光线。
+
+7.2 牛顿在其《光学讲义》中的色散模型。
+
+7.3 牛顿在《原理》第一卷命题94中对斯涅尔折射定律的推导。

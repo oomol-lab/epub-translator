@@ -26,13 +26,13 @@ XML template:
 ```xml
 <a id="1">
   <span id="2">4</span>
-  The methodology of the
-  <span id="3">Principia</span>
+  The methodology of
+  <span id="3">Robotics</span>
 </a>
 ```
 
-Source: "4 The methodology of the Principia"
-Translated: "4 《自然哲学的数学原理》的方法论"
+Source: "4 The methodology of Robotics"
+Translated: "4 机器人学的方法论"
 
 ANALYSIS:
 - <span id="3"> has NO text after </span> (the </a> comes immediately)
@@ -42,17 +42,17 @@ CORRECT output:
 ```xml
 <a id="1">
   <span id="2">4</span>
-  《
-  <span id="3">自然哲学的数学原理》的方法论</span>
+
+  <span id="3">机器人学的方法论</span>
 </a>
 ```
 
 WRONG outputs:
-❌ <a id="1"><span id="2">4</span> 《自然哲学的数学原理》的方法论</a>
+❌ <a id="1"><span id="2">4</span> 机器人学的方法论</a>
    (Missing id="3" completely!)
 
-❌ <a id="1"><span id="2">4</span> 《<span id="3">自然哲学的数学原理</span>》的方法论</a>
-   (Added tail "》的方法论" to id="3", but source has no tail!)
+❌ <a id="1"><span id="2">4</span> <span id="3">机器人学</span>的方法论</a>
+   (Added tail "的方法论" to id="3", but source has no tail!)
 
 ---
 

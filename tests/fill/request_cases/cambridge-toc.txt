@@ -1,3 +1,68 @@
+Source text:
+CONTENTS
+
+List of figures
+
+List of contributors
+
+Preface
+
+Introduction
+
+I. Bernard Cohen and George E. Smith
+
+1 Newton's philosophical analysis of space and time
+
+Robert Disalle
+
+2 Newton's concepts of force and mass, with notes on the Laws of Motion
+
+I. Bernard Cohen
+
+3 Curvature in Newton's dynamics
+
+J. Bruce Brackenridge and Michael Nauenberg
+
+4 The methodology of the Principia
+
+George E. Smith
+
+5 Newton's argument for universal gravitation
+
+William Harper
+
+6 Newton and celestial mechanics
+
+Curtis Wilson
+
+7 Newton's optics and atomism
+
+Alan E. Shapiro
+
+8 Newton's metaphysics
+
+Howard Stein
+
+9 Analysis and synthesis in Newton's mathematical work
+
+Niccolò Guicciardini
+
+10 Newton, active powers, and the mechanical philosophy
+
+Alan Gabbey
+
+11 The background to Newton's chymistry
+
+William Newman
+
+12 Newton's alchemy
+
+Karin Figala
+
+13 Newton on prophecy and the Apocalypse
+
+XML template:
+```XML
 <xml>
   <body data-orig-len="820" id="0">
     <div data-orig-len="820" id="1">
@@ -22,21 +87,21 @@
       <div data-orig-len="65" id="13">
         <a data-orig-len="51" id="14">
           <span data-orig-len="1" id="15">1</span>
-          Newton’s philosophical analysis of space and time
+          Newton's philosophical analysis of space and time
         </a>
         <div data-orig-len="14" id="16">Robert Disalle</div>
       </div>
       <div data-orig-len="87" id="17">
         <a data-orig-len="71" id="18">
           <span data-orig-len="1" id="19">2</span>
-          Newton’s concepts of force and mass, with notes on the Laws of Motion
+          Newton's concepts of force and mass, with notes on the Laws of Motion
         </a>
         <div data-orig-len="16" id="20">I. Bernard Cohen</div>
       </div>
       <div data-orig-len="75" id="21">
         <a data-orig-len="32" id="22">
           <span data-orig-len="1" id="23">3</span>
-          Curvature in Newton’s dynamics
+          Curvature in Newton's dynamics
         </a>
         <div data-orig-len="43" id="24">
           J. Bruce Brackenridge and Michael Nauenberg
@@ -53,7 +118,7 @@
       <div data-orig-len="59" id="30">
         <a data-orig-len="45" id="31">
           <span data-orig-len="1" id="32">5</span>
-          Newton’s argument for universal gravitation
+          Newton's argument for universal gravitation
         </a>
         <div data-orig-len="14" id="33">William Harper</div>
       </div>
@@ -67,21 +132,21 @@
       <div data-orig-len="44" id="38">
         <a data-orig-len="29" id="39">
           <span data-orig-len="1" id="40">7</span>
-          Newton’s optics and atomism
+          Newton's optics and atomism
         </a>
         <div data-orig-len="15" id="41">Alan E. Shapiro</div>
       </div>
       <div data-orig-len="34" id="42">
         <a data-orig-len="22" id="43">
           <span data-orig-len="1" id="44">8</span>
-          Newton’s metaphysics
+          Newton's metaphysics
         </a>
         <div data-orig-len="12" id="45">Howard Stein</div>
       </div>
       <div data-orig-len="74" id="46">
         <a data-orig-len="54" id="47">
           <span data-orig-len="1" id="48">9</span>
-          Analysis and synthesis in Newton’s mathematical work
+          Analysis and synthesis in Newton's mathematical work
         </a>
         <div data-orig-len="20" id="49">Niccolò Guicciardini</div>
       </div>
@@ -95,14 +160,14 @@
       <div data-orig-len="53" id="54">
         <a data-orig-len="39" id="55">
           <span data-orig-len="2" id="56">11</span>
-          The background to Newton’s chymistry
+          The background to Newton's chymistry
         </a>
         <div data-orig-len="14" id="57">William Newman</div>
       </div>
       <div data-orig-len="31" id="58">
         <a data-orig-len="19" id="59">
           <span data-orig-len="2" id="60">12</span>
-          Newton’s alchemy
+          Newton's alchemy
         </a>
         <div data-orig-len="12" id="61">Karin Figala</div>
       </div>
@@ -117,6 +182,7 @@
 </xml>
 ```
 
+Translated text:
 目录
 
 插图列表

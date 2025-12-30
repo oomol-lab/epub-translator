@@ -63,7 +63,7 @@ class ProgressiveLockingValidator:
         unlocked_errors = self._filter_unlocked_errors(all_errors)
 
         # 7. 生成错误消息
-        error_message = self._format_errors(unlocked_errors, errors_limit)
+        error_message = self._format_errors(unlocked_errors, errors_limit, template_ele)
 
         # 8. 检查是否完成
         total_nodes = self._count_nodes_with_id(template_ele)
@@ -176,7 +176,9 @@ class ProgressiveLockingValidator:
 
         return unlocked_errors
 
-    def _format_errors(self, errors: dict[tuple[int, ...], list[str]], limit: int) -> str | None:
+    def _format_errors(
+        self, errors: dict[tuple[int, ...], list[str]], limit: int, template_ele: Element
+    ) -> str | None:
         """格式化错误消息（复用现有逻辑）"""
         if not errors:
             return None
@@ -185,14 +187,39 @@ class ProgressiveLockingValidator:
         context = _ValidationContext()
         context._errors = errors
 
-        # 需要构造 _tag_text_dict
-        # 这里简化处理，只包含错误路径中的节点
+        # 构造 _tag_text_dict，从 template_ele 中提取真实的标签信息
+        id_to_elem: dict[int, Element] = {}
+        for elem in template_ele.iter():
+            elem_id_str = elem.get(ID_KEY)
+            if elem_id_str is not None:
+                elem_id = int(elem_id_str)
+                id_to_elem[elem_id] = elem
+
+        # 填充 _tag_text_dict
         for path in errors.keys():
             for node_id in path:
                 if node_id not in context._tag_text_dict:
-                    context._tag_text_dict[node_id] = f'<tag id="{node_id}">'
+                    elem = id_to_elem.get(node_id)
+                    if elem is not None:
+                        context._tag_text_dict[node_id] = self._str_tag(elem)
+                    else:
+                        context._tag_text_dict[node_id] = f'<tag id="{node_id}">'
 
         return context.errors(limit=limit)
+
+    def _str_tag(self, ele: Element) -> str:
+        """生成标签的字符串表示（与 format.py 中的逻辑一致）"""
+        ele_id = ele.get(ID_KEY)
+        content: str
+        if ele_id is not None:
+            content = f'<{ele.tag} id="{ele_id}"'
+        else:
+            content = f"<{ele.tag}"
+        if len(ele) > 0:
+            content += f"> ... </{ele.tag}>"
+        else:
+            content += " />"
+        return content
 
     def _count_nodes_with_id(self, root: Element) -> int:
         """统计带有 id 属性的节点数量"""
