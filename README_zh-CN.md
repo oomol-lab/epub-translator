@@ -1,11 +1,11 @@
 <div align=center>
   <h1>EPUB Translator</h1>
   <p>
-    <a href="https://github.com/oomol-lab/epub-translator/actions/workflows/merge-build.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/oomol-lab/epub-translator/merge-build.yml" alt"ci" /></a>
+    <a href="https://github.com/oomol-lab/epub-translator/actions/workflows/merge-build.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/oomol-lab/epub-translator/merge-build.yml" alt="ci" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/badge/pip_install-epub--translator-blue" alt="pip install epub-translator" /></a>
-    <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt"pypi epub-translator" /></a>
+    <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
-    <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt"license" /></a>
+    <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
   </p>
   <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p><a href="./README.md">English</a> | 中文</p>
@@ -46,7 +46,7 @@ pip install epub-translator
 
 ```python
 from pathlib import Path
-from epub_translator import LLM, translate
+from epub_translator import LLM, translate, language
 
 # 使用 API 凭证初始化 LLM
 llm = LLM(
@@ -56,12 +56,12 @@ llm = LLM(
     token_encoding="o200k_base",
 )
 
-# 翻译 EPUB 文件
+# 使用语言常量翻译 EPUB 文件
 translate(
     llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
-    target_language="Chinese",
+    target_language=language.CHINESE,
 )
 ```
 
@@ -124,6 +124,30 @@ translate(
     max_retries: int = 5,              # 翻译失败的最大重试次数
     max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
     on_progress: Callable[[float], None] | None = None,  # 进度回调函数 (0.0-1.0)
+)
+```
+
+#### 语言常量
+
+EPUB Translator 提供了预定义的语言常量供用户使用，您可以使用这些常量而不是直接编写语言名称字符串：
+
+```python
+from epub_translator import language
+
+# 使用示例：
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+)
+
+# 您也可以使用自定义的语言字符串：
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language="Icelandic",  # 对于不在常量列表中的语言
 )
 ```
 

@@ -1,11 +1,11 @@
 <div align=center>
   <h1>EPUB Translator</h1>
   <p>
-    <a href="https://github.com/oomol-lab/epub-translator/actions/workflows/merge-build.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/oomol-lab/epub-translator/merge-build.yml" alt"ci" /></a>
+    <a href="https://github.com/oomol-lab/epub-translator/actions/workflows/merge-build.yml" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/oomol-lab/epub-translator/merge-build.yml" alt="ci" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/badge/pip_install-epub--translator-blue" alt="pip install epub-translator" /></a>
-    <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt"pypi epub-translator" /></a>
+    <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
-    <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt"license" /></a>
+    <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
   </p>
   <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p>English | <a href="./README_zh-CN.md">中文</a></p>
@@ -46,7 +46,7 @@ The easiest way to use EPUB Translator is through OOMOL Studio with a visual int
 
 ```python
 from pathlib import Path
-from epub_translator import LLM, translate
+from epub_translator import LLM, translate, language
 
 # Initialize LLM with your API credentials
 llm = LLM(
@@ -56,12 +56,12 @@ llm = LLM(
     token_encoding="o200k_base",
 )
 
-# Translate EPUB file
+# Translate EPUB file using language constants
 translate(
     llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
-    target_language="English",
+    target_language=language.ENGLISH,
 )
 ```
 
@@ -124,6 +124,30 @@ translate(
     max_retries: int = 5,              # Maximum retries for failed translations
     max_group_tokens: int = 1200,      # Maximum tokens per translation group
     on_progress: Callable[[float], None] | None = None,  # Progress callback (0.0-1.0)
+)
+```
+
+#### Language Constants
+
+EPUB Translator provides predefined language constants for convenience. You can use these constants instead of writing language names as strings:
+
+```python
+from epub_translator import language
+
+# Usage example:
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.ENGLISH,
+)
+
+# You can also use custom language strings:
+translate(
+    llm=llm,
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language="Icelandic",  # For languages not in the constants
 )
 ```
 
