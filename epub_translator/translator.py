@@ -71,7 +71,7 @@ def translate(
             placeholder.recover()
             deduplicate_ids_in_element(xml.element)
             with zip.replace(chapter_path) as target_file:
-                xml.save(target_file, is_html_like=True)
+                xml.save(target_file)
 
             # Update progress after each chapter
             processed_chapters += 1
@@ -198,7 +198,10 @@ def _count_chapters(zip: Zip) -> int:
 def _search_chapter_items(zip: Zip):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
-            xml = XMLLikeNode(chapter_file)
+            xml = XMLLikeNode(
+                file=chapter_file,
+                is_html_like=chapter_path.suffix.lower() in (".html", ".htm"),
+            )
         body_element = find_first(xml.element, "body")
         if body_element is not None:
             placeholder = Placeholder(body_element)

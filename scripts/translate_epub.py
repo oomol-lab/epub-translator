@@ -19,7 +19,7 @@ def main() -> None:
     llm = LLM(
         **config,
         log_dir_path=temp_path / "logs",
-        cache_path=temp_path / "cache",
+        cache_path=Path(__file__).parent / ".." / "cache",
     )
     with tqdm(total=100, desc="Translating", unit="%", bar_format="{l_bar}{bar}| {n:.1f}/{total:.0f}%") as pbar:
         last_progress = 0.0

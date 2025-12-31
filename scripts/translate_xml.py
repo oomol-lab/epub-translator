@@ -3,6 +3,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 
+from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
@@ -28,7 +29,7 @@ def main() -> None:
     llm = LLM(
         **config,
         log_dir_path=temp_path / "logs",
-        cache_path=temp_path / "cache",
+        cache_path=Path(__file__).parent / ".." / "cache",
     )
     print("✓ Created LLM instance")
 

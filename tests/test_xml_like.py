@@ -214,6 +214,83 @@ class TestXMLLikeNode(unittest.TestCase):
         # 验证保留了空白行
         self.assertTrue("\n\n" in header_part)
 
+    def test_namespace_prefix_restoration(self):
+        """测试命名空间前缀恢复 - 修复 namespace prefix 丢失的核心问题"""
+        original_content = b"""<?xml version="1.0" encoding="utf-8"?>
+<package version="3.0" unique-identifier="uid" xml:lang="en" xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata>
+    <dc:identifier id="uid">test-book-id</dc:identifier>
+    <dc:language>en</dc:language>
+    <dc:title>Test Book Title</dc:title>
+    <dc:creator>Test Author</dc:creator>
+    <meta property="dcterms:modified">2025-12-31T00:00:00Z</meta>
+  </metadata>
+</package>"""
+
+        # 读取并解析
+        input_file = io.BytesIO(original_content)
+        node = XMLLikeNode(input_file)
+
+        # 验证内部标签已被清理（不包含命名空间 URI）
+        for elem in node.element.iter():
+            self.assertNotIn("{", elem.tag, f"Tag should be cleaned: {elem.tag}")
+
+        # 保存
+        output_file = io.BytesIO()
+        node.save(output_file)
+        result = output_file.getvalue().decode("utf-8")
+
+        # 核心验证：namespace prefix 必须恢复
+        self.assertIn('xmlns:dc="http://purl.org/dc/elements/1.1/"', result, "DC namespace declaration missing")
+        self.assertIn("<dc:identifier", result, "dc:identifier prefix missing")
+        self.assertIn("</dc:identifier>", result, "dc:identifier closing tag prefix missing")
+        self.assertIn("<dc:language>", result, "dc:language prefix missing")
+        self.assertIn("</dc:language>", result, "dc:language closing tag prefix missing")
+        self.assertIn("<dc:title>", result, "dc:title prefix missing")
+        self.assertIn("</dc:title>", result, "dc:title closing tag prefix missing")
+        self.assertIn("<dc:creator>", result, "dc:creator prefix missing")
+        self.assertIn("</dc:creator>", result, "dc:creator closing tag prefix missing")
+
+        # 验证 xml:lang 属性（保留的 XML namespace）
+        self.assertIn('xml:lang="en"', result, "xml:lang attribute missing")
+
+        # 验证内容完整性
+        self.assertIn("test-book-id", result)
+        self.assertIn("Test Book Title", result)
+        self.assertIn("Test Author", result)
+
+    def test_mathml_namespace_prefix_restoration(self):
+        """测试 MathML 命名空间前缀恢复"""
+        original_content = b"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:m="http://www.w3.org/1998/Math/MathML">
+<head><title>Math Test</title></head>
+<body>
+  <p>Inline math: <m:math display="inline"><m:mrow><m:mi>x</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow></m:math></p>
+</body>
+</html>"""
+
+        # 读取并解析
+        input_file = io.BytesIO(original_content)
+        node = XMLLikeNode(input_file)
+
+        # 保存
+        output_file = io.BytesIO()
+        node.save(output_file)
+        result = output_file.getvalue().decode("utf-8")
+
+        # 验证 MathML namespace 声明
+        self.assertIn('xmlns:m="http://www.w3.org/1998/Math/MathML"', result, "MathML namespace declaration missing")
+
+        # 验证 MathML 元素的 prefix 恢复
+        self.assertIn("<m:math", result, "m:math prefix missing")
+        self.assertIn("</m:math>", result, "m:math closing tag prefix missing")
+        self.assertIn("<m:mrow>", result, "m:mrow prefix missing")
+        self.assertIn("</m:mrow>", result, "m:mrow closing tag prefix missing")
+        self.assertIn("<m:mi>", result, "m:mi prefix missing")
+        self.assertIn("<m:mo>", result, "m:mo prefix missing")
+        self.assertIn("<m:mn>", result, "m:mn prefix missing")
+
 
 if __name__ == "__main__":
     unittest.main()
