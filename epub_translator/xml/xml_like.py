@@ -15,6 +15,7 @@ _COMMON_NAMESPACES = {
     "http://www.idpf.org/2007/opf": "opf",
     "http://www.w3.org/2000/svg": "svg",
     "urn:oasis:names:tc:opendocument:xmlns:container": "container",
+    "http://www.w3.org/XML/1998/namespace": "xml",  # Reserved XML namespace
 }
 
 _ROOT_NAMESPACES = {
@@ -28,8 +29,8 @@ _ENCODING_PATTERN = re.compile(r'encoding\s*=\s*["\']([^"\']+)["\']', re.IGNOREC
 _FIRST_ELEMENT_PATTERN = re.compile(r"<(?![?!])[a-zA-Z]")
 _NAMESPACE_IN_TAG = re.compile(r"\{([^}]+)\}")
 
-# HTML 规定了一系列自闭标签，这些标签需要改成非自闭的，因为 EPub 格式不支持
-# https://www.tutorialspoint.com/which-html-tags-are-self-closing
+# Some non-standard EPUB generators use HTML-style tags without self-closing syntax
+# We need to convert them to XML-compatible format before parsing
 _EMPTY_TAGS = (
     "br",
     "hr",
@@ -40,15 +41,29 @@ _EMPTY_TAGS = (
     "area",
 )
 
-_EMPTY_TAG_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^>]*?)\s*/>")
+# For reading: match tags like <br> or <br class="x"> (but not <br/> or <body>)
+_EMPTY_TAG_OPEN_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^/>]*)>")
+
+# For saving: match self-closing tags like <br />
+_EMPTY_TAG_CLOSE_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^>]*?)\s*/>")
 
 
 class XMLLikeNode:
-    def __init__(self, file: IO[bytes]) -> None:
+    def __init__(self, file: IO[bytes], is_html_like: bool = False) -> None:
         raw_content = file.read()
         self._encoding: str = _detect_encoding(raw_content)
         content = raw_content.decode(self._encoding)
         self._header, xml_content = _extract_header(content)
+
+        # For non-standard HTML files, convert <br> to <br/> before parsing
+        self._is_html_like = is_html_like
+        if is_html_like:
+            xml_content = re.sub(
+                pattern=_EMPTY_TAG_OPEN_PATTERN,
+                repl=lambda m: f"<{m.group(1)}{m.group(2)} />",
+                string=xml_content,
+            )
+
         try:
             self.element = fromstring(xml_content)
         except Exception as error:
@@ -63,7 +78,7 @@ class XMLLikeNode:
     def namespaces(self) -> list[str]:
         return list(self._namespaces.keys())
 
-    def save(self, file: IO[bytes], is_html_like: bool = False) -> None:
+    def save(self, file: IO[bytes]) -> None:
         writer = io.TextIOWrapper(file, encoding=self._encoding, write_through=True)
         try:
             if self._header:
@@ -75,18 +90,15 @@ class XMLLikeNode:
                 tag_to_namespace=self._tag_to_namespace,
                 attr_to_namespace=self._attr_to_namespace,
             )
-            if is_html_like:
+
+            # For non-standard HTML files, convert back from <br/> to <br>
+            if self._is_html_like:
                 content = re.sub(
-                    pattern=_EMPTY_TAG_PATTERN,
+                    pattern=_EMPTY_TAG_CLOSE_PATTERN,
                     repl=lambda m: f"<{m.group(1)}{m.group(2)}>",
                     string=content,
                 )
-            else:
-                content = re.sub(
-                    pattern=_EMPTY_TAG_PATTERN,
-                    repl=lambda m: f"<{m.group(1)}{m.group(2)} />",
-                    string=content,
-                )
+
             writer.write(content)
 
         finally:
@@ -198,8 +210,14 @@ def _serialize_with_namespaces(
     tag_to_namespace: dict[str, str],
     attr_to_namespace: dict[str, str],
 ) -> str:
+    # Reserved XML namespace - never declare it explicitly
+    XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
+
     # First, add namespace declarations to root element (before serialization)
     for namespace_uri, prefix in namespaces.items():
+        # Skip the reserved xml namespace - it's implicit
+        if namespace_uri == XML_NAMESPACE_URI:
+            continue
         if namespace_uri in _ROOT_NAMESPACES:
             element.attrib["xmlns"] = namespace_uri
         else:
