@@ -87,59 +87,60 @@ def test_fill_case(llm: LLM, case_name: str, case_file: Path, max_retries: int =
 
     print(f"Total nodes: {total_nodes}")
 
-    for attempt in range(max_retries):
-        print(f"\n  Round {attempt + 1}/{max_retries}:", end=" ")
+    with llm.context() as llm_context:
+        for attempt in range(max_retries):
+            print(f"\n  Round {attempt + 1}/{max_retries}:", end=" ")
 
-        response = llm.request(input=fixed_messages + conversation_history)
+            response = llm_context.request(input=fixed_messages + conversation_history)
 
-        try:
-            validated_element = _extract_xml_element(response)
-            is_complete, error_message, newly_locked = validator.validate_with_locking(
-                template_ele=template_element,
-                validated_ele=validated_element,
-                errors_limit=10,
-            )
+            try:
+                validated_element = _extract_xml_element(response)
+                is_complete, error_message, newly_locked = validator.validate_with_locking(
+                    template_ele=template_element,
+                    validated_ele=validated_element,
+                    errors_limit=10,
+                )
 
-            locked_count = len(validator.locked_ids)
-            print(f"{locked_count}/{total_nodes} nodes locked", end="")
+                locked_count = len(validator.locked_ids)
+                print(f"{locked_count}/{total_nodes} nodes locked", end="")
 
-            if newly_locked:
-                print(f" (+{len(newly_locked)})", end="")
-            else:
-                print(" (no progress)", end="")
+                if newly_locked:
+                    print(f" (+{len(newly_locked)})", end="")
+                else:
+                    print(" (no progress)", end="")
 
-            if is_complete:
-                elapsed = time.time() - start_time
-                print(f"\n\n  ✅ CONVERGED in {attempt + 1} rounds ({elapsed:.1f}s)")
-                print(f"{'=' * 70}")
-                return True, total_nodes, attempt + 1, elapsed
+                if is_complete:
+                    elapsed = time.time() - start_time
+                    print(f"\n\n  ✅ CONVERGED in {attempt + 1} rounds ({elapsed:.1f}s)")
+                    print(f"{'=' * 70}")
+                    return True, total_nodes, attempt + 1, elapsed
 
-            print()
+                print()
 
-            # 构造下一轮错误提示
-            progress_msg = f"Progress: {locked_count} nodes locked"
-            if newly_locked:
-                progress_msg += f", {len(newly_locked)} newly locked this round"
-            full_error_message = f"{progress_msg}\n\n{error_message}"
+                # 构造下一轮错误提示
+                progress_msg = f"Progress: {locked_count} nodes locked"
+                if newly_locked:
+                    progress_msg += f", {len(newly_locked)} newly locked this round"
+                full_error_message = f"{progress_msg}\n\n{error_message}"
 
-            conversation_history = [
-                Message(role=MessageRole.ASSISTANT, message=response),
-                Message(role=MessageRole.USER, message=full_error_message),
-            ]
+                conversation_history = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=full_error_message),
+                ]
 
-        except ValidationError as error:
-            print("Validation error")
-            conversation_history = [
-                Message(role=MessageRole.ASSISTANT, message=response),
-                Message(role=MessageRole.USER, message=str(error)),
-            ]
+            except ValidationError as error:
+                print("Validation error")
+                conversation_history = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=str(error)),
+                ]
 
-    # 达到最大重试次数仍未收敛
-    elapsed = time.time() - start_time
-    print(f"\n\n  ❌ FAILED to converge after {max_retries} rounds ({elapsed:.1f}s)")
-    print(f"  Final progress: {len(validator.locked_ids)}/{total_nodes} nodes locked")
-    print(f"{'=' * 70}")
-    return False, total_nodes, max_retries, elapsed
+        # 达到最大重试次数仍未收敛
+        elapsed = time.time() - start_time
+        print(f"\n\n  ❌ FAILED to converge after {max_retries} rounds ({elapsed:.1f}s)")
+        print(f"  Final progress: {len(validator.locked_ids)}/{total_nodes} nodes locked")
+        print(f"{'=' * 70}")
+        return False, total_nodes, max_retries, elapsed
 
 
 def main():

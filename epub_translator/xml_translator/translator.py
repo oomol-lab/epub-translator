@@ -126,53 +126,54 @@ class XMLTranslator:
         conversation_history: list[Message] = []
         latest_error: ValidationError | None = None
 
-        for _ in range(self._max_retries):
-            # Request LLM response
-            response = self._llm.request(
-                input=fixed_messages + conversation_history,
-            )
-
-            try:
-                # Extract XML from response
-                validated_element = _extract_xml_element(response)
-
-                # Validate with progressive locking
-                is_complete, error_message, newly_locked = validator.validate_with_locking(
-                    template_ele=fill.request_element,
-                    validated_ele=validated_element,
-                    errors_limit=self._max_fill_displaying_errors,
+        with self._llm.context() as llm_context:
+            for _ in range(self._max_retries):
+                # Request LLM response
+                response = llm_context.request(
+                    input=fixed_messages + conversation_history,
                 )
 
-                if is_complete:
-                    # All nodes locked, fill successful
-                    fill._fill_submitted_texts(  # pylint: disable=protected-access
-                        generated_ids_stack=[],
-                        element=validated_element,
+                try:
+                    # Extract XML from response
+                    validated_element = _extract_xml_element(response)
+
+                    # Validate with progressive locking
+                    is_complete, error_message, newly_locked = validator.validate_with_locking(
+                        template_ele=fill.request_element,
+                        validated_ele=validated_element,
+                        errors_limit=self._max_fill_displaying_errors,
                     )
-                    return validated_element
 
-                # Not complete yet, construct error message with progress info
-                progress_msg = f"Progress: {len(validator.locked_ids)} nodes locked"
-                if newly_locked:
-                    progress_msg += f", {len(newly_locked)} newly locked this round"
+                    if is_complete:
+                        # All nodes locked, fill successful
+                        fill._fill_submitted_texts(  # pylint: disable=protected-access
+                            generated_ids_stack=[],
+                            element=validated_element,
+                        )
+                        return validated_element
 
-                full_error_message = f"{progress_msg}\n\n{error_message}"
+                    # Not complete yet, construct error message with progress info
+                    progress_msg = f"Progress: {len(validator.locked_ids)} nodes locked"
+                    if newly_locked:
+                        progress_msg += f", {len(newly_locked)} newly locked this round"
 
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=full_error_message),
-                ]
+                    full_error_message = f"{progress_msg}\n\n{error_message}"
 
-            except ValidationError as error:
-                # XML extraction or basic validation failed
-                latest_error = error
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=str(error)),
-                ]
+                    conversation_history = [
+                        Message(role=MessageRole.ASSISTANT, message=response),
+                        Message(role=MessageRole.USER, message=full_error_message),
+                    ]
 
-        message = f"Failed to get valid XML structure after {self._max_retries} attempts"
-        if latest_error is None:
-            raise ValueError(message)
-        else:
-            raise ValueError(message) from latest_error
+                except ValidationError as error:
+                    # XML extraction or basic validation failed
+                    latest_error = error
+                    conversation_history = [
+                        Message(role=MessageRole.ASSISTANT, message=response),
+                        Message(role=MessageRole.USER, message=str(error)),
+                    ]
+
+            message = f"Failed to get valid XML structure after {self._max_retries} attempts"
+            if latest_error is None:
+                raise ValueError(message)
+            else:
+                raise ValueError(message) from latest_error
