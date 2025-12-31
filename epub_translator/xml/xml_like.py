@@ -6,6 +6,8 @@ from xml.etree.ElementTree import Element, fromstring, tostring
 
 from .xml import iter_with_stack
 
+_XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
+
 _COMMON_NAMESPACES = {
     "http://www.w3.org/1999/xhtml": "xhtml",
     "http://www.idpf.org/2007/ops": "epub",
@@ -51,9 +53,12 @@ _EMPTY_TAG_CLOSE_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^>]
 class XMLLikeNode:
     def __init__(self, file: IO[bytes], is_html_like: bool = False) -> None:
         raw_content = file.read()
-        self._encoding: str = _detect_encoding(raw_content)
+        self._encoding: str = self._detect_encoding(raw_content)
         content = raw_content.decode(self._encoding)
-        self._header, xml_content = _extract_header(content)
+        self._header, xml_content = self._extract_header(content)
+        self._namespaces: dict[str, str] = {}
+        self._tag_to_namespace: dict[str, str] = {}
+        self._attr_to_namespace: dict[str, str] = {}
 
         # For non-standard HTML files, convert <br> to <br/> before parsing
         self._is_html_like = is_html_like
@@ -65,10 +70,11 @@ class XMLLikeNode:
             )
 
         try:
-            self.element = fromstring(xml_content)
+            self.element = self._extract_and_clean_namespaces(
+                element=fromstring(xml_content),
+            )
         except Exception as error:
             raise ValueError("Failed to parse XML-like content") from error
-        self._namespaces, self._tag_to_namespace, self._attr_to_namespace = _extract_and_clean_namespaces(self.element)
 
     @property
     def encoding(self) -> str:
@@ -84,12 +90,7 @@ class XMLLikeNode:
             if self._header:
                 writer.write(self._header)
 
-            content = _serialize_with_namespaces(
-                element=self.element,
-                namespaces=self._namespaces,
-                tag_to_namespace=self._tag_to_namespace,
-                attr_to_namespace=self._attr_to_namespace,
-            )
+            content = self._serialize_with_namespaces(self.element)
 
             # For non-standard HTML files, convert back from <br/> to <br>
             if self._is_html_like:
@@ -104,144 +105,127 @@ class XMLLikeNode:
         finally:
             writer.detach()
 
+    def _detect_encoding(self, raw_content: bytes) -> str:
+        if raw_content.startswith(b"\xef\xbb\xbf"):
+            return "utf-8-sig"
+        elif raw_content.startswith(b"\xff\xfe"):
+            return "utf-16-le"
+        elif raw_content.startswith(b"\xfe\xff"):
+            return "utf-16-be"
 
-def _detect_encoding(raw_content: bytes) -> str:
-    if raw_content.startswith(b"\xef\xbb\xbf"):
-        return "utf-8-sig"
-    elif raw_content.startswith(b"\xff\xfe"):
-        return "utf-16-le"
-    elif raw_content.startswith(b"\xfe\xff"):
-        return "utf-16-be"
+        # 尝试从 XML 声明中提取编码：只读取前 1024 字节来查找 XML 声明
+        header_bytes = raw_content[:1024]
+        for try_encoding in ("utf-8", "utf-16-le", "utf-16-be", "iso-8859-1"):
+            try:
+                header_str = header_bytes.decode(try_encoding)
+                match = _ENCODING_PATTERN.search(header_str)
+                if match:
+                    declared_encoding = match.group(1).lower()
+                    try:
+                        raw_content.decode(declared_encoding)
+                        return declared_encoding
+                    except (LookupError, UnicodeDecodeError):
+                        pass
+            except UnicodeDecodeError:
+                continue
 
-    # 尝试从 XML 声明中提取编码：只读取前 1024 字节来查找 XML 声明
-    header_bytes = raw_content[:1024]
-    for try_encoding in ("utf-8", "utf-16-le", "utf-16-be", "iso-8859-1"):
         try:
-            header_str = header_bytes.decode(try_encoding)
-            match = _ENCODING_PATTERN.search(header_str)
-            if match:
-                declared_encoding = match.group(1).lower()
-                try:
-                    raw_content.decode(declared_encoding)
-                    return declared_encoding
-                except (LookupError, UnicodeDecodeError):
-                    pass
+            raw_content.decode("utf-8")
+            return "utf-8"
         except UnicodeDecodeError:
-            continue
+            pass
+        return "iso-8859-1"
 
-    try:
-        raw_content.decode("utf-8")
-        return "utf-8"
-    except UnicodeDecodeError:
-        pass
-    return "iso-8859-1"
-
-
-def _extract_header(content: str) -> tuple[str, str]:
-    match = _FIRST_ELEMENT_PATTERN.search(content)
-    if match:
-        split_pos = match.start()
-        header = content[:split_pos]
-        xml_content = content[split_pos:]
-        return header, xml_content
-    return "", content
-
-
-def _extract_and_clean_namespaces(element: Element):
-    namespaces: dict[str, str] = {}
-    tag_to_namespace: dict[str, str] = {}
-    attr_to_namespace: dict[str, str] = {}
-
-    for _, elem in iter_with_stack(element):
-        match = _NAMESPACE_IN_TAG.match(elem.tag)
+    def _extract_header(self, content: str) -> tuple[str, str]:
+        match = _FIRST_ELEMENT_PATTERN.search(content)
         if match:
-            namespace_uri = match.group(1)
-            if namespace_uri not in namespaces:
-                prefix = _COMMON_NAMESPACES.get(namespace_uri, f"ns{len(namespaces)}")
-                namespaces[namespace_uri] = prefix
+            split_pos = match.start()
+            header = content[:split_pos]
+            xml_content = content[split_pos:]
+            return header, xml_content
+        return "", content
 
-            tag_name = elem.tag[len(match.group(0)) :]
-
-            # Record tag -> namespace mapping (warn if conflict)
-            if tag_name in tag_to_namespace and tag_to_namespace[tag_name] != namespace_uri:
-                warnings.warn(
-                    f"Tag '{tag_name}' has multiple namespaces: "
-                    f"{tag_to_namespace[tag_name]} and {namespace_uri}. "
-                    f"Using the first one.",
-                    stacklevel=2,
-                )
-            else:
-                tag_to_namespace[tag_name] = namespace_uri
-
-            # Clean: remove namespace URI completely
-            elem.tag = tag_name
-
-        for attr_key in list(elem.attrib.keys()):
-            match = _NAMESPACE_IN_TAG.match(attr_key)
+    def _extract_and_clean_namespaces(self, element: Element) -> Element:
+        for _, elem in iter_with_stack(element):
+            match = _NAMESPACE_IN_TAG.match(elem.tag)
             if match:
                 namespace_uri = match.group(1)
-                if namespace_uri not in namespaces:
-                    prefix = _COMMON_NAMESPACES.get(namespace_uri, f"ns{len(namespaces)}")
-                    namespaces[namespace_uri] = prefix
+                if namespace_uri not in self._namespaces:
+                    prefix = _COMMON_NAMESPACES.get(namespace_uri, f"ns{len(self._namespaces)}")
+                    self._namespaces[namespace_uri] = prefix
 
-                attr_name = attr_key[len(match.group(0)) :]
-                attr_value = elem.attrib.pop(attr_key)
+                tag_name = elem.tag[len(match.group(0)) :]
 
-                # Record attr -> namespace mapping (warn if conflict)
-                if attr_name in attr_to_namespace and attr_to_namespace[attr_name] != namespace_uri:
+                # Record tag -> namespace mapping (warn if conflict)
+                if tag_name in self._tag_to_namespace and self._tag_to_namespace[tag_name] != namespace_uri:
                     warnings.warn(
-                        f"Attribute '{attr_name}' has multiple namespaces: "
-                        f"{attr_to_namespace[attr_name]} and {namespace_uri}. "
+                        f"Tag '{tag_name}' has multiple namespaces: "
+                        f"{self._tag_to_namespace[tag_name]} and {namespace_uri}. "
                         f"Using the first one.",
                         stacklevel=2,
                     )
                 else:
-                    attr_to_namespace[attr_name] = namespace_uri
+                    self._tag_to_namespace[tag_name] = namespace_uri
 
                 # Clean: remove namespace URI completely
-                elem.attrib[attr_name] = attr_value
+                elem.tag = tag_name
 
-    return namespaces, tag_to_namespace, attr_to_namespace
+            for attr_key in list(elem.attrib.keys()):
+                match = _NAMESPACE_IN_TAG.match(attr_key)
+                if match:
+                    namespace_uri = match.group(1)
+                    if namespace_uri not in self._namespaces:
+                        prefix = _COMMON_NAMESPACES.get(namespace_uri, f"ns{len(self._namespaces)}")
+                        self._namespaces[namespace_uri] = prefix
 
+                    attr_name = attr_key[len(match.group(0)) :]
+                    attr_value = elem.attrib.pop(attr_key)
 
-def _serialize_with_namespaces(
-    element: Element,
-    namespaces: dict[str, str],
-    tag_to_namespace: dict[str, str],
-    attr_to_namespace: dict[str, str],
-) -> str:
-    # Reserved XML namespace - never declare it explicitly
-    XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
+                    # Record attr -> namespace mapping (warn if conflict)
+                    if attr_name in self._attr_to_namespace and self._attr_to_namespace[attr_name] != namespace_uri:
+                        warnings.warn(
+                            f"Attribute '{attr_name}' has multiple namespaces: "
+                            f"{self._attr_to_namespace[attr_name]} and {namespace_uri}. "
+                            f"Using the first one.",
+                            stacklevel=2,
+                        )
+                    else:
+                        self._attr_to_namespace[attr_name] = namespace_uri
 
-    # First, add namespace declarations to root element (before serialization)
-    for namespace_uri, prefix in namespaces.items():
-        # Skip the reserved xml namespace - it's implicit
-        if namespace_uri == XML_NAMESPACE_URI:
-            continue
-        if namespace_uri in _ROOT_NAMESPACES:
-            element.attrib["xmlns"] = namespace_uri
-        else:
-            element.attrib[f"xmlns:{prefix}"] = namespace_uri
+                    # Clean: remove namespace URI completely
+                    elem.attrib[attr_name] = attr_value
+        return element
 
-    # Serialize the element tree as-is (tags are simple names without prefixes)
-    xml_string = tostring(element, encoding="unicode")
+    def _serialize_with_namespaces(self, element: Element) -> str:
+        # First, add namespace declarations to root element (before serialization)
+        for namespace_uri, prefix in self._namespaces.items():
+            # Skip the reserved xml namespace - it's implicit
+            if namespace_uri == _XML_NAMESPACE_URI:
+                continue
+            if namespace_uri in _ROOT_NAMESPACES:
+                element.attrib["xmlns"] = namespace_uri
+            else:
+                element.attrib[f"xmlns:{prefix}"] = namespace_uri
 
-    # Now restore namespace prefixes in the serialized string
-    # For each tag that should have a namespace prefix, wrap it with the prefix
-    for tag_name, namespace_uri in tag_to_namespace.items():
-        if namespace_uri not in _ROOT_NAMESPACES:
-            # Get the prefix for this namespace
-            prefix = namespaces[namespace_uri]
-            # Replace opening and closing tags
-            xml_string = xml_string.replace(f"<{tag_name} ", f"<{prefix}:{tag_name} ")
-            xml_string = xml_string.replace(f"<{tag_name}>", f"<{prefix}:{tag_name}>")
-            xml_string = xml_string.replace(f"</{tag_name}>", f"</{prefix}:{tag_name}>")
-            xml_string = xml_string.replace(f"<{tag_name}/>", f"<{prefix}:{tag_name}/>")
+        # Serialize the element tree as-is (tags are simple names without prefixes)
+        xml_string = tostring(element, encoding="unicode")
 
-    # Similarly for attributes (though less common in EPUB)
-    for attr_name, namespace_uri in attr_to_namespace.items():
-        if namespace_uri not in _ROOT_NAMESPACES:
-            prefix = namespaces[namespace_uri]
-            xml_string = xml_string.replace(f' {attr_name}="', f' {prefix}:{attr_name}="')
+        # Now restore namespace prefixes in the serialized string
+        # For each tag that should have a namespace prefix, wrap it with the prefix
+        for tag_name, namespace_uri in self._tag_to_namespace.items():
+            if namespace_uri not in _ROOT_NAMESPACES:
+                # Get the prefix for this namespace
+                prefix = self._namespaces[namespace_uri]
+                # Replace opening and closing tags
+                xml_string = xml_string.replace(f"<{tag_name} ", f"<{prefix}:{tag_name} ")
+                xml_string = xml_string.replace(f"<{tag_name}>", f"<{prefix}:{tag_name}>")
+                xml_string = xml_string.replace(f"</{tag_name}>", f"</{prefix}:{tag_name}>")
+                xml_string = xml_string.replace(f"<{tag_name}/>", f"<{prefix}:{tag_name}/>")
 
-    return xml_string
+        # Similarly for attributes (though less common in EPUB)
+        for attr_name, namespace_uri in self._attr_to_namespace.items():
+            if namespace_uri not in _ROOT_NAMESPACES:
+                prefix = self._namespaces[namespace_uri]
+                xml_string = xml_string.replace(f' {attr_name}="', f' {prefix}:{attr_name}="')
+
+        return xml_string
