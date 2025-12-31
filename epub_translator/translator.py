@@ -200,7 +200,7 @@ def _search_chapter_items(zip: Zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(
                 file=chapter_file,
-                is_html_like=str(chapter_path.name).lower().endswith(".html"),
+                is_html_like=chapter_path.suffix.lower() in (".html", ".htm"),
             )
         body_element = find_first(xml.element, "body")
         if body_element is not None:
