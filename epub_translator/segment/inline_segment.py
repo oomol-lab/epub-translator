@@ -99,11 +99,11 @@ class InlineSegment:
         self._child_tag2count: dict[str, int] = {}
 
         next_temp_id: int = 0
-        terms = nest((child.parent_stack[-1].tag, child) for child in children if isinstance(child, InlineSegment))
+        terms = nest((child.parent.tag, child) for child in children if isinstance(child, InlineSegment))
 
         for _, child_terms in terms.items():
             if not is_the_same(  # 仅当 tag 彼此无法区分时才分配 id，以尽可能减少 id 的数量
-                elements=(element_fingerprint(t.parent_stack[-1]) for t in child_terms),
+                elements=(element_fingerprint(t.parent) for t in child_terms),
             ):
                 for child in child_terms:
                     child.id = next_temp_id
@@ -112,6 +112,10 @@ class InlineSegment:
     @property
     def children(self) -> list["TextSegment | InlineSegment"]:
         return self._children
+
+    @property
+    def parent(self) -> Element:
+        return self._parent_stack[-1]
 
     @property
     def parent_stack(self) -> list[Element]:
@@ -127,7 +131,7 @@ class InlineSegment:
     def recreate_ids(self, id_generator: IDGenerator) -> None:
         for child in self._children:
             if isinstance(child, InlineSegment):
-                child_tag = child.parent_stack[-1].tag
+                child_tag = child.parent.tag
                 ids = ensure_list(self._child_tag2ids, child_tag)
                 if child.id is not None:
                     child.id = id_generator.next_id()
@@ -136,7 +140,7 @@ class InlineSegment:
                 self._child_tag2count[child_tag] = self._child_tag2count.get(child_tag, 0) + 1
 
     def create_element(self) -> Element:
-        element = Element(self.parent_stack[-1].tag)
+        element = Element(self.parent.tag)
         previous_element: Element | None = None
         for child in self._children:
             if isinstance(child, InlineSegment):
@@ -190,7 +194,6 @@ class InlineSegment:
                 yield from child._child_inline_segments()  # pylint: disable=protected-access
 
     def _validate_children_structure(self, validated_element: Element):
-        self_element = self._parent_stack[-1]
         tag2found_elements: dict[str, list[Element]] = {}
 
         for child_element in validated_element:
@@ -203,7 +206,7 @@ class InlineSegment:
                 if id_str is None:
                     yield InlineLostIDError(
                         element=child_element,
-                        stack=[self_element],
+                        stack=[self.parent],
                     )
 
         for tag, found_elements in tag2found_elements.items():
@@ -212,19 +215,18 @@ class InlineSegment:
                 yield InlineWrongTagCountError(
                     expected_count=expected_count,
                     found_elements=found_elements,
-                    stack=[self_element],
+                    stack=[self.parent],
                 )
 
         for child, child_element in self._match_children(validated_element):
             # pylint: disable=protected-access
             for error in child._validate_children_structure(child_element):
-                error.stack.insert(0, self_element)
+                error.stack.insert(0, self.parent)
                 yield error
 
     # 即便 self.validate(...) 的错误没有排除干净，也要尽可能匹配一个质量较高（尽力而为）的版本
     def assign_attributes(self, template_element: Element) -> Element:
-        self_element = self._parent_stack[-1]
-        assigned_element = Element(self_element.tag, self_element.attrib)
+        assigned_element = Element(self.parent.tag, self.parent.attrib)
         matched_child_element_ids: set[int] = set()
 
         for child, child_element in self._match_children(template_element):
@@ -262,8 +264,7 @@ class InlineSegment:
     def _match_children(self, element: Element) -> Generator[tuple["InlineSegment", Element], None, None]:
         tag2elements = nest((c.tag, c) for c in element)
         tag2children = nest(
-            (c.parent_stack[-1].tag, (i, c))
-            for i, c in enumerate(c for c in self._children if isinstance(c, InlineSegment))
+            (c.parent.tag, (i, c)) for i, c in enumerate(c for c in self._children if isinstance(c, InlineSegment))
         )
         used_ids: set[int] = set()
         children_and_elements: list[tuple[int, InlineSegment, Element]] = []
