@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from ..utils import ensure_list, is_the_same, nest
-from ..xml import append_text_in_element, iter_with_stack
+from ..xml import append_text_in_element, iter_with_stack, plain_text
 from .const import ID_KEY
 from .text_segment import TextSegment
 from .utils import IDGenerator, element_fingerprint
@@ -214,6 +214,44 @@ class InlineSegment:
             for error in child._validate_tags(child_element):
                 error.stack.insert(0, self_element)
                 yield error
+
+    # 即便 self.validate(...) 的错误没有排除干净，也要尽可能匹配一个质量较高（尽力而为）的版本
+    def assign_attributes(self, template_element: Element) -> Element:
+        self_element = self._parent_stack[-1]
+        assigned_element = Element(self_element.tag, self_element.attrib)
+        matched_child_element_ids: set[int] = set()
+
+        for child, child_element in self._match_children(template_element):
+            child_assigned_element = child.assign_attributes(child_element)
+            assigned_element.append(child_assigned_element)
+            matched_child_element_ids.add(id(child_element))
+
+        assigned_child_element_stack = list(assigned_element)
+        assigned_child_element_stack.reverse()
+
+        previous_assigned_child_element: Element | None = None
+        for child_element in template_element:
+            # 只关心 child_element 是否是分割点，不关心它真实对应。极端情况下可能乱序，只好大致对上就行
+            child_text: str = ""
+            if id(child_element) not in matched_child_element_ids:
+                child_text = plain_text(child_element)
+            elif assigned_child_element_stack:
+                previous_assigned_child_element = assigned_child_element_stack.pop()
+            if child_element.tail is not None:
+                child_text += child_element.tail
+            if not child_text.strip():
+                continue
+            if previous_assigned_child_element is None:
+                assigned_element.text = append_text_in_element(
+                    origin_text=assigned_element.text,
+                    append_text=child_text,
+                )
+            else:
+                previous_assigned_child_element.tail = append_text_in_element(
+                    origin_text=previous_assigned_child_element.tail,
+                    append_text=child_text,
+                )
+        return assigned_element
 
     def _match_children(self, element: Element) -> Generator[tuple["InlineSegment", Element], None, None]:
         tag2elements = nest((c.tag, c) for c in element)
