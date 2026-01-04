@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from ..utils import ensure_list, is_the_same, nest
-from ..xml import append_text_in_element, iter_with_stack, plain_text
-from .const import ID_KEY
+from ..xml import ID_KEY, append_text_in_element, iter_with_stack, plain_text
 from .text_segment import TextSegment
 from .utils import IDGenerator, element_fingerprint
 
