@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element
 
 from tiktoken import Encoding
 
-from .utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
+from ..xml import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
 
 
 def group_fragmented_elements(

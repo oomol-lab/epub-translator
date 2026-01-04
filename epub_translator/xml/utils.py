@@ -1,7 +1,8 @@
+from collections.abc import Generator
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
-from .const import DATA_ORIGIN_LEN_KEY, ID_KEY
+from ..xml_translator.const import DATA_ORIGIN_LEN_KEY, ID_KEY
 
 
 def normalize_text_in_element(text: str | None) -> str | None:
@@ -13,7 +14,7 @@ def normalize_text_in_element(text: str | None) -> str | None:
     return text
 
 
-def expand_left_element_texts(element: Element):
+def expand_left_element_texts(element: Element) -> Generator[str, None, None]:
     yield "<"
     yield element.tag
     yield " "
@@ -23,7 +24,7 @@ def expand_left_element_texts(element: Element):
     yield '="999">'
 
 
-def expand_right_element_texts(element: Element):
+def expand_right_element_texts(element: Element) -> Generator[str, None, None]:
     yield "</"
     yield element.tag
     yield ">"
