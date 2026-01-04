@@ -5,7 +5,7 @@ from xml.etree.ElementTree import Element
 from resource_segmentation import Resource, Segment, split
 from tiktoken import Encoding
 
-from ..format import TextSegment, incision_between, search_text_segments
+from ..segment import TextSegment, incision_between, search_text_segments
 from .fragmented import group_fragmented_elements
 
 _BORDER_INCISION = 0

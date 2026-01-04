@@ -2,9 +2,9 @@ from collections.abc import Generator, Iterable
 from typing import TypeVar
 from xml.etree.ElementTree import Element
 
-from ..format import TextSegment
 from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
+from ..segment import TextSegment
 from ..xml import encode_friendly
 from .fill import XMLFill
 from .format import ValidationError, _extract_xml_element

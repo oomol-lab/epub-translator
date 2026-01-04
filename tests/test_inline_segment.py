@@ -1,7 +1,7 @@
 import unittest
 from xml.etree.ElementTree import fromstring, tostring
 
-from epub_translator.format.inline_segment import (
+from epub_translator.segment.inline_segment import (
     InlineExceptedIDError,
     InlineLostIDError,
     InlineSegment,
@@ -9,8 +9,8 @@ from epub_translator.format.inline_segment import (
     InlineWrongTagCountError,
     collect_next_inline_segment,
 )
-from epub_translator.format.text_segment import search_text_segments
-from epub_translator.format.utils import IDGenerator
+from epub_translator.segment.text_segment import search_text_segments
+from epub_translator.segment.utils import IDGenerator
 from epub_translator.xml import ID_KEY
 
 

@@ -4,7 +4,7 @@ from xml.etree.ElementTree import Element, SubElement
 
 from tiktoken import Encoding
 
-from epub_translator.format import search_text_segments
+from epub_translator.segment import search_text_segments
 from epub_translator.xml_translator.group import XMLGroupContext
 
 

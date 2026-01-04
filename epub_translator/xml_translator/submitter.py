@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
-from ..format import TextPosition, TextSegment, combine_text_segments
+from ..segment import TextPosition, TextSegment, combine_text_segments
 from ..xml import append_text_in_element, iter_with_stack
 
 
