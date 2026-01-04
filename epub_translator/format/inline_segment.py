@@ -91,20 +91,24 @@ class InlineSegment:
         self.id: int | None = None
         self._children: list[TextSegment | InlineSegment] = children
         self._parent_stack: list[Element] = children[0].parent_stack[:depth]
+
+        # 每一组 tag 都对应一个 ids 列表。
+        # 若为空，说明该 tag 属性结构全同，没必要分配 id 以区分。
+        # 若非空，则表示 tag 下每一个 element 都有 id 属性。
+        # 注意，相同 tag 下的 element 要么全部有 id，要么全部都没有 id
+        self._child_tag2ids: dict[str, list[int]] = {}
         self._child_tag2count: dict[str, int] = {}
-        self._child_tag2ids: dict[str, list[int]] = {}  # {} value is meant that don't need to assign ids
 
         next_temp_id: int = 0
-        terms = nest((child.parent_stack[-1].tag, child) for child in children)
+        terms = nest((child.parent_stack[-1].tag, child) for child in children if isinstance(child, InlineSegment))
 
         for _, child_terms in terms.items():
             if not is_the_same(  # 仅当 tag 彼此无法区分时才分配 id，以尽可能减少 id 的数量
-                elements=(element_fingerprint(t.parent_stack[-1]) for t in child_terms if isinstance(t, InlineSegment)),
+                elements=(element_fingerprint(t.parent_stack[-1]) for t in child_terms),
             ):
                 for child in child_terms:
-                    if isinstance(child, InlineSegment):
-                        child.id = next_temp_id
-                        next_temp_id += 1
+                    child.id = next_temp_id
+                    next_temp_id += 1
 
     @property
     def parent_stack(self) -> list[Element]:
@@ -174,7 +178,7 @@ class InlineSegment:
                 ids=sorted(remain_expected_ids),
             )
 
-        yield from self._validate_tags(validated_element)
+        yield from self._validate_children_structure(validated_element)
 
     def _child_inline_segments(self) -> Generator["InlineSegment", None, None]:
         for child in self._children:
@@ -182,17 +186,16 @@ class InlineSegment:
                 yield child
                 yield from child._child_inline_segments()  # pylint: disable=protected-access
 
-    def _validate_tags(self, validated_element: Element):
+    def _validate_children_structure(self, validated_element: Element):
         self_element = self._parent_stack[-1]
         tag2found_elements: dict[str, list[Element]] = {}
 
         for child_element in validated_element:
             ids = self._child_tag2ids.get(child_element.tag, None)
-            if ids is None:
+            if not ids:
                 found_elements = ensure_list(tag2found_elements, child_element.tag)
                 found_elements.append(child_element)
-
-            elif len(ids) > 0:
+            else:
                 id_str = child_element.get(ID_KEY, None)
                 if id_str is None:
                     yield InlineLostIDError(
@@ -211,7 +214,7 @@ class InlineSegment:
 
         for child, child_element in self._match_children(validated_element):
             # pylint: disable=protected-access
-            for error in child._validate_tags(child_element):
+            for error in child._validate_children_structure(child_element):
                 error.stack.insert(0, self_element)
                 yield error
 
@@ -259,7 +262,9 @@ class InlineSegment:
             (c.parent_stack[-1].tag, (i, c))
             for i, c in enumerate(c for c in self._children if isinstance(c, InlineSegment))
         )
+        used_ids: set[int] = set()
         children_and_elements: list[tuple[int, InlineSegment, Element]] = []
+
         for tag, orders_and_children in tag2children.items():
             # 优先考虑 id 匹配，剩下的以自然顺序尽可能匹配
             ids = self._child_tag2ids.get(tag, [])
@@ -267,11 +272,15 @@ class InlineSegment:
             not_matched_elements: list[Element] = []
 
             for child_element in tag2elements.get(tag, []):
-                id_order = -1
+                id_order: int | None = None
                 child_id = self._id_from_element(child_element)
-                if child_id is not None:
-                    id_order = ids.index(child_id)
-                if id_order == -1:
+                if child_id is not None and child_id not in used_ids:
+                    used_ids.add(child_id)  # 一个 id 只能用一次，防止重复
+                    try:
+                        id_order = ids.index(child_id)
+                    except ValueError:
+                        pass
+                if id_order is None:
                     not_matched_elements.append(child_element)
                 else:
                     matched_children_elements[id_order] = child_element
