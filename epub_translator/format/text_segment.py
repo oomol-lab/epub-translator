@@ -10,7 +10,7 @@ from ..xml import expand_left_element_texts, expand_right_element_texts, normali
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
 # Reference: https://developer.mozilla.org/en-US/docs/Glossary/Inline-level_content
 _HTML_INLINE_TAGS = frozenset(
-    [
+    (
         # Inline text semantics
         "a",
         "abbr",
@@ -67,7 +67,7 @@ _HTML_INLINE_TAGS = frozenset(
         "del",
         "ins",
         "slot",
-    ]
+    )
 )
 
 
