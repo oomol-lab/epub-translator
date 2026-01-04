@@ -3,7 +3,7 @@
 
 from xml.etree.ElementTree import Element
 
-from .const import ID_KEY
+from ..xml import ID_KEY
 from .format import _ValidationContext
 
 
@@ -177,9 +177,7 @@ class ProgressiveLockingValidator:
 
         return unlocked_errors
 
-    def _format_errors(
-        self, errors: dict[tuple[int, ...], list[str]], limit: int, template_ele: Element
-    ) -> str | None:
+    def _format_errors(self, errors: dict[tuple[int, ...], list[str]], limit: int, template_ele: Element) -> str | None:
         """格式化错误消息（复用现有逻辑）"""
         if not errors:
             return None

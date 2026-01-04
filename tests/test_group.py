@@ -4,8 +4,8 @@ from xml.etree.ElementTree import Element, SubElement
 
 from tiktoken import Encoding
 
+from epub_translator.segment import search_text_segments
 from epub_translator.xml_translator.group import XMLGroupContext
-from epub_translator.xml_translator.text_segment import search_text_segments
 
 
 class MockEncoding:

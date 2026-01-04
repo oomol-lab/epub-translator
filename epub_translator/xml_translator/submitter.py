@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
-from ..xml import iter_with_stack
-from .text_segment import TextPosition, TextSegment, combine_text_segments
+from ..segment import TextPosition, TextSegment, combine_text_segments
+from ..xml import append_text_in_element, iter_with_stack
 
 
 def submit_text_segments(element: Element, text_segments: Iterable[TextSegment]):
@@ -47,7 +47,7 @@ def _replace_text_segments(element: Element, text_segments: dict[int, list[TextS
         tail_text_segments: list[TextSegment] = []
         for text_segment in text_segments.get(id(child_element), ()):
             if text_segment.position == TextPosition.TEXT:
-                child_element.text = _append_text(
+                child_element.text = append_text_in_element(
                     origin_text=child_element.text,
                     append_text=text_segment.text,
                 )
@@ -60,7 +60,7 @@ def _replace_text_segments(element: Element, text_segments: dict[int, list[TextS
             if not tail_text_segments:
                 break
             if cc_element.tail is not None:
-                cc_element.tail = _append_text(
+                cc_element.tail = append_text_in_element(
                     origin_text=cc_element.tail,
                     append_text=tail_text_segments.pop().text,
                 )
@@ -93,10 +93,3 @@ def _index_of_parent(parent: Element, checked_element: Element) -> int:
         if child == checked_element:
             return i
     raise ValueError("Element not found in parent.")
-
-
-def _append_text(origin_text: str | None, append_text: str) -> str:
-    if origin_text is None:
-        return append_text
-    else:
-        return origin_text + append_text

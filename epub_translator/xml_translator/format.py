@@ -1,8 +1,7 @@
 from xml.etree.ElementTree import Element
 
 from ..utils import normalize_whitespace
-from ..xml import decode_friendly
-from .const import ID_KEY
+from ..xml import ID_KEY, decode_friendly
 
 
 def format(template_ele: Element, validated_text: str, errors_limit: int) -> Element:
@@ -268,12 +267,12 @@ class _ValidationContext:
                 if child.text and child.text.strip():
                     preview = child.text.strip()[:20]
                     if is_lost:
-                        parts.append(f'[{preview}...]')
+                        parts.append(f"[{preview}...]")
                     else:
-                        parts.append(f'{preview}...')
+                        parts.append(f"{preview}...")
 
                 if is_lost:
-                    children_with_ids.append(f'{tag_str}*MISSING*')
+                    children_with_ids.append(f"{tag_str}*MISSING*")
                 else:
                     children_with_ids.append(tag_str)
 
