@@ -110,6 +110,10 @@ class InlineSegment:
                     next_temp_id += 1
 
     @property
+    def children(self) -> list["TextSegment | InlineSegment"]:
+        return self._children
+
+    @property
     def parent_stack(self) -> list[Element]:
         return self._parent_stack
 
