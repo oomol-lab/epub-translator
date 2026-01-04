@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from .utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
+from ..xml_translator.utils import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
 
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements

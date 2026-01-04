@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
+from ..format import TextPosition, TextSegment, combine_text_segments
 from ..xml import iter_with_stack
-from .text_segment import TextPosition, TextSegment, combine_text_segments
 
 
 def submit_text_segments(element: Element, text_segments: Iterable[TextSegment]):

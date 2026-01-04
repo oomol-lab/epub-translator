@@ -1,10 +1,10 @@
 from xml.etree.ElementTree import Element
 
+from ..format import TextSegment, combine_text_segments
 from ..utils import normalize_whitespace
 from ..xml import plain_text
 from .const import DATA_ORIGIN_LEN_KEY, ID_KEY
 from .format import format
-from .text_segment import TextSegment, combine_text_segments
 
 
 class XMLFill:

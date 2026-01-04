@@ -2,6 +2,7 @@ from collections.abc import Generator, Iterable
 from typing import TypeVar
 from xml.etree.ElementTree import Element
 
+from ..format import TextSegment
 from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
 from ..xml import encode_friendly
@@ -9,7 +10,6 @@ from .fill import XMLFill
 from .format import ValidationError, _extract_xml_element
 from .group import XMLGroupContext
 from .progressive_locking import ProgressiveLockingValidator
-from .text_segment import TextSegment
 
 T = TypeVar("T")
 
