@@ -21,7 +21,7 @@ class InlineUnexpectedIDError:
 
 
 @dataclass
-class InlineExceptedIDError:
+class InlineExpectedIDError:
     ids: list[int]
 
 
@@ -177,7 +177,7 @@ class InlineSegment:
                 )
 
         if remain_expected_ids:
-            yield InlineExceptedIDError(
+            yield InlineExpectedIDError(
                 ids=sorted(remain_expected_ids),
             )
 

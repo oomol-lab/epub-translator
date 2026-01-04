@@ -2,7 +2,7 @@ import unittest
 from xml.etree.ElementTree import fromstring, tostring
 
 from epub_translator.segment.inline_segment import (
-    InlineExceptedIDError,
+    InlineExpectedIDError,
     InlineLostIDError,
     InlineSegment,
     InlineUnexpectedIDError,
@@ -31,7 +31,6 @@ class TestCollectInlineSegment(unittest.TestCase):
         )
 
         self.assertIsNotNone(inline_segment)
-        assert inline_segment is not None  # for type checker
         assert inline_segment is not None  # for type checker
         self.assertIsNone(next_segment)
         # 应该收集两个 text segment
@@ -341,8 +340,8 @@ class TestValidate(unittest.TestCase):
         validated = fromstring(f'<p>译X<em {ID_KEY}="1">译A</em>译YZ</p>')
 
         errors = list(inline_segment.validate(validated))
-        # 应该有 InlineExceptedIDError（期望的 ID 2 未找到）
-        expected_errors = [e for e in errors if isinstance(e, InlineExceptedIDError)]
+        # 应该有 InlineExpectedIDError ID 2 未找到）
+        expected_errors = [e for e in errors if isinstance(e, InlineExpectedIDError)]
         self.assertGreater(len(expected_errors), 0)
 
 
