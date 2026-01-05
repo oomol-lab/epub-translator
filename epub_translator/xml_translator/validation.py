@@ -46,7 +46,7 @@ class _InlineErrorInfo:
 
 @dataclass
 class _ErrorGroup:
-    block_id: int | None  # None 表示没有特定 block_id 的错误
+    block: tuple[int, Element] | None  # (block_id, block_element)
     block_errors: list[_BlockErrorInfo]
     inline_errors: list[_InlineErrorInfo]
     total_score: int
@@ -60,7 +60,6 @@ class ValidationReporting:
 
 
 def validate(
-    root_tag: str,
     errors: Iterable[BlockError | FoundInvalidIDError],
     max_errors: int,
 ) -> ValidationReporting:
@@ -68,7 +67,7 @@ def validate(
     block_score: int = 0
     inline_scores: dict[int, int] = {}
 
-    if error_groups:
+    if None in error_groups:
         block_score = sum(e.weight for e in error_groups[None].block_errors)
     for block_id, group in error_groups.items():
         if block_id is not None and group.inline_errors:
@@ -78,7 +77,6 @@ def validate(
         block_score=block_score,
         inline_scores=inline_scores,
         error_message=_build_error_message(
-            root_tag=root_tag,
             error_groups=error_groups,
             max_errors=max_errors,
         ),
@@ -95,12 +93,11 @@ def _collect_and_group_errors(
             block_id = error.id
             if block_id not in error_groups:
                 error_groups[block_id] = _ErrorGroup(
-                    block_id=block_id,
+                    block=(block_id, error.element),
                     block_errors=[],
                     inline_errors=[],
                     total_score=0,
                 )
-
             for inline_error in error.errors:
                 level = _get_inline_error_level(inline_error)
                 weight = _calculate_error_weight(inline_error, level)
@@ -110,12 +107,11 @@ def _collect_and_group_errors(
         else:
             if None not in error_groups:
                 error_groups[None] = _ErrorGroup(
-                    block_id=None,
+                    block=None,
                     block_errors=[],
                     inline_errors=[],
                     total_score=0,
                 )
-
             level = _get_block_error_level(error)
             weight = _calculate_error_weight(error, level)
             error_groups[None].block_errors.append(_BlockErrorInfo(error=error, level=level, weight=weight))
@@ -129,7 +125,6 @@ def _collect_and_group_errors(
 
 
 def _build_error_message(
-    root_tag: str,
     error_groups: dict[int | None, _ErrorGroup],
     max_errors: int,
 ) -> str | None:
@@ -154,24 +149,22 @@ def _build_error_message(
             shown_error_count += 1
 
         inline_messages: list[str] = []
-        if group.block_id is not None:  # inline 错误必须有 block_id
+        if group.block is not None:  # inline 错误必须有 block_id
             for error_info in group.inline_errors:
                 if shown_error_count >= max_errors:
                     break
-                inline_messages.append(_format_inline_error(error_info.error, group.block_id))
+                block_id, _ = group.block
+                inline_messages.append(_format_inline_error(error_info.error, block_id))
                 shown_error_count += 1
 
         if inline_messages:
             group_messages.extend(f"  - {msg}" for msg in inline_messages)
 
         if group_messages:
-            if group.block_id is not None:
-                block_tag = root_tag
-                if group.inline_errors:
-                    first_error = group.inline_errors[0].error
-                    if isinstance(first_error, (InlineLostIDError, InlineWrongTagCountError)) and first_error.stack:
-                        block_tag = first_error.stack[0].tag
-                messages.append(f"In {block_tag}#{group.block_id}:\n" + "\n".join(group_messages))
+            if group.block is not None:
+                # 从 parent element 中获取 block_tag
+                block_id, block_element = group.block
+                messages.append(f"In {block_element.tag}#{block_id}:\n" + "\n".join(group_messages))
             else:
                 messages.extend(group_messages)
 

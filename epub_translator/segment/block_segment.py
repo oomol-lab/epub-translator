@@ -16,6 +16,7 @@ class BlockSubmitter:
     submitted_element: Element
 
 
+# 展开，还包括 Block Tag
 @dataclass
 class BlockWrongRootTagError:
     expected_tag: str
@@ -36,6 +37,7 @@ class BlockExpectedIDsError:
 @dataclass
 class BlockContentError:
     id: int
+    element: Element
     errors: list[InlineError | FoundInvalidIDError]
 
 
@@ -87,6 +89,7 @@ class BlockSegment:
                     remain_expected_elements.pop(element_id, None)
                     yield BlockContentError(
                         id=element_id,
+                        element=child_validated_element,
                         errors=list(inline_segment.validate(child_validated_element)),
                     )
 
