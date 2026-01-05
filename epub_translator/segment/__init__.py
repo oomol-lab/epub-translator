@@ -1,4 +1,5 @@
 from .block_segment import (
+    BlockContentError,
     BlockError,
     BlockExpectedIDError,
     BlockSegment,

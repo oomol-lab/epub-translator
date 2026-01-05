@@ -33,7 +33,13 @@ class BlockExpectedIDError:
     ids: list[int]
 
 
-BlockError = BlockWrongRootTagError | BlockUnexpectedIDError | BlockExpectedIDError
+@dataclass
+class BlockContentError:
+    id: int
+    errors: list[InlineError | FoundInvalidIDError]
+
+
+BlockError = BlockWrongRootTagError | BlockUnexpectedIDError | BlockExpectedIDError | BlockContentError
 
 
 class BlockSegment:
@@ -56,9 +62,7 @@ class BlockSegment:
             root_element.append(inline_segment.create_element())
         return root_element
 
-    def validate(
-        self, validated_element: Element
-    ) -> Generator[BlockError | InlineError | FoundInvalidIDError, None, None]:
+    def validate(self, validated_element: Element) -> Generator[BlockError | FoundInvalidIDError, None, None]:
         if validated_element.tag != self._root_tag:
             yield BlockWrongRootTagError(
                 expected_tag=self._root_tag,
@@ -79,7 +83,10 @@ class BlockSegment:
                     )
                 else:
                     remain_expected_ids.discard(element_id)
-                    yield from inline_segment.validate(child_validated_element)
+                    yield BlockContentError(
+                        id=element_id,
+                        errors=list(inline_segment.validate(child_validated_element)),
+                    )
 
         if remain_expected_ids:
             yield BlockExpectedIDError(ids=sorted(list(remain_expected_ids)))

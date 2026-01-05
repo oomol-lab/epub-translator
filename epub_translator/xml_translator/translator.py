@@ -9,6 +9,7 @@ from ..xml import encode_friendly
 from .fill import XMLFill
 from .format import ValidationError, _extract_xml_element
 from .group import XMLGroupContext
+from .hill_climbing import HillClimbing
 from .progressive_locking import ProgressiveLockingValidator
 
 T = TypeVar("T")
@@ -66,6 +67,11 @@ class XMLTranslator:
     def _translate_text_segments(self, elements: Iterable[Element]):
         for group in self._group_context.split_groups(elements):
             text_segments = list(group)
+            hill_climbing = HillClimbing(
+                encoding=self._llm.encoding,
+                request_tag="xml",
+                text_segments=text_segments,
+            )
             fill = XMLFill(text_segments)
             source_text = "".join(self._render_text_segments(text_segments))
             translated_text = self._translate_text(source_text)
