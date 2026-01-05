@@ -3,10 +3,8 @@ from dataclasses import dataclass
 from typing import cast
 from xml.etree.ElementTree import Element
 
-from epub_translator.segment.inline_segment import InlineSegment
-
 from .common import FoundInvalidIDError, validate_id_in_element
-from .inline_segment import InlineError, collect_next_inline_segment
+from .inline_segment import InlineError, InlineSegment, collect_next_inline_segment
 from .text_segment import TextSegment
 from .utils import IDGenerator, id_in_element
 
@@ -20,7 +18,7 @@ class BlockSubmitter:
 
 @dataclass
 class BlockWrongRootTagError:
-    excepted_tag: str
+    expected_tag: str
     instead_tag: str
 
 
@@ -63,7 +61,7 @@ class BlockSegment:
     ) -> Generator[BlockError | InlineError | FoundInvalidIDError, None, None]:
         if validated_element.tag != self._root_tag:
             yield BlockWrongRootTagError(
-                excepted_tag=self._root_tag,
+                expected_tag=self._root_tag,
                 instead_tag=validated_element.tag,
             )
 
