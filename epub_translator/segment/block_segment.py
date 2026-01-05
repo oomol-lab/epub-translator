@@ -16,11 +16,11 @@ class BlockSubmitter:
     submitted_element: Element
 
 
-# 展开，还包括 Block Tag
 @dataclass
-class BlockWrongRootTagError:
+class BlockWrongTagError:
     expected_tag: str
     instead_tag: str
+    block_id: int | None  # None 表示根元素
 
 
 @dataclass
@@ -41,7 +41,7 @@ class BlockContentError:
     errors: list[InlineError | FoundInvalidIDError]
 
 
-BlockError = BlockWrongRootTagError | BlockUnexpectedIDError | BlockExpectedIDsError | BlockContentError
+BlockError = BlockWrongTagError | BlockUnexpectedIDError | BlockExpectedIDsError | BlockContentError
 
 
 class BlockSegment:
@@ -66,9 +66,10 @@ class BlockSegment:
 
     def validate(self, validated_element: Element) -> Generator[BlockError | FoundInvalidIDError, None, None]:
         if validated_element.tag != self._root_tag:
-            yield BlockWrongRootTagError(
+            yield BlockWrongTagError(
                 expected_tag=self._root_tag,
                 instead_tag=validated_element.tag,
+                block_id=None,
             )
 
         remain_expected_elements: dict[int, Element] = dict(
@@ -86,12 +87,22 @@ class BlockSegment:
                         element=child_validated_element,
                     )
                 else:
+                    if inline_segment.parent.tag != child_validated_element.tag:
+                        yield BlockWrongTagError(
+                            expected_tag=inline_segment.parent.tag,
+                            instead_tag=child_validated_element.tag,
+                            block_id=inline_segment.id,
+                        )
+
                     remain_expected_elements.pop(element_id, None)
-                    yield BlockContentError(
-                        id=element_id,
-                        element=child_validated_element,
-                        errors=list(inline_segment.validate(child_validated_element)),
-                    )
+                    inline_errors = list(inline_segment.validate(child_validated_element))
+
+                    if inline_errors:
+                        yield BlockContentError(
+                            id=element_id,
+                            element=child_validated_element,
+                            errors=inline_errors,
+                        )
 
         if remain_expected_elements:
             yield BlockExpectedIDsError(id2element=remain_expected_elements)

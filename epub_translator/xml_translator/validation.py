@@ -7,7 +7,7 @@ from ..segment import (
     BlockError,
     BlockExpectedIDsError,
     BlockUnexpectedIDError,
-    BlockWrongRootTagError,
+    BlockWrongTagError,
     FoundInvalidIDError,
     InlineError,
     InlineExpectedIDsError,
@@ -18,7 +18,7 @@ from ..segment import (
 
 _LEVEL_WEIGHT = 3
 
-_BLOCK_WRONG_ROOT_TAG_LEVEL = 5
+_BLOCK_WRONG_TAG_LEVEL = 5
 _BLOCK_EXPECTED_IDS_LEVEL = 5
 _BLOCK_FOUND_INVALID_ID_LEVEL = 4
 _BLOCK_UNEXPECTED_ID_LEVEL = 3
@@ -189,8 +189,8 @@ def _calculate_error_weight(error: BlockError | InlineError | FoundInvalidIDErro
 
 
 def _get_block_error_level(error: BlockError | FoundInvalidIDError) -> int:
-    if isinstance(error, BlockWrongRootTagError):
-        return _BLOCK_WRONG_ROOT_TAG_LEVEL
+    if isinstance(error, BlockWrongTagError):
+        return _BLOCK_WRONG_TAG_LEVEL
     elif isinstance(error, BlockExpectedIDsError):
         return _BLOCK_EXPECTED_IDS_LEVEL
     elif isinstance(error, BlockUnexpectedIDError):
@@ -217,11 +217,19 @@ def _get_inline_error_level(error: InlineError | FoundInvalidIDError) -> int:
 
 
 def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
-    if isinstance(error, BlockWrongRootTagError):
-        return (
-            f"Root tag mismatch: expected `{error.expected_tag}`, but found `{error.instead_tag}`. "
-            f"Fix: Change the root tag to `{error.expected_tag}`."
-        )
+    if isinstance(error, BlockWrongTagError):
+        if error.block_id is None:
+            return (
+                f"Root tag mismatch: expected `<{error.expected_tag}>`, but found `<{error.instead_tag}>`. "
+                f"Fix: Change the root tag to `<{error.expected_tag}>`."
+            )
+        else:
+            return (
+                f"Wrong tag for block at `{error.instead_tag}#{error.block_id}`: "
+                f'expected `<{error.expected_tag} id="{error.block_id}">`, '
+                f'but found `<{error.instead_tag} id="{error.block_id}">`. '
+                f"Fix: Change the tag to `<{error.expected_tag}>`."
+            )
     elif isinstance(error, BlockExpectedIDsError):
         missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
         elements_str = ", ".join(missing_elements)
@@ -307,14 +315,14 @@ def _build_inline_selector(
     element: Element | None = None,
     tag: str | None = None,
 ) -> str:
-    # 如果 element 有 id，直接返回 tag#id
     if element is not None:
         element_id = element.get("id")
         if element_id is not None:
+            # 能用 ID 直接定位，就不必用路径定位
             return f"{element.tag}#{element_id}"
         tag = element.tag
 
-    # 构建路径：block#id > parent > ... > tag
+    # 路径：block#id > parent > ... > tag
     block_tag = stack[0].tag if stack else "unknown"
     path_parts = [f"{block_tag}#{block_id}"]
 

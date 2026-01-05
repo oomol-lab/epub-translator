@@ -5,7 +5,7 @@ from .block_segment import (
     BlockSegment,
     BlockSubmitter,
     BlockUnexpectedIDError,
-    BlockWrongRootTagError,
+    BlockWrongTagError,
 )
 from .common import FoundInvalidIDError
 from .inline_segment import (
