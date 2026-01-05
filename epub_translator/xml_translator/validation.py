@@ -37,6 +37,7 @@ _INLINE_WRONG_TAG_COUNT_LEVEL = 0
 _INLINE_UNEXPECTED_ID_LEVEL = 0
 
 ERROR = TypeVar("ERROR")
+LEVEL_DEPTH = 7
 
 
 @dataclass
@@ -50,10 +51,13 @@ class ErrorItem(Generic[ERROR]):
 
 @dataclass
 class BlockErrorsGroup:
-    weight: int
     block_id: int
     block_element: Element
     errors: list[ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError]]
+
+    @property
+    def weight(self) -> int:
+        return sum(e.weight for e in self.errors)
 
 
 @dataclass
@@ -72,7 +76,6 @@ class ErrorsGroup:
 def nest_as_errors_group(errors: Iterable[BlockError | FoundInvalidIDError]) -> ErrorsGroup | None:
     return _create_errors_group(
         error_items=_transform_errors_to_items(errors),
-        will_sort_block_errors=True,
     )
 
 
@@ -86,14 +89,10 @@ def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsG
 
     return _create_errors_group(
         error_items=errors_items,
-        will_sort_block_errors=False,
     )
 
 
-def error_message(encoding: Encoding, errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
-    if errors_group is None:
-        return None
-
+def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitted_count: int = 0) -> None | str:
     message_lines: list[str] = []
     for upper_error in errors_group.upper_errors:
         message_lines.append(_format_block_error(upper_error.error))
@@ -210,7 +209,6 @@ def _create_errors_group(
             ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
         ]
     ],
-    will_sort_block_errors: bool,
 ) -> ErrorsGroup | None:
     upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]] = []
     block_elements: dict[int, Element] = {}
@@ -236,7 +234,6 @@ def _create_errors_group(
             continue
 
         block_error_group = BlockErrorsGroup(
-            weight=sum(e.weight for e in block_errors),
             block_id=block_id,
             block_element=block_element,
             errors=sorted(block_errors, key=lambda e: (-e.weight, e.index1, e.index2)),
@@ -244,8 +241,7 @@ def _create_errors_group(
         block_errors_groups.append(block_error_group)
 
     upper_errors.sort(key=lambda e: (-e.level, e.index1, e.index2))
-    if will_sort_block_errors:
-        block_errors_groups.sort(key=lambda g: -g.weight)
+    block_errors_groups.sort(key=lambda g: -g.weight)
 
     return ErrorsGroup(
         upper_errors=upper_errors,
