@@ -1,5 +1,7 @@
 from xml.etree.ElementTree import Element
 
+from ..xml import ID_KEY
+
 
 def element_fingerprint(element: Element) -> str:
     attrs = sorted(f"{key}={value}" for key, value in element.attrib.items())
@@ -20,6 +22,16 @@ def unwrap_parents(element: Element) -> tuple[Element, list[Element]]:
         element = child
         element.tail = None
     return element, parents
+
+
+def id_in_element(element: Element) -> int | None:
+    id_str = element.get(ID_KEY, None)
+    if id_str is None:
+        return None
+    try:
+        return int(id_str)
+    except ValueError:
+        return None
 
 
 class IDGenerator:

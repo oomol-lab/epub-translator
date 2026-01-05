@@ -4,8 +4,9 @@ from xml.etree.ElementTree import Element
 
 from ..utils import ensure_list, is_the_same, nest
 from ..xml import ID_KEY, append_text_in_element, iter_with_stack, plain_text
+from .common import FoundInvalidIDError, validate_id_in_element
 from .text_segment import TextSegment
-from .utils import IDGenerator, element_fingerprint
+from .utils import IDGenerator, element_fingerprint, id_in_element
 
 
 @dataclass
@@ -30,6 +31,9 @@ class InlineWrongTagCountError:
     expected_count: int
     found_elements: list[Element]
     stack: list[Element]
+
+
+InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDError | InlineWrongTagCountError
 
 
 # @return collected InlineSegment and the next TextSegment that is not included
@@ -147,8 +151,6 @@ class InlineSegment:
             if isinstance(child, InlineSegment):
                 previous_element = child.create_element()
                 element.append(previous_element)
-                if child.id is not None:
-                    previous_element.set(ID_KEY, str(child.id))
 
             elif isinstance(child, TextSegment):
                 if previous_element is None:
@@ -161,19 +163,21 @@ class InlineSegment:
                         origin_text=previous_element.tail,
                         append_text=child.text,
                     )
+        if self.id is not None:
+            element.set(ID_KEY, str(self.id))
         return element
 
-    def validate(self, validated_element: Element):
+    def validate(self, validated_element: Element) -> Generator[InlineError | FoundInvalidIDError, None, None]:
         remain_expected_ids: set[int] = set()
         for child in self._child_inline_segments():
             if child.id is not None:
                 remain_expected_ids.add(child.id)
 
         for _, child_element in iter_with_stack(validated_element):
-            element_id = self._id_from_element(child_element)
-            if element_id is None:
-                continue
-            if element_id in remain_expected_ids:
+            element_id = validate_id_in_element(child_element)
+            if isinstance(element_id, FoundInvalidIDError):
+                yield element_id
+            elif element_id in remain_expected_ids:
                 remain_expected_ids.remove(element_id)
             else:
                 yield InlineUnexpectedIDError(
@@ -278,7 +282,7 @@ class InlineSegment:
 
             for child_element in tag2elements.get(tag, []):
                 id_order: int | None = None
-                child_id = self._id_from_element(child_element)
+                child_id = id_in_element(child_element)
                 if child_id is not None and child_id not in used_ids:
                     used_ids.add(child_id)  # 一个 id 只能用一次，防止重复
                     try:
@@ -304,12 +308,3 @@ class InlineSegment:
 
         for _, child, child_element in sorted(children_and_elements, key=lambda x: x[0]):
             yield child, child_element
-
-    def _id_from_element(self, element: Element) -> int | None:
-        id_str = element.get(ID_KEY, None)
-        if id_str is None:
-            return None
-        try:
-            return int(id_str)
-        except ValueError:
-            return None
