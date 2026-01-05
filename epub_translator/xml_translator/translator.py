@@ -5,12 +5,9 @@ from xml.etree.ElementTree import Element
 from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
 from ..segment import TextSegment
-from ..xml import encode_friendly
-from .fill import XMLFill
-from .format import ValidationError, _extract_xml_element
+from ..xml import decode_friendly, encode_friendly
 from .group import XMLGroupContext
 from .hill_climbing import HillClimbing
-from .progressive_locking import ProgressiveLockingValidator
 
 T = TypeVar("T")
 
@@ -67,19 +64,20 @@ class XMLTranslator:
     def _translate_text_segments(self, elements: Iterable[Element]):
         for group in self._group_context.split_groups(elements):
             text_segments = list(group)
-            _hill_climbing = HillClimbing(
+            source_text = "".join(self._render_text_segments(text_segments))
+            translated_text = self._translate_text(source_text)
+            hill_climbing = HillClimbing(
                 encoding=self._llm.encoding,
                 request_tag="xml",
                 text_segments=text_segments,
+                max_fill_displaying_errors=self._max_fill_displaying_errors,
             )
-            fill = XMLFill(text_segments)
-            source_text = "".join(self._render_text_segments(text_segments))
-            translated_text = self._translate_text(source_text)
-            self._fill_into_xml(
-                fill=fill,
+            self._request_and_submit(
+                hill_climbing=hill_climbing,
                 source_text=source_text,
                 translated_text=translated_text,
             )
+            hill_climbing.append()
             yield from group.body
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):
@@ -111,10 +109,10 @@ class XMLTranslator:
             ]
         )
 
-    def _fill_into_xml(self, fill: XMLFill, source_text: str, translated_text: str) -> Element:
+    def _request_and_submit(self, hill_climbing: HillClimbing, source_text: str, translated_text: str) -> None:
         user_message = (
             f"Source text:\n{source_text}\n\n"
-            f"XML template:\n```XML\n{encode_friendly(fill.request_element)}\n```\n\n"
+            f"XML template:\n```XML\n{encode_friendly(hill_climbing.request_element())}\n```\n\n"
             f"Translated text:\n{translated_text}"
         )
         fixed_messages: list[Message] = [
@@ -127,59 +125,46 @@ class XMLTranslator:
                 message=user_message,
             ),
         ]
-
-        validator = ProgressiveLockingValidator()
         conversation_history: list[Message] = []
-        latest_error: ValidationError | None = None
 
         with self._llm.context() as llm_context:
+            did_success: bool = False
             for _ in range(self._max_retries):
-                # Request LLM response
-                response = llm_context.request(
-                    input=fixed_messages + conversation_history,
-                )
+                response = llm_context.request(fixed_messages + conversation_history)
+                validated_element = self._extract_xml_element(response)
+                error_message: str | None = None
 
-                try:
-                    # Extract XML from response
-                    validated_element = _extract_xml_element(response)
+                if isinstance(validated_element, str):
+                    error_message = validated_element
+                elif isinstance(validated_element, Element):
+                    error_message = hill_climbing.submit(validated_element)
 
-                    # Validate with progressive locking
-                    is_complete, error_message, newly_locked = validator.validate_with_locking(
-                        template_ele=fill.request_element,
-                        validated_ele=validated_element,
-                        errors_limit=self._max_fill_displaying_errors,
-                    )
+                if error_message is None:
+                    did_success = True
+                    break
 
-                    if is_complete:
-                        # All nodes locked, fill successful
-                        fill._fill_submitted_texts(  # pylint: disable=protected-access
-                            generated_ids_stack=[],
-                            element=validated_element,
-                        )
-                        return validated_element
+                conversation_history = [
+                    Message(role=MessageRole.ASSISTANT, message=response),
+                    Message(role=MessageRole.USER, message=error_message),
+                ]
+            if not did_success:
+                print("Warning: Maximum retries reached without successful XML filling. Will ignore remaining errors.")
 
-                    # Not complete yet, construct error message with progress info
-                    progress_msg = f"Progress: {len(validator.locked_ids)} nodes locked"
-                    if newly_locked:
-                        progress_msg += f", {len(newly_locked)} newly locked this round"
+    def _extract_xml_element(self, text: str) -> Element | str:
+        first_xml_element: Element | None = None
+        all_xml_elements: int = 0
 
-                    full_error_message = f"{progress_msg}\n\n{error_message}"
+        for xml_element in decode_friendly(text, tags="xml"):
+            if first_xml_element is None:
+                first_xml_element = xml_element
+            all_xml_elements += 1
 
-                    conversation_history = [
-                        Message(role=MessageRole.ASSISTANT, message=response),
-                        Message(role=MessageRole.USER, message=full_error_message),
-                    ]
+        if first_xml_element is None:
+            return "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
 
-                except ValidationError as error:
-                    # XML extraction or basic validation failed
-                    latest_error = error
-                    conversation_history = [
-                        Message(role=MessageRole.ASSISTANT, message=response),
-                        Message(role=MessageRole.USER, message=str(error)),
-                    ]
-
-            message = f"Failed to get valid XML structure after {self._max_retries} attempts"
-            if latest_error is None:
-                raise ValueError(message)
-            else:
-                raise ValueError(message) from latest_error
+        if all_xml_elements > 1:
+            return (
+                f"Found {all_xml_elements} <xml>...</xml> blocks. "
+                "Please return only one XML block without any examples or explanations."
+            )
+        return first_xml_element

@@ -20,7 +20,7 @@ class ValidationError(Exception):
         self.validated_ele = validated_ele
 
 
-def _extract_xml_element(text: str) -> Element:
+def _extract_xml_element(text: str) -> Element | str:
     first_xml_element: Element | None = None
     all_xml_elements: int = 0
 
@@ -30,11 +30,10 @@ def _extract_xml_element(text: str) -> Element:
         all_xml_elements += 1
 
     if first_xml_element is None:
-        raise ValidationError(
-            "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
-        )
+        return "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
+
     if all_xml_elements > 1:
-        raise ValidationError(
+        return (
             f"Found {all_xml_elements} <xml>...</xml> blocks. "
             "Please return only one XML block without any examples or explanations."
         )
