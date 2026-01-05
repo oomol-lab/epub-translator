@@ -174,10 +174,17 @@ class InlineSegment:
                 remain_expected_ids.add(child.id)
 
         for _, child_element in iter_with_stack(validated_element):
-            element_id = validate_id_in_element(child_element)
-            if isinstance(element_id, FoundInvalidIDError):
-                yield element_id
-            elif element_id in remain_expected_ids:
+            element_id = id_in_element(child_element)
+            if element_id is None:
+                validated_id = validate_id_in_element(
+                    element=child_element,
+                    enable_no_id=True,
+                )
+                if isinstance(validated_id, FoundInvalidIDError):
+                    yield validated_id
+                continue
+
+            if element_id in remain_expected_ids:
                 remain_expected_ids.remove(element_id)
             else:
                 yield InlineUnexpectedIDError(
