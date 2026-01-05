@@ -22,7 +22,7 @@ class InlineUnexpectedIDError:
 
 
 @dataclass
-class InlineExpectedIDError:
+class InlineExpectedIDsError:
     ids: list[int]
 
 
@@ -33,7 +33,7 @@ class InlineWrongTagCountError:
     stack: list[Element]
 
 
-InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDError | InlineWrongTagCountError
+InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDsError | InlineWrongTagCountError
 
 
 # @return collected InlineSegment and the next TextSegment that is not included
@@ -193,7 +193,7 @@ class InlineSegment:
                 )
 
         if remain_expected_ids:
-            yield InlineExpectedIDError(
+            yield InlineExpectedIDsError(
                 ids=sorted(remain_expected_ids),
             )
 

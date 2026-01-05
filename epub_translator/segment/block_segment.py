@@ -29,7 +29,7 @@ class BlockUnexpectedIDError:
 
 
 @dataclass
-class BlockExpectedIDError:
+class BlockExpectedIDsError:
     ids: list[int]
 
 
@@ -39,7 +39,7 @@ class BlockContentError:
     errors: list[InlineError | FoundInvalidIDError]
 
 
-BlockError = BlockWrongRootTagError | BlockUnexpectedIDError | BlockExpectedIDError | BlockContentError
+BlockError = BlockWrongRootTagError | BlockUnexpectedIDError | BlockExpectedIDsError | BlockContentError
 
 
 class BlockSegment:
@@ -89,7 +89,7 @@ class BlockSegment:
                     )
 
         if remain_expected_ids:
-            yield BlockExpectedIDError(ids=sorted(list(remain_expected_ids)))
+            yield BlockExpectedIDsError(ids=sorted(list(remain_expected_ids)))
 
     def submit(self, target: Element) -> Generator[BlockSubmitter, None, None]:
         for child_element in target:
