@@ -67,6 +67,7 @@ class ErrorsGroup:
 def nest_as_errors_group(errors: Iterable[BlockError | FoundInvalidIDError]) -> ErrorsGroup | None:
     return _create_errors_group(
         error_items=_transform_errors_to_items(errors),
+        will_sort_block_errors=True,
     )
 
 
@@ -77,7 +78,11 @@ def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsG
 
     errors_items.sort(key=lambda item: (-item[1].weight, item[1].index1, item[1].index2))
     errors_items = errors_items[:max_errors]
-    return _create_errors_group(errors_items)
+
+    return _create_errors_group(
+        error_items=errors_items,
+        will_sort_block_errors=False,
+    )
 
 
 def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
@@ -90,8 +95,15 @@ def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> N
     if message_lines:
         message_lines.append("")
 
-    for block_group in errors_group.block_groups:
-        # TODO: 添加一句承上启下的话，表明接下来都局限于某个 block 内
+    for i, block_group in enumerate(errors_group.block_groups):
+        if i == 0:
+            message_lines.append("")
+
+        block_tag = block_group.block_element.tag
+        error_count = len(block_group.errors)
+        count_suffix = f" ({error_count} error{'s' if error_count != 1 else ''})"
+        message_lines.append(f"In {block_tag}#{block_group.block_id}:{count_suffix}")
+
         for block_error in block_group.errors:
             message: str
             if isinstance(block_error.error, BlockError):
@@ -100,15 +112,21 @@ def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> N
                 message = _format_inline_error(block_error.error, block_group.block_id)
             else:
                 raise RuntimeError()
-            message_lines.append(message)
-        message_lines.append("")
+            message_lines.append(f"  - {message}")
 
     if not message_lines:
         return None
 
-    message_lines.insert(0, f"Found {errors_group.errors_count} error(s) in total. Fix them and submit again:\n")
+    header = f"Found {errors_group.errors_count} error(s) in total. Fix all errors below and return the corrected XML:"
+    message_lines.insert(0, "")
+    message_lines.insert(0, header)
+
     if omitted_count > 0:
-        message_lines.append(f"\n... and {omitted_count} more error(s) omitted.")
+        message_lines.append("")
+        message_lines.append(
+            f"... and {omitted_count} more error(s) omitted. "
+            f"Fix the above errors first, then resubmit for remaining issues."
+        )
 
     return "\n".join(message_lines)
 
@@ -187,6 +205,7 @@ def _create_errors_group(
             ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
         ]
     ],
+    will_sort_block_errors: bool,
 ) -> ErrorsGroup | None:
     upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]] = []
     block_elements: dict[int, Element] = {}
@@ -219,8 +238,9 @@ def _create_errors_group(
         )
         block_errors_groups.append(block_error_group)
 
-    block_errors_groups.sort(key=lambda g: -g.weight)
     upper_errors.sort(key=lambda e: (-e.weight, e.index1, e.index2))
+    if will_sort_block_errors:
+        block_errors_groups.sort(key=lambda g: -g.weight)
 
     return ErrorsGroup(
         upper_errors=upper_errors,
@@ -363,6 +383,12 @@ def _build_inline_selector(
     element: Element | None = None,
     tag: str | None = None,
 ) -> str:
+    """构建 inline 元素的 selector
+
+    TODO: 考虑添加文本片段提示，帮助 AI 更精确定位，例如：
+          `p#10 > span > em` (contains text: "hello world...")
+          这需要在 error 对象中携带文本信息
+    """
     if element is not None:
         element_id = element.get("id")
         if element_id is not None:
