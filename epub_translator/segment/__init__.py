@@ -1,15 +1,16 @@
 from .block_segment import (
+    BlockContentError,
     BlockError,
-    BlockExpectedIDError,
+    BlockExpectedIDsError,
     BlockSegment,
     BlockSubmitter,
     BlockUnexpectedIDError,
-    BlockWrongRootTagError,
+    BlockWrongTagError,
 )
 from .common import FoundInvalidIDError
 from .inline_segment import (
     InlineError,
-    InlineExpectedIDError,
+    InlineExpectedIDsError,
     InlineLostIDError,
     InlineSegment,
     InlineUnexpectedIDError,

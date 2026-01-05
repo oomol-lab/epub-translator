@@ -22,8 +22,8 @@ class InlineUnexpectedIDError:
 
 
 @dataclass
-class InlineExpectedIDError:
-    ids: list[int]
+class InlineExpectedIDsError:
+    id2element: dict[int, Element]
 
 
 @dataclass
@@ -33,7 +33,7 @@ class InlineWrongTagCountError:
     stack: list[Element]
 
 
-InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDError | InlineWrongTagCountError
+InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDsError | InlineWrongTagCountError
 
 
 # @return collected InlineSegment and the next TextSegment that is not included
@@ -168,10 +168,10 @@ class InlineSegment:
         return element
 
     def validate(self, validated_element: Element) -> Generator[InlineError | FoundInvalidIDError, None, None]:
-        remain_expected_ids: set[int] = set()
+        remain_expected_elements: dict[int, Element] = {}
         for child in self._child_inline_segments():
             if child.id is not None:
-                remain_expected_ids.add(child.id)
+                remain_expected_elements[child.id] = child.parent
 
         for _, child_element in iter_with_stack(validated_element):
             element_id = id_in_element(child_element)
@@ -184,17 +184,16 @@ class InlineSegment:
                     yield validated_id
                 continue
 
-            if element_id in remain_expected_ids:
-                remain_expected_ids.remove(element_id)
-            else:
+            remain_expected_element = remain_expected_elements.pop(element_id, None)
+            if remain_expected_element is None:
                 yield InlineUnexpectedIDError(
                     id=element_id,
                     element=child_element,
                 )
 
-        if remain_expected_ids:
-            yield InlineExpectedIDError(
-                ids=sorted(remain_expected_ids),
+        if remain_expected_elements:
+            yield InlineExpectedIDsError(
+                id2element=remain_expected_elements,
             )
 
         yield from self._validate_children_structure(validated_element)

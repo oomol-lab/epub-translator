@@ -2,7 +2,7 @@ import unittest
 from xml.etree.ElementTree import fromstring, tostring
 
 from epub_translator.segment.inline_segment import (
-    InlineExpectedIDError,
+    InlineExpectedIDsError,
     InlineLostIDError,
     InlineSegment,
     InlineUnexpectedIDError,
@@ -345,7 +345,7 @@ class TestValidate(unittest.TestCase):
 
         errors = list(inline_segment.validate(validated))
         # 应该有 InlineExpectedIDError ID 2 未找到）
-        expected_errors = [e for e in errors if isinstance(e, InlineExpectedIDError)]
+        expected_errors = [e for e in errors if isinstance(e, InlineExpectedIDsError)]
         self.assertGreater(len(expected_errors), 0)
 
 
