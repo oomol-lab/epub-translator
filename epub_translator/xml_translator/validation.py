@@ -184,7 +184,7 @@ def _build_error_message(
         for error_info in group.block_errors:
             if shown_error_count >= max_errors:
                 break
-            group_messages.append(_format_block_error(root_tag, error_info.error))
+            group_messages.append(_format_block_error(error_info.error))
             shown_error_count += 1
 
         # 添加 inline 错误（如果有）
@@ -231,9 +231,9 @@ def _build_error_message(
 
 
 def _calculate_error_weight(error: BlockError | InlineError | FoundInvalidIDError, level: int) -> int:
-    # BlockExpectedIDsError 和 InlineExpectedIDsError 的权重乘以 ids 数量
+    # BlockExpectedIDsError 和 InlineExpectedIDsError 的权重乘以 id2element 数量
     if isinstance(error, (BlockExpectedIDsError, InlineExpectedIDsError)):
-        return (_LEVEL_WEIGHT**level) * len(error.ids)
+        return (_LEVEL_WEIGHT**level) * len(error.id2element)
     else:
         return _LEVEL_WEIGHT**level
 
@@ -266,7 +266,7 @@ def _get_inline_error_level(error: InlineError | FoundInvalidIDError) -> int:
         return 0
 
 
-def _format_block_error(root_tag: str, error: BlockError | FoundInvalidIDError) -> str:
+def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
     """格式化 block 级别错误消息"""
     if isinstance(error, BlockWrongRootTagError):
         return (
@@ -274,8 +274,9 @@ def _format_block_error(root_tag: str, error: BlockError | FoundInvalidIDError) 
             f"Fix: Change the root tag to `{error.expected_tag}`."
         )
     elif isinstance(error, BlockExpectedIDsError):
-        ids_str = ", ".join(f'<{root_tag} id="{id}">' for id in error.ids)
-        return f"Missing expected blocks: {ids_str}. Fix: Add these missing blocks with the correct IDs."
+        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+        elements_str = ", ".join(missing_elements)
+        return f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
 
     elif isinstance(error, BlockUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"
@@ -298,8 +299,9 @@ def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int
         return f"Element at `{selector}` is missing an ID attribute. Fix: Add the required ID attribute."
 
     elif isinstance(error, InlineExpectedIDsError):
-        ids_str = ", ".join(f'id="{id}"' for id in error.ids)
-        return f"Missing expected inline elements with IDs: {ids_str}. Fix: Add these missing inline elements."
+        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+        elements_str = ", ".join(missing_elements)
+        return f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
 
     elif isinstance(error, InlineUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"

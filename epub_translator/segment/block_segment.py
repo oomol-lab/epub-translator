@@ -30,7 +30,7 @@ class BlockUnexpectedIDError:
 
 @dataclass
 class BlockExpectedIDsError:
-    ids: list[int]
+    id2element: dict[int, Element]
 
 
 @dataclass
@@ -69,7 +69,9 @@ class BlockSegment:
                 instead_tag=validated_element.tag,
             )
 
-        remain_expected_ids: set[int] = set(self._id2inline_segment.keys())
+        remain_expected_elements: dict[int, Element] = dict(
+            (id, inline_segment.parent) for id, inline_segment in self._id2inline_segment.items()
+        )
         for child_validated_element in validated_element:
             element_id = validate_id_in_element(child_validated_element)
             if isinstance(element_id, FoundInvalidIDError):
@@ -82,14 +84,14 @@ class BlockSegment:
                         element=child_validated_element,
                     )
                 else:
-                    remain_expected_ids.discard(element_id)
+                    remain_expected_elements.pop(element_id, None)
                     yield BlockContentError(
                         id=element_id,
                         errors=list(inline_segment.validate(child_validated_element)),
                     )
 
-        if remain_expected_ids:
-            yield BlockExpectedIDsError(ids=sorted(list(remain_expected_ids)))
+        if remain_expected_elements:
+            yield BlockExpectedIDsError(id2element=remain_expected_elements)
 
     def submit(self, target: Element) -> Generator[BlockSubmitter, None, None]:
         for child_element in target:
