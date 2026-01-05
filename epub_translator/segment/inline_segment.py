@@ -43,6 +43,7 @@ def collect_next_inline_segment(
         text_segments_iter=text_segments_iter,
     )
     if inline_segment is not None:
+        inline_segment.id = id_generator.next_id()
         inline_segment.recreate_ids(id_generator)
     return inline_segment, next_text_segment
 

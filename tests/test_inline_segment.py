@@ -120,8 +120,9 @@ class TestInlineSegmentIDAssignment(unittest.TestCase):
         self.assertIsNotNone(em_segments[0].id)
         self.assertIsNotNone(em_segments[1].id)
         # ID 应该是从 1 开始的连续数字
-        self.assertEqual(em_segments[0].id, 1)
-        self.assertEqual(em_segments[1].id, 2)
+        self.assertEqual(inline_segment.id, 1)
+        self.assertEqual(em_segments[0].id, 2)
+        self.assertEqual(em_segments[1].id, 3)
 
     def test_different_tags_no_id(self):
         """测试不同标签不分配 ID"""
