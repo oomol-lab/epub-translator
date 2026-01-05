@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar, cast
 from xml.etree.ElementTree import Element
 
+from tiktoken import Encoding
+
 from ..segment import (
     BlockContentError,
     BlockError,
@@ -17,8 +19,11 @@ from ..segment import (
     InlineWrongTagCountError,
 )
 from ..utils import ensure_list
+from ..xml import plain_text
 
 _LEVEL_WEIGHT = 3
+_MAX_TEXT_HINT_TOKENS_COUNT = 6
+
 
 _BLOCK_WRONG_TAG_LEVEL = 5
 _BLOCK_EXPECTED_IDS_LEVEL = 5
@@ -85,7 +90,7 @@ def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsG
     )
 
 
-def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
+def error_message(encoding: Encoding, errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
     if errors_group is None:
         return None
 
@@ -109,7 +114,7 @@ def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> N
             if isinstance(block_error.error, BlockError):
                 message = _format_block_error(block_error.error)
             elif isinstance(block_error.error, InlineError):
-                message = _format_inline_error(block_error.error, block_group.block_id)
+                message = _format_inline_error(encoding, block_error.error, block_group.block_id)
             else:
                 raise RuntimeError()
             message_lines.append(f"  - {message}")
@@ -317,9 +322,9 @@ def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
         return "Unknown block error. Fix: Review the block structure."
 
 
-def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int) -> str:
+def _format_inline_error(encoding: Encoding, error: InlineError | FoundInvalidIDError, block_id: int) -> str:
     if isinstance(error, InlineLostIDError):
-        selector = _build_inline_selector(error.stack, block_id, element=error.element)
+        selector = _build_inline_selector(encoding, error.stack, block_id, element=error.element)
         return f"Element at `{selector}` is missing an ID attribute. Fix: Add the required ID attribute."
 
     elif isinstance(error, InlineExpectedIDsError):
@@ -333,7 +338,7 @@ def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int
 
     elif isinstance(error, InlineWrongTagCountError):
         tag = error.found_elements[0].tag if error.found_elements else "unknown"
-        selector = _build_inline_selector(error.stack, block_id, tag=tag)
+        selector = _build_inline_selector(encoding, error.stack, block_id, tag=tag)
         expected = error.expected_count
         found = len(error.found_elements)
 
@@ -378,17 +383,12 @@ def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int
 
 
 def _build_inline_selector(
+    encoding: Encoding,
     stack: list[Element],
     block_id: int,
     element: Element | None = None,
     tag: str | None = None,
 ) -> str:
-    """构建 inline 元素的 selector
-
-    TODO: 考虑添加文本片段提示，帮助 AI 更精确定位，例如：
-          `p#10 > span > em` (contains text: "hello world...")
-          这需要在 error 对象中携带文本信息
-    """
     if element is not None:
         element_id = element.get("id")
         if element_id is not None:
@@ -406,4 +406,20 @@ def _build_inline_selector(
     if tag:
         path_parts.append(tag)
 
-    return " > ".join(path_parts)
+    selector = " > ".join(path_parts)
+
+    if element is not None:
+        text_hint = _extract_text_hint(encoding, element)
+        if text_hint:
+            selector += f' (contains text: "{text_hint}")'
+    return selector
+
+
+def _extract_text_hint(encoding: Encoding, element: Element) -> str:
+    text = plain_text(element).strip()
+    if text:
+        tokens = encoding.encode(text)
+        if len(tokens) > _MAX_TEXT_HINT_TOKENS_COUNT:
+            tokens = tokens[:_MAX_TEXT_HINT_TOKENS_COUNT]
+            text = encoding.decode(tokens).strip() + " ..."
+    return text
