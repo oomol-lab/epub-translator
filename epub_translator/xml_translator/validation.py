@@ -31,61 +31,7 @@ _INLINE_FOUND_INVALID_ID_LEVEL = 1
 _INLINE_WRONG_TAG_COUNT_LEVEL = 0
 _INLINE_UNEXPECTED_ID_LEVEL = 0
 
-
-@dataclass
-class _BlockErrorInfo:
-    error: BlockError | FoundInvalidIDError
-    level: int
-    weight: int
-
-
-@dataclass
-class _InlineErrorInfo:
-    error: InlineError | FoundInvalidIDError
-    level: int
-    weight: int
-
-
-@dataclass
-class _ErrorGroup:
-    block: tuple[int, Element] | None  # (block_id, block_element)
-    block_errors: list[_BlockErrorInfo]
-    inline_errors: list[_InlineErrorInfo]
-    total_score: int
-
-
 ERROR = TypeVar("ERROR")
-
-
-@dataclass
-class ValidationReporting:
-    error_message: str | None
-    block_score: int
-    inline_scores: dict[int, int]
-
-
-def validate(
-    errors: Iterable[BlockError | FoundInvalidIDError],
-    max_errors: int,
-) -> ValidationReporting:
-    error_groups = _collect_and_group_errors(errors)
-    block_score: int = 0
-    inline_scores: dict[int, int] = {}
-
-    if None in error_groups:
-        block_score = sum(e.weight for e in error_groups[None].block_errors)
-    for block_id, group in error_groups.items():
-        if block_id is not None and group.inline_errors:
-            inline_scores[block_id] = sum(e.weight for e in group.inline_errors)
-
-    return ValidationReporting(
-        block_score=block_score,
-        inline_scores=inline_scores,
-        error_message=_build_error_message(
-            error_groups=error_groups,
-            max_errors=max_errors,
-        ),
-    )
 
 
 @dataclass
@@ -132,6 +78,39 @@ def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsG
     errors_items.sort(key=lambda item: (-item[1].weight, item[1].index1, item[1].index2))
     errors_items = errors_items[:max_errors]
     return _create_errors_group(errors_items)
+
+
+def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
+    if errors_group is None:
+        return None
+
+    message_lines: list[str] = []
+    for upper_error in errors_group.upper_errors:
+        message_lines.append(_format_block_error(upper_error.error))
+    if message_lines:
+        message_lines.append("")
+
+    for block_group in errors_group.block_groups:
+        # TODO: 添加一句承上启下的话，表明接下来都局限于某个 block 内
+        for block_error in block_group.errors:
+            message: str
+            if isinstance(block_error.error, BlockError):
+                message = _format_block_error(block_error.error)
+            elif isinstance(block_error.error, InlineError):
+                message = _format_inline_error(block_error.error, block_group.block_id)
+            else:
+                raise RuntimeError()
+            message_lines.append(message)
+        message_lines.append("")
+
+    if not message_lines:
+        return None
+
+    message_lines.insert(0, f"Found {errors_group.errors_count} error(s) in total. Fix them and submit again:\n")
+    if omitted_count > 0:
+        message_lines.append(f"\n... and {omitted_count} more error(s) omitted.")
+
+    return "\n".join(message_lines)
 
 
 @dataclass
@@ -247,136 +226,6 @@ def _create_errors_group(
         upper_errors=upper_errors,
         block_groups=block_errors_groups,
     )
-
-
-def _collect_and_group_errors(
-    errors: Iterable[BlockError | FoundInvalidIDError],
-) -> dict[int | None, _ErrorGroup]:
-    error_groups: dict[int | None, _ErrorGroup] = {}
-
-    for error in errors:
-        if isinstance(error, BlockContentError):
-            block_id = error.id
-            if block_id not in error_groups:
-                error_groups[block_id] = _ErrorGroup(
-                    block=(block_id, error.element),
-                    block_errors=[],
-                    inline_errors=[],
-                    total_score=0,
-                )
-            for inline_error in error.errors:
-                level = _get_inline_error_level(inline_error)
-                weight = _calculate_error_weight(inline_error, level)
-                error_groups[block_id].inline_errors.append(
-                    _InlineErrorInfo(error=inline_error, level=level, weight=weight)
-                )
-        else:
-            if None not in error_groups:
-                error_groups[None] = _ErrorGroup(
-                    block=None,
-                    block_errors=[],
-                    inline_errors=[],
-                    total_score=0,
-                )
-            level = _get_block_error_level(error)
-            weight = _calculate_error_weight(error, level)
-            error_groups[None].block_errors.append(_BlockErrorInfo(error=error, level=level, weight=weight))
-
-    for group in error_groups.values():
-        group.block_errors.sort(key=lambda e: -e.level)
-        group.inline_errors.sort(key=lambda e: -e.level)
-        group.total_score = sum(e.weight for e in group.block_errors) + sum(e.weight for e in group.inline_errors)
-
-    return error_groups
-
-
-def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0):
-    if errors_group is None:
-        return None
-
-    message_lines: list[str] = []
-    for upper_error in errors_group.upper_errors:
-        message_lines.append(_format_block_error(upper_error.error))
-    if message_lines:
-        message_lines.append("")
-
-    for block_group in errors_group.block_groups:
-        # TODO: 添加一句承上启下的话，表明接下来都局限于某个 block 内
-        for block_error in block_group.errors:
-            message: str
-            if isinstance(block_error.error, BlockError):
-                message = _format_block_error(block_error.error)
-            elif isinstance(block_error.error, InlineError):
-                message = _format_inline_error(block_error.error, block_group.block_id)
-            else:
-                raise RuntimeError()
-            message_lines.append(message)
-        message_lines.append("")
-
-    if not message_lines:
-        return None
-
-    message_lines.insert(0, f"Found {errors_group.errors_count} error(s) in total. Fix them and submit again:\n")
-    if omitted_count > 0:
-        message_lines.append(f"\n... and {omitted_count} more error(s) omitted.")
-
-    return "\n".join(message_lines)
-
-
-def _build_error_message(
-    error_groups: dict[int | None, _ErrorGroup],
-    max_errors: int,
-) -> str | None:
-    if not error_groups:
-        return None
-
-    total_error_count = sum(len(g.block_errors) + len(g.inline_errors) for g in error_groups.values())
-    if total_error_count == 0:
-        return None
-
-    messages: list[str] = []
-    shown_error_count = 0
-    for group in sorted(error_groups.values(), key=lambda g: -g.total_score):
-        if shown_error_count >= max_errors:
-            break
-
-        group_messages: list[str] = []
-        for error_info in group.block_errors:
-            if shown_error_count >= max_errors:
-                break
-            group_messages.append(_format_block_error(error_info.error))
-            shown_error_count += 1
-
-        inline_messages: list[str] = []
-        if group.block is not None:  # inline 错误必须有 block_id
-            for error_info in group.inline_errors:
-                if shown_error_count >= max_errors:
-                    break
-                block_id, _ = group.block
-                inline_messages.append(_format_inline_error(error_info.error, block_id))
-                shown_error_count += 1
-
-        if inline_messages:
-            group_messages.extend(f"  - {msg}" for msg in inline_messages)
-
-        if group_messages:
-            if group.block is not None:
-                # 从 parent element 中获取 block_tag
-                block_id, block_element = group.block
-                messages.append(f"In {block_element.tag}#{block_id}:\n" + "\n".join(group_messages))
-            else:
-                messages.extend(group_messages)
-
-    if not messages:
-        return None
-
-    header = f"Found {total_error_count} error(s) in total:"
-    result = header + "\n\n" + "\n\n".join(messages)
-    if shown_error_count < total_error_count:
-        omitted_count = total_error_count - shown_error_count
-        result += f"\n\n... and {omitted_count} more error(s) omitted."
-
-    return result
 
 
 def _calculate_error_weight(error: BlockError | InlineError | FoundInvalidIDError, level: int) -> int:
