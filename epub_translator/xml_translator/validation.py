@@ -1,6 +1,9 @@
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from typing import Generic, TypeVar, cast
 from xml.etree.ElementTree import Element
+
+from tiktoken import Encoding
 
 from ..segment import (
     BlockContentError,
@@ -15,8 +18,12 @@ from ..segment import (
     InlineUnexpectedIDError,
     InlineWrongTagCountError,
 )
+from ..utils import ensure_list
+from ..xml import plain_text
 
 _LEVEL_WEIGHT = 3
+_MAX_TEXT_HINT_TOKENS_COUNT = 6
+
 
 _BLOCK_WRONG_TAG_LEVEL = 5
 _BLOCK_EXPECTED_IDS_LEVEL = 5
@@ -29,155 +36,221 @@ _INLINE_FOUND_INVALID_ID_LEVEL = 1
 _INLINE_WRONG_TAG_COUNT_LEVEL = 0
 _INLINE_UNEXPECTED_ID_LEVEL = 0
 
+ERROR = TypeVar("ERROR")
+
 
 @dataclass
-class _BlockErrorInfo:
-    error: BlockError | FoundInvalidIDError
+class ErrorItem(Generic[ERROR]):
+    error: ERROR
+    index1: int
+    index2: int
     level: int
     weight: int
 
 
 @dataclass
-class _InlineErrorInfo:
-    error: InlineError | FoundInvalidIDError
-    level: int
+class BlockErrorsGroup:
     weight: int
+    block_id: int
+    block_element: Element
+    errors: list[ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError]]
 
 
 @dataclass
-class _ErrorGroup:
-    block: tuple[int, Element] | None  # (block_id, block_element)
-    block_errors: list[_BlockErrorInfo]
-    inline_errors: list[_InlineErrorInfo]
-    total_score: int
+class ErrorsGroup:
+    upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]]
+    block_groups: list[BlockErrorsGroup]
+
+    @property
+    def errors_count(self) -> int:
+        count = len(self.upper_errors)
+        for block_group in self.block_groups:
+            count += len(block_group.errors)
+        return count
 
 
-@dataclass
-class ValidationReporting:
-    error_message: str | None
-    block_score: int
-    inline_scores: dict[int, int]
-
-
-def validate(
-    errors: Iterable[BlockError | FoundInvalidIDError],
-    max_errors: int,
-) -> ValidationReporting:
-    error_groups = _collect_and_group_errors(errors)
-    block_score: int = 0
-    inline_scores: dict[int, int] = {}
-
-    if None in error_groups:
-        block_score = sum(e.weight for e in error_groups[None].block_errors)
-    for block_id, group in error_groups.items():
-        if block_id is not None and group.inline_errors:
-            inline_scores[block_id] = sum(e.weight for e in group.inline_errors)
-
-    return ValidationReporting(
-        block_score=block_score,
-        inline_scores=inline_scores,
-        error_message=_build_error_message(
-            error_groups=error_groups,
-            max_errors=max_errors,
-        ),
+def nest_as_errors_group(errors: Iterable[BlockError | FoundInvalidIDError]) -> ErrorsGroup | None:
+    return _create_errors_group(
+        error_items=_transform_errors_to_items(errors),
+        will_sort_block_errors=True,
     )
 
 
-def _collect_and_group_errors(
-    errors: Iterable[BlockError | FoundInvalidIDError],
-) -> dict[int | None, _ErrorGroup]:
-    error_groups: dict[int | None, _ErrorGroup] = {}
+def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsGroup | None:
+    errors_items = list(_flatten_errors_group(errors_group))
+    if len(errors_items) <= max_errors:
+        return errors_group
 
-    for error in errors:
-        if isinstance(error, BlockContentError):
-            block_id = error.id
-            if block_id not in error_groups:
-                error_groups[block_id] = _ErrorGroup(
-                    block=(block_id, error.element),
-                    block_errors=[],
-                    inline_errors=[],
-                    total_score=0,
-                )
-            for inline_error in error.errors:
+    errors_items.sort(key=lambda item: (-item[1].weight, item[1].index1, item[1].index2))
+    errors_items = errors_items[:max_errors]
+
+    return _create_errors_group(
+        error_items=errors_items,
+        will_sort_block_errors=False,
+    )
+
+
+def error_message(encoding: Encoding, errors_group: ErrorsGroup | None, omitted_count: int = 0) -> None | str:
+    if errors_group is None:
+        return None
+
+    message_lines: list[str] = []
+    for upper_error in errors_group.upper_errors:
+        message_lines.append(_format_block_error(upper_error.error))
+    if message_lines:
+        message_lines.append("")
+
+    for i, block_group in enumerate(errors_group.block_groups):
+        if i == 0:
+            message_lines.append("")
+
+        block_tag = block_group.block_element.tag
+        error_count = len(block_group.errors)
+        count_suffix = f" ({error_count} error{'s' if error_count != 1 else ''})"
+        message_lines.append(f"In {block_tag}#{block_group.block_id}:{count_suffix}")
+
+        for block_error in block_group.errors:
+            message: str
+            if isinstance(block_error.error, BlockError):
+                message = _format_block_error(block_error.error)
+            elif isinstance(block_error.error, InlineError):
+                message = _format_inline_error(encoding, block_error.error, block_group.block_id)
+            else:
+                raise RuntimeError()
+            message_lines.append(f"  - {message}")
+
+    if not message_lines:
+        return None
+
+    header = f"Found {errors_group.errors_count} error(s) in total. Fix all errors below and return the corrected XML:"
+    message_lines.insert(0, "")
+    message_lines.insert(0, header)
+
+    if omitted_count > 0:
+        message_lines.append("")
+        message_lines.append(
+            f"... and {omitted_count} more error(s) omitted. "
+            f"Fix the above errors first, then resubmit for remaining issues."
+        )
+
+    return "\n".join(message_lines)
+
+
+@dataclass
+class _Block:
+    id: int
+    element: Element
+
+
+def _transform_errors_to_items(errors: Iterable[BlockError | FoundInvalidIDError]):
+    for i, block_error in enumerate(errors):
+        if isinstance(block_error, BlockContentError):
+            block = _Block(
+                id=block_error.id,
+                element=block_error.element,
+            )
+            for j, inline_error in enumerate(block_error.errors):
                 level = _get_inline_error_level(inline_error)
                 weight = _calculate_error_weight(inline_error, level)
-                error_groups[block_id].inline_errors.append(
-                    _InlineErrorInfo(error=inline_error, level=level, weight=weight)
+                yield (
+                    block,
+                    ErrorItem(
+                        error=inline_error,
+                        index1=i,
+                        index2=j,
+                        level=level,
+                        weight=weight,
+                    ),
                 )
         else:
-            if None not in error_groups:
-                error_groups[None] = _ErrorGroup(
-                    block=None,
-                    block_errors=[],
-                    inline_errors=[],
-                    total_score=0,
+            level = _get_block_error_level(block_error)
+            weight = _calculate_error_weight(block_error, level)
+            error_item: ErrorItem[BlockError | FoundInvalidIDError] = ErrorItem(
+                error=block_error,
+                index1=i,
+                index2=0,
+                level=level,
+                weight=weight,
+            )
+            block: _Block | None = None
+            if isinstance(block_error, BlockWrongTagError) and block_error.block is not None:
+                block = _Block(
+                    id=block_error.block[0],
+                    element=block_error.block[1],
                 )
-            level = _get_block_error_level(error)
-            weight = _calculate_error_weight(error, level)
-            error_groups[None].block_errors.append(_BlockErrorInfo(error=error, level=level, weight=weight))
-
-    for group in error_groups.values():
-        group.block_errors.sort(key=lambda e: -e.level)
-        group.inline_errors.sort(key=lambda e: -e.level)
-        group.total_score = sum(e.weight for e in group.block_errors) + sum(e.weight for e in group.inline_errors)
-
-    return error_groups
+            yield block, error_item
 
 
-def _build_error_message(
-    error_groups: dict[int | None, _ErrorGroup],
-    max_errors: int,
-) -> str | None:
-    if not error_groups:
+def _flatten_errors_group(
+    errors_group: ErrorsGroup,
+) -> Generator[
+    tuple[
+        _Block | None,
+        ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
+    ],
+    None,
+    None,
+]:
+    for error in errors_group.upper_errors:
+        yield None, error
+
+    for block_group in errors_group.block_groups:
+        block = _Block(
+            id=block_group.block_id,
+            element=block_group.block_element,
+        )
+        for error in block_group.errors:
+            yield block, error
+
+
+def _create_errors_group(
+    error_items: Iterable[
+        tuple[
+            _Block | None,
+            ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
+        ]
+    ],
+    will_sort_block_errors: bool,
+) -> ErrorsGroup | None:
+    upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]] = []
+    block_elements: dict[int, Element] = {}
+    block_errors_dict: dict[
+        int, list[ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError]]
+    ] = {}
+
+    for block, error in error_items:
+        if block is None:
+            upper_errors.append(cast(ErrorItem[BlockError | FoundInvalidIDError], error))
+        else:
+            block_errors = ensure_list(block_errors_dict, block.id)
+            block_errors.append(error)
+            block_elements[block.id] = block.element
+
+    if not upper_errors and not block_errors_dict:
         return None
 
-    total_error_count = sum(len(g.block_errors) + len(g.inline_errors) for g in error_groups.values())
-    if total_error_count == 0:
-        return None
+    block_errors_groups: list[BlockErrorsGroup] = []
+    for block_id, block_errors in block_errors_dict.items():
+        block_element = block_elements.get(block_id)
+        if block_element is None:
+            continue
 
-    messages: list[str] = []
-    shown_error_count = 0
-    for group in sorted(error_groups.values(), key=lambda g: -g.total_score):
-        if shown_error_count >= max_errors:
-            break
+        block_error_group = BlockErrorsGroup(
+            weight=sum(e.weight for e in block_errors),
+            block_id=block_id,
+            block_element=block_element,
+            errors=sorted(block_errors, key=lambda e: (-e.weight, e.index1, e.index2)),
+        )
+        block_errors_groups.append(block_error_group)
 
-        group_messages: list[str] = []
-        for error_info in group.block_errors:
-            if shown_error_count >= max_errors:
-                break
-            group_messages.append(_format_block_error(error_info.error))
-            shown_error_count += 1
+    upper_errors.sort(key=lambda e: (-e.weight, e.index1, e.index2))
+    if will_sort_block_errors:
+        block_errors_groups.sort(key=lambda g: -g.weight)
 
-        inline_messages: list[str] = []
-        if group.block is not None:  # inline 错误必须有 block_id
-            for error_info in group.inline_errors:
-                if shown_error_count >= max_errors:
-                    break
-                block_id, _ = group.block
-                inline_messages.append(_format_inline_error(error_info.error, block_id))
-                shown_error_count += 1
-
-        if inline_messages:
-            group_messages.extend(f"  - {msg}" for msg in inline_messages)
-
-        if group_messages:
-            if group.block is not None:
-                # 从 parent element 中获取 block_tag
-                block_id, block_element = group.block
-                messages.append(f"In {block_element.tag}#{block_id}:\n" + "\n".join(group_messages))
-            else:
-                messages.extend(group_messages)
-
-    if not messages:
-        return None
-
-    header = f"Found {total_error_count} error(s) in total:"
-    result = header + "\n\n" + "\n\n".join(messages)
-    if shown_error_count < total_error_count:
-        omitted_count = total_error_count - shown_error_count
-        result += f"\n\n... and {omitted_count} more error(s) omitted."
-
-    return result
+    return ErrorsGroup(
+        upper_errors=upper_errors,
+        block_groups=block_errors_groups,
+    )
 
 
 def _calculate_error_weight(error: BlockError | InlineError | FoundInvalidIDError, level: int) -> int:
@@ -218,16 +291,16 @@ def _get_inline_error_level(error: InlineError | FoundInvalidIDError) -> int:
 
 def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
     if isinstance(error, BlockWrongTagError):
-        if error.block_id is None:
+        if error.block is None:
             return (
                 f"Root tag mismatch: expected `<{error.expected_tag}>`, but found `<{error.instead_tag}>`. "
                 f"Fix: Change the root tag to `<{error.expected_tag}>`."
             )
         else:
             return (
-                f"Wrong tag for block at `{error.instead_tag}#{error.block_id}`: "
-                f'expected `<{error.expected_tag} id="{error.block_id}">`, '
-                f'but found `<{error.instead_tag} id="{error.block_id}">`. '
+                f"Wrong tag for block at `{error.instead_tag}#{error.block[0]}`: "
+                f'expected `<{error.expected_tag} id="{error.block[0]}">`, '
+                f'but found `<{error.instead_tag} id="{error.block[0]}">`. '
                 f"Fix: Change the tag to `<{error.expected_tag}>`."
             )
     elif isinstance(error, BlockExpectedIDsError):
@@ -249,9 +322,9 @@ def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
         return "Unknown block error. Fix: Review the block structure."
 
 
-def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int) -> str:
+def _format_inline_error(encoding: Encoding, error: InlineError | FoundInvalidIDError, block_id: int) -> str:
     if isinstance(error, InlineLostIDError):
-        selector = _build_inline_selector(error.stack, block_id, element=error.element)
+        selector = _build_inline_selector(encoding, error.stack, block_id, element=error.element)
         return f"Element at `{selector}` is missing an ID attribute. Fix: Add the required ID attribute."
 
     elif isinstance(error, InlineExpectedIDsError):
@@ -265,7 +338,7 @@ def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int
 
     elif isinstance(error, InlineWrongTagCountError):
         tag = error.found_elements[0].tag if error.found_elements else "unknown"
-        selector = _build_inline_selector(error.stack, block_id, tag=tag)
+        selector = _build_inline_selector(encoding, error.stack, block_id, tag=tag)
         expected = error.expected_count
         found = len(error.found_elements)
 
@@ -310,6 +383,7 @@ def _format_inline_error(error: InlineError | FoundInvalidIDError, block_id: int
 
 
 def _build_inline_selector(
+    encoding: Encoding,
     stack: list[Element],
     block_id: int,
     element: Element | None = None,
@@ -332,4 +406,20 @@ def _build_inline_selector(
     if tag:
         path_parts.append(tag)
 
-    return " > ".join(path_parts)
+    selector = " > ".join(path_parts)
+
+    if element is not None:
+        text_hint = _extract_text_hint(encoding, element)
+        if text_hint:
+            selector += f' (contains text: "{text_hint}")'
+    return selector
+
+
+def _extract_text_hint(encoding: Encoding, element: Element) -> str:
+    text = plain_text(element).strip()
+    if text:
+        tokens = encoding.encode(text)
+        if len(tokens) > _MAX_TEXT_HINT_TOKENS_COUNT:
+            tokens = tokens[:_MAX_TEXT_HINT_TOKENS_COUNT]
+            text = encoding.decode(tokens).strip() + " ..."
+    return text
