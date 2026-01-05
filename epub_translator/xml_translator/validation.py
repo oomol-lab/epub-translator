@@ -1,5 +1,6 @@
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from typing import Generic, TypeVar, cast
 from xml.etree.ElementTree import Element
 
 from ..segment import (
@@ -15,6 +16,7 @@ from ..segment import (
     InlineUnexpectedIDError,
     InlineWrongTagCountError,
 )
+from ..utils import ensure_list
 
 _LEVEL_WEIGHT = 3
 
@@ -52,6 +54,9 @@ class _ErrorGroup:
     total_score: int
 
 
+ERROR = TypeVar("ERROR")
+
+
 @dataclass
 class ValidationReporting:
     error_message: str | None
@@ -80,6 +85,167 @@ def validate(
             error_groups=error_groups,
             max_errors=max_errors,
         ),
+    )
+
+
+@dataclass
+class ErrorItem(Generic[ERROR]):
+    error: ERROR
+    index1: int
+    index2: int
+    level: int
+    weight: int
+
+
+@dataclass
+class BlockErrorsGroup:
+    weight: int
+    block_id: int
+    block_element: Element
+    errors: list[ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError]]
+
+
+@dataclass
+class ErrorsGroup:
+    upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]]
+    block_groups: list[BlockErrorsGroup]
+
+    @property
+    def errors_count(self) -> int:
+        count = len(self.upper_errors)
+        for block_group in self.block_groups:
+            count += len(block_group.errors)
+        return count
+
+
+def nest_as_errors_group(errors: Iterable[BlockError | FoundInvalidIDError]) -> ErrorsGroup | None:
+    return _create_errors_group(
+        error_items=_transform_errors_to_items(errors),
+    )
+
+
+def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsGroup | None:
+    errors_items = list(_flatten_errors_group(errors_group))
+    if len(errors_items) <= max_errors:
+        return errors_group
+
+    errors_items.sort(key=lambda item: (-item[1].weight, item[1].index1, item[1].index2))
+    errors_items = errors_items[:max_errors]
+    return _create_errors_group(errors_items)
+
+
+@dataclass
+class _Block:
+    id: int
+    element: Element
+
+
+def _transform_errors_to_items(errors: Iterable[BlockError | FoundInvalidIDError]):
+    for i, block_error in enumerate(errors):
+        if isinstance(block_error, BlockContentError):
+            block = _Block(
+                id=block_error.id,
+                element=block_error.element,
+            )
+            for j, inline_error in enumerate(block_error.errors):
+                level = _get_inline_error_level(inline_error)
+                weight = _calculate_error_weight(inline_error, level)
+                yield (
+                    block,
+                    ErrorItem(
+                        error=inline_error,
+                        index1=i,
+                        index2=j,
+                        level=level,
+                        weight=weight,
+                    ),
+                )
+        else:
+            level = _get_block_error_level(block_error)
+            weight = _calculate_error_weight(block_error, level)
+            error_item: ErrorItem[BlockError | FoundInvalidIDError] = ErrorItem(
+                error=block_error,
+                index1=i,
+                index2=0,
+                level=level,
+                weight=weight,
+            )
+            block: _Block | None = None
+            if isinstance(block_error, BlockWrongTagError) and block_error.block is not None:
+                block = _Block(
+                    id=block_error.block[0],
+                    element=block_error.block[1],
+                )
+            yield block, error_item
+
+
+def _flatten_errors_group(
+    errors_group: ErrorsGroup,
+) -> Generator[
+    tuple[
+        _Block | None,
+        ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
+    ],
+    None,
+    None,
+]:
+    for error in errors_group.upper_errors:
+        yield None, error
+
+    for block_group in errors_group.block_groups:
+        block = _Block(
+            id=block_group.block_id,
+            element=block_group.block_element,
+        )
+        for error in block_group.errors:
+            yield block, error
+
+
+def _create_errors_group(
+    error_items: Iterable[
+        tuple[
+            _Block | None,
+            ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError],
+        ]
+    ],
+) -> ErrorsGroup | None:
+    upper_errors: list[ErrorItem[BlockError | FoundInvalidIDError]] = []
+    block_elements: dict[int, Element] = {}
+    block_errors_dict: dict[
+        int, list[ErrorItem[BlockError | FoundInvalidIDError] | ErrorItem[InlineError | FoundInvalidIDError]]
+    ] = {}
+
+    for block, error in error_items:
+        if block is None:
+            upper_errors.append(cast(ErrorItem[BlockError | FoundInvalidIDError], error))
+        else:
+            block_errors = ensure_list(block_errors_dict, block.id)
+            block_errors.append(error)
+            block_elements[block.id] = block.element
+
+    if not upper_errors and not block_errors_dict:
+        return None
+
+    block_errors_groups: list[BlockErrorsGroup] = []
+    for block_id, block_errors in block_errors_dict.items():
+        block_element = block_elements.get(block_id)
+        if block_element is None:
+            continue
+
+        block_error_group = BlockErrorsGroup(
+            weight=sum(e.weight for e in block_errors),
+            block_id=block_id,
+            block_element=block_element,
+            errors=sorted(block_errors, key=lambda e: (-e.weight, e.index1, e.index2)),
+        )
+        block_errors_groups.append(block_error_group)
+
+    block_errors_groups.sort(key=lambda g: -g.weight)
+    upper_errors.sort(key=lambda e: (-e.weight, e.index1, e.index2))
+
+    return ErrorsGroup(
+        upper_errors=upper_errors,
+        block_groups=block_errors_groups,
     )
 
 
@@ -122,6 +288,39 @@ def _collect_and_group_errors(
         group.total_score = sum(e.weight for e in group.block_errors) + sum(e.weight for e in group.inline_errors)
 
     return error_groups
+
+
+def error_message(errors_group: ErrorsGroup | None, omitted_count: int = 0):
+    if errors_group is None:
+        return None
+
+    message_lines: list[str] = []
+    for upper_error in errors_group.upper_errors:
+        message_lines.append(_format_block_error(upper_error.error))
+    if message_lines:
+        message_lines.append("")
+
+    for block_group in errors_group.block_groups:
+        # TODO: 添加一句承上启下的话，表明接下来都局限于某个 block 内
+        for block_error in block_group.errors:
+            message: str
+            if isinstance(block_error.error, BlockError):
+                message = _format_block_error(block_error.error)
+            elif isinstance(block_error.error, InlineError):
+                message = _format_inline_error(block_error.error, block_group.block_id)
+            else:
+                raise RuntimeError()
+            message_lines.append(message)
+        message_lines.append("")
+
+    if not message_lines:
+        return None
+
+    message_lines.insert(0, f"Found {errors_group.errors_count} error(s) in total. Fix them and submit again:\n")
+    if omitted_count > 0:
+        message_lines.append(f"\n... and {omitted_count} more error(s) omitted.")
+
+    return "\n".join(message_lines)
 
 
 def _build_error_message(
@@ -218,16 +417,16 @@ def _get_inline_error_level(error: InlineError | FoundInvalidIDError) -> int:
 
 def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
     if isinstance(error, BlockWrongTagError):
-        if error.block_id is None:
+        if error.block is None:
             return (
                 f"Root tag mismatch: expected `<{error.expected_tag}>`, but found `<{error.instead_tag}>`. "
                 f"Fix: Change the root tag to `<{error.expected_tag}>`."
             )
         else:
             return (
-                f"Wrong tag for block at `{error.instead_tag}#{error.block_id}`: "
-                f'expected `<{error.expected_tag} id="{error.block_id}">`, '
-                f'but found `<{error.instead_tag} id="{error.block_id}">`. '
+                f"Wrong tag for block at `{error.instead_tag}#{error.block[0]}`: "
+                f'expected `<{error.expected_tag} id="{error.block[0]}">`, '
+                f'but found `<{error.instead_tag} id="{error.block[0]}">`. '
                 f"Fix: Change the tag to `<{error.expected_tag}>`."
             )
     elif isinstance(error, BlockExpectedIDsError):

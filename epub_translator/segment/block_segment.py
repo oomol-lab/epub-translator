@@ -18,9 +18,9 @@ class BlockSubmitter:
 
 @dataclass
 class BlockWrongTagError:
+    block: tuple[int, Element] | None  # (block_id, block_element) | None 表示根元素
     expected_tag: str
     instead_tag: str
-    block_id: int | None  # None 表示根元素
 
 
 @dataclass
@@ -67,9 +67,9 @@ class BlockSegment:
     def validate(self, validated_element: Element) -> Generator[BlockError | FoundInvalidIDError, None, None]:
         if validated_element.tag != self._root_tag:
             yield BlockWrongTagError(
+                block=None,
                 expected_tag=self._root_tag,
                 instead_tag=validated_element.tag,
-                block_id=None,
             )
 
         remain_expected_elements: dict[int, Element] = dict(
@@ -89,9 +89,9 @@ class BlockSegment:
                 else:
                     if inline_segment.parent.tag != child_validated_element.tag:
                         yield BlockWrongTagError(
+                            block=(cast(int, inline_segment.id), inline_segment.parent),
                             expected_tag=inline_segment.parent.tag,
                             instead_tag=child_validated_element.tag,
-                            block_id=inline_segment.id,
                         )
 
                     remain_expected_elements.pop(element_id, None)
