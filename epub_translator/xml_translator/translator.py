@@ -160,7 +160,7 @@ class XMLTranslator:
             all_xml_elements += 1
 
         if first_xml_element is None:
-            return "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
+            return "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."  # noqa: E501
 
         if all_xml_elements > 1:
             return (
