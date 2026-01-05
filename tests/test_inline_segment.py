@@ -11,7 +11,7 @@ from epub_translator.segment.inline_segment import (
 )
 from epub_translator.segment.text_segment import search_text_segments
 from epub_translator.segment.utils import IDGenerator
-from epub_translator.xml import ID_KEY
+from epub_translator.xml import ID_KEY, iter_with_stack
 
 
 class TestCollectInlineSegment(unittest.TestCase):
@@ -184,9 +184,12 @@ class TestCreateElement(unittest.TestCase):
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
 
-        # 不应该复制属性
-        self.assertIsNone(element.get("class"))
-        self.assertIsNone(element.get("id"))
+        for _, child_element in iter_with_stack(element):
+            if id(child_element) == id(element):
+                continue
+            # 不应该复制属性
+            self.assertIsNone(child_element.get("class"))
+            self.assertIsNone(child_element.get("id"))
 
     def test_create_element_with_ids(self):
         """测试创建带 ID 的元素"""
