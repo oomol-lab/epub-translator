@@ -8,15 +8,35 @@
 import json
 import sys
 from pathlib import Path
-from xml.etree.ElementTree import fromstring
+from xml.etree.ElementTree import Element, fromstring
 
 # 添加项目根目录到 path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from epub_translator.llm import LLM, Message, MessageRole
-from epub_translator.xml import encode_friendly
-from epub_translator.xml_translator.format import ValidationError, _extract_xml_element
-from epub_translator.xml_translator.progressive_locking import ProgressiveLockingValidator
+from epub_translator.xml import decode_friendly, encode_friendly
+from epub_translator.xml_translator.hill_climbing import HillClimbing
+from scripts.utils import read_and_clean_temp
+
+
+def _extract_xml_element(text: str) -> Element | str:
+    """提取 XML 元素，返回 Element 或错误消息字符串"""
+    first_xml_element: Element | None = None
+    all_xml_elements: int = 0
+
+    for xml_element in decode_friendly(text, tags="xml"):
+        if first_xml_element is None:
+            first_xml_element = xml_element
+        all_xml_elements += 1
+
+    if first_xml_element is None:
+        return "No complete <xml>...</xml> block found. Please ensure you have properly closed the XML with </xml> tag."
+
+    if all_xml_elements > 1:
+        return (
+            f"Found {all_xml_elements} <xml>...</xml> blocks. "
+            "Please return only one XML block without any examples or explanations."
+        )
+    return first_xml_element
 
 
 def parse_test_case(file_path: Path) -> tuple[str, str, str]:
@@ -49,11 +69,13 @@ def parse_test_case(file_path: Path) -> tuple[str, str, str]:
 
 def test_fill_case(llm: LLM, case_name: str, case_file: Path, max_retries: int = 10) -> tuple[bool, int, int, float]:
     """
-    测试单个 fill 案例（使用渐进式锁定）
+    测试单个 fill 案例（使用爬山算法）
 
-    返回: (success, total_nodes, rounds_used, time_elapsed)
+    返回: (success, unused, rounds_used, time_elapsed)
     """
     import time
+
+    from epub_translator.segment import search_text_segments
 
     start_time = time.time()
 
@@ -64,8 +86,19 @@ def test_fill_case(llm: LLM, case_name: str, case_file: Path, max_retries: int =
     source_text, xml_template, translated_text = parse_test_case(case_file)
     template_element = fromstring(xml_template)
 
+    # 从模板元素创建 TextSegment 列表
+    text_segments = list(search_text_segments(template_element))
+
+    # 创建爬山算法实例
+    hill_climbing = HillClimbing(
+        encoding=llm.encoding,
+        request_tag="xml",
+        text_segments=text_segments,
+        max_fill_displaying_errors=10,
+    )
+
     # 构造初始请求
-    request_xml = encode_friendly(template_element)
+    request_xml = encode_friendly(hill_climbing.request_element())
     fixed_messages = [
         Message(
             role=MessageRole.SYSTEM,
@@ -81,66 +114,50 @@ def test_fill_case(llm: LLM, case_name: str, case_file: Path, max_retries: int =
         ),
     ]
 
-    validator = ProgressiveLockingValidator()
     conversation_history = []
-    total_nodes = sum(1 for elem in template_element.iter() if elem.get("id") is not None)
 
-    print(f"Total nodes: {total_nodes}")
+    print(f"Source length: {len(source_text)} chars")
+    print(f"Translated length: {len(translated_text)} chars")
 
     with llm.context() as llm_context:
+        did_success: bool = False
+        rounds_used: int = max_retries
         for attempt in range(max_retries):
             print(f"\n  Round {attempt + 1}/{max_retries}:", end=" ")
 
             response = llm_context.request(input=fixed_messages + conversation_history)
+            validated_element = _extract_xml_element(response)
+            error_message: str | None = None
 
-            try:
-                validated_element = _extract_xml_element(response)
-                is_complete, error_message, newly_locked = validator.validate_with_locking(
-                    template_ele=template_element,
-                    validated_ele=validated_element,
-                    errors_limit=10,
-                )
+            if isinstance(validated_element, str):
+                error_message = validated_element
+                print("XML parse error")
+            elif isinstance(validated_element, Element):
+                error_message = hill_climbing.submit(validated_element)
 
-                locked_count = len(validator.locked_ids)
-                print(f"{locked_count}/{total_nodes} nodes locked", end="")
+            if error_message is None:
+                did_success = True
+                rounds_used = attempt + 1
+                print("Success!")
+                break
 
-                if newly_locked:
-                    print(f" (+{len(newly_locked)})", end="")
-                else:
-                    print(" (no progress)", end="")
+            print("Has errors")
 
-                if is_complete:
-                    elapsed = time.time() - start_time
-                    print(f"\n\n  ✅ CONVERGED in {attempt + 1} rounds ({elapsed:.1f}s)")
-                    print(f"{'=' * 70}")
-                    return True, total_nodes, attempt + 1, elapsed
+            conversation_history = [
+                Message(role=MessageRole.ASSISTANT, message=response),
+                Message(role=MessageRole.USER, message=error_message),
+            ]
 
-                print()
-
-                # 构造下一轮错误提示
-                progress_msg = f"Progress: {locked_count} nodes locked"
-                if newly_locked:
-                    progress_msg += f", {len(newly_locked)} newly locked this round"
-                full_error_message = f"{progress_msg}\n\n{error_message}"
-
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=full_error_message),
-                ]
-
-            except ValidationError as error:
-                print("Validation error")
-                conversation_history = [
-                    Message(role=MessageRole.ASSISTANT, message=response),
-                    Message(role=MessageRole.USER, message=str(error)),
-                ]
-
-        # 达到最大重试次数仍未收敛
         elapsed = time.time() - start_time
-        print(f"\n\n  ❌ FAILED to converge after {max_retries} rounds ({elapsed:.1f}s)")
-        print(f"  Final progress: {len(validator.locked_ids)}/{total_nodes} nodes locked")
-        print(f"{'=' * 70}")
-        return False, total_nodes, max_retries, elapsed
+
+        if did_success:
+            print(f"\n\n  ✅ CONVERGED in {rounds_used} rounds ({elapsed:.1f}s)")
+            print(f"{'=' * 70}")
+            return True, 0, rounds_used, elapsed
+        else:
+            print(f"\n\n  ❌ FAILED to converge after {max_retries} rounds ({elapsed:.1f}s)")
+            print(f"{'=' * 70}")
+            return False, 0, max_retries, elapsed
 
 
 def main():
@@ -154,8 +171,12 @@ def main():
     with open(config_path, encoding="utf-8") as f:
         config = json.load(f)
 
-    llm = LLM(**config)
-
+    temp_path = read_and_clean_temp()
+    llm = LLM(
+        **config,
+        log_dir_path=temp_path / "logs",
+        cache_path=Path(__file__).parent / ".." / "cache",
+    )
     # 测试用例目录
     test_cases_dir = Path(__file__).parent.parent / "tests" / "fill" / "request_cases"
 
@@ -170,7 +191,7 @@ def main():
     total_start_time = __import__("time").time()
 
     print("\n" + "=" * 70)
-    print("FILL CASES TEST - Progressive Locking System Verification")
+    print("FILL CASES TEST - Hill Climbing Algorithm Verification")
     print("=" * 70)
 
     for case_name in cases:
@@ -192,9 +213,9 @@ def main():
     passed = sum(1 for _, success, _, _, _ in results if success)
     failed = len(results) - passed
 
-    for case_name, success, total_nodes, rounds, elapsed in results:
+    for case_name, success, _, rounds, elapsed in results:
         status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status}  {case_name:30s}  {rounds:2d} rounds  {elapsed:6.1f}s  ({total_nodes} nodes)")
+        print(f"{status}  {case_name:30s}  {rounds:2d} rounds  {elapsed:6.1f}s")
 
     print(f"\n{'-' * 70}")
     print(f"Total: {len(results)} cases  |  Passed: {passed}  |  Failed: {failed}")
