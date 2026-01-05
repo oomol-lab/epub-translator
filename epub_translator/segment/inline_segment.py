@@ -174,6 +174,9 @@ class InlineSegment:
                 remain_expected_elements[child.id] = child.parent
 
         for _, child_element in iter_with_stack(validated_element):
+            if child_element is validated_element:
+                continue  # skip the root self
+
             element_id = id_in_element(child_element)
             if element_id is None:
                 validated_id = validate_id_in_element(
