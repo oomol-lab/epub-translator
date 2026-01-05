@@ -25,13 +25,13 @@ _LEVEL_WEIGHT = 3
 _MAX_TEXT_HINT_TOKENS_COUNT = 6
 
 
+_BLOCK_EXPECTED_IDS_LEVEL = 6
 _BLOCK_WRONG_TAG_LEVEL = 5
-_BLOCK_EXPECTED_IDS_LEVEL = 5
 _BLOCK_FOUND_INVALID_ID_LEVEL = 4
 _BLOCK_UNEXPECTED_ID_LEVEL = 3
 
+_INLINE_EXPECTED_IDS_LEVEL = 3
 _INLINE_LOST_ID_LEVEL = 2
-_INLINE_EXPECTED_IDS_LEVEL = 2
 _INLINE_FOUND_INVALID_ID_LEVEL = 1
 _INLINE_WRONG_TAG_COUNT_LEVEL = 0
 _INLINE_UNEXPECTED_ID_LEVEL = 0
@@ -81,7 +81,7 @@ def truncate_errors_group(errors_group: ErrorsGroup, max_errors: int) -> ErrorsG
     if len(errors_items) <= max_errors:
         return errors_group
 
-    errors_items.sort(key=lambda item: (-item[1].weight, item[1].index1, item[1].index2))
+    errors_items.sort(key=lambda item: (-item[1].level, item[1].index1, item[1].index2))
     errors_items = errors_items[:max_errors]
 
     return _create_errors_group(
@@ -243,7 +243,7 @@ def _create_errors_group(
         )
         block_errors_groups.append(block_error_group)
 
-    upper_errors.sort(key=lambda e: (-e.weight, e.index1, e.index2))
+    upper_errors.sort(key=lambda e: (-e.level, e.index1, e.index2))
     if will_sort_block_errors:
         block_errors_groups.sort(key=lambda g: -g.weight)
 
