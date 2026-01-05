@@ -4,8 +4,9 @@ from xml.etree.ElementTree import Element
 
 from ..utils import ensure_list, is_the_same, nest
 from ..xml import ID_KEY, append_text_in_element, iter_with_stack, plain_text
+from .common import FoundInvalidIDError, validate_id_in_element
 from .text_segment import TextSegment
-from .utils import IDGenerator, element_fingerprint
+from .utils import IDGenerator, element_fingerprint, id_in_element
 
 
 @dataclass
@@ -32,6 +33,9 @@ class InlineWrongTagCountError:
     stack: list[Element]
 
 
+InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDError | InlineWrongTagCountError
+
+
 # @return collected InlineSegment and the next TextSegment that is not included
 def collect_next_inline_segment(
     id_generator: IDGenerator,
@@ -43,6 +47,7 @@ def collect_next_inline_segment(
         text_segments_iter=text_segments_iter,
     )
     if inline_segment is not None:
+        inline_segment.id = id_generator.next_id()
         inline_segment.recreate_ids(id_generator)
     return inline_segment, next_text_segment
 
@@ -99,11 +104,11 @@ class InlineSegment:
         self._child_tag2count: dict[str, int] = {}
 
         next_temp_id: int = 0
-        terms = nest((child.parent_stack[-1].tag, child) for child in children if isinstance(child, InlineSegment))
+        terms = nest((child.parent.tag, child) for child in children if isinstance(child, InlineSegment))
 
         for _, child_terms in terms.items():
             if not is_the_same(  # 仅当 tag 彼此无法区分时才分配 id，以尽可能减少 id 的数量
-                elements=(element_fingerprint(t.parent_stack[-1]) for t in child_terms),
+                elements=(element_fingerprint(t.parent) for t in child_terms),
             ):
                 for child in child_terms:
                     child.id = next_temp_id
@@ -112,6 +117,10 @@ class InlineSegment:
     @property
     def children(self) -> list["TextSegment | InlineSegment"]:
         return self._children
+
+    @property
+    def parent(self) -> Element:
+        return self._parent_stack[-1]
 
     @property
     def parent_stack(self) -> list[Element]:
@@ -127,7 +136,7 @@ class InlineSegment:
     def recreate_ids(self, id_generator: IDGenerator) -> None:
         for child in self._children:
             if isinstance(child, InlineSegment):
-                child_tag = child.parent_stack[-1].tag
+                child_tag = child.parent.tag
                 ids = ensure_list(self._child_tag2ids, child_tag)
                 if child.id is not None:
                     child.id = id_generator.next_id()
@@ -136,14 +145,12 @@ class InlineSegment:
                 self._child_tag2count[child_tag] = self._child_tag2count.get(child_tag, 0) + 1
 
     def create_element(self) -> Element:
-        element = Element(self.parent_stack[-1].tag)
+        element = Element(self.parent.tag)
         previous_element: Element | None = None
         for child in self._children:
             if isinstance(child, InlineSegment):
                 previous_element = child.create_element()
                 element.append(previous_element)
-                if child.id is not None:
-                    previous_element.set(ID_KEY, str(child.id))
 
             elif isinstance(child, TextSegment):
                 if previous_element is None:
@@ -156,18 +163,27 @@ class InlineSegment:
                         origin_text=previous_element.tail,
                         append_text=child.text,
                     )
+        if self.id is not None:
+            element.set(ID_KEY, str(self.id))
         return element
 
-    def validate(self, validated_element: Element):
+    def validate(self, validated_element: Element) -> Generator[InlineError | FoundInvalidIDError, None, None]:
         remain_expected_ids: set[int] = set()
         for child in self._child_inline_segments():
             if child.id is not None:
                 remain_expected_ids.add(child.id)
 
         for _, child_element in iter_with_stack(validated_element):
-            element_id = self._id_from_element(child_element)
+            element_id = id_in_element(child_element)
             if element_id is None:
+                validated_id = validate_id_in_element(
+                    element=child_element,
+                    enable_no_id=True,
+                )
+                if isinstance(validated_id, FoundInvalidIDError):
+                    yield validated_id
                 continue
+
             if element_id in remain_expected_ids:
                 remain_expected_ids.remove(element_id)
             else:
@@ -190,7 +206,6 @@ class InlineSegment:
                 yield from child._child_inline_segments()  # pylint: disable=protected-access
 
     def _validate_children_structure(self, validated_element: Element):
-        self_element = self._parent_stack[-1]
         tag2found_elements: dict[str, list[Element]] = {}
 
         for child_element in validated_element:
@@ -203,7 +218,7 @@ class InlineSegment:
                 if id_str is None:
                     yield InlineLostIDError(
                         element=child_element,
-                        stack=[self_element],
+                        stack=[self.parent],
                     )
 
         for tag, found_elements in tag2found_elements.items():
@@ -212,19 +227,18 @@ class InlineSegment:
                 yield InlineWrongTagCountError(
                     expected_count=expected_count,
                     found_elements=found_elements,
-                    stack=[self_element],
+                    stack=[self.parent],
                 )
 
         for child, child_element in self._match_children(validated_element):
             # pylint: disable=protected-access
             for error in child._validate_children_structure(child_element):
-                error.stack.insert(0, self_element)
+                error.stack.insert(0, self.parent)
                 yield error
 
     # 即便 self.validate(...) 的错误没有排除干净，也要尽可能匹配一个质量较高（尽力而为）的版本
     def assign_attributes(self, template_element: Element) -> Element:
-        self_element = self._parent_stack[-1]
-        assigned_element = Element(self_element.tag, self_element.attrib)
+        assigned_element = Element(self.parent.tag, self.parent.attrib)
         matched_child_element_ids: set[int] = set()
 
         for child, child_element in self._match_children(template_element):
@@ -262,8 +276,7 @@ class InlineSegment:
     def _match_children(self, element: Element) -> Generator[tuple["InlineSegment", Element], None, None]:
         tag2elements = nest((c.tag, c) for c in element)
         tag2children = nest(
-            (c.parent_stack[-1].tag, (i, c))
-            for i, c in enumerate(c for c in self._children if isinstance(c, InlineSegment))
+            (c.parent.tag, (i, c)) for i, c in enumerate(c for c in self._children if isinstance(c, InlineSegment))
         )
         used_ids: set[int] = set()
         children_and_elements: list[tuple[int, InlineSegment, Element]] = []
@@ -276,7 +289,7 @@ class InlineSegment:
 
             for child_element in tag2elements.get(tag, []):
                 id_order: int | None = None
-                child_id = self._id_from_element(child_element)
+                child_id = id_in_element(child_element)
                 if child_id is not None and child_id not in used_ids:
                     used_ids.add(child_id)  # 一个 id 只能用一次，防止重复
                     try:
@@ -302,12 +315,3 @@ class InlineSegment:
 
         for _, child, child_element in sorted(children_and_elements, key=lambda x: x[0]):
             yield child, child_element
-
-    def _id_from_element(self, element: Element) -> int | None:
-        id_str = element.get(ID_KEY, None)
-        if id_str is None:
-            return None
-        try:
-            return int(id_str)
-        except ValueError:
-            return None
