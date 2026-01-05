@@ -32,5 +32,5 @@ class HillClimbing:
         return element
 
     def submit(self, element: Element):
-        for error in self._block_segment.validate(element):
+        for _ in self._block_segment.validate(element):
             pass

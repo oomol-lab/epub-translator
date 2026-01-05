@@ -67,7 +67,7 @@ class XMLTranslator:
     def _translate_text_segments(self, elements: Iterable[Element]):
         for group in self._group_context.split_groups(elements):
             text_segments = list(group)
-            hill_climbing = HillClimbing(
+            _hill_climbing = HillClimbing(
                 encoding=self._llm.encoding,
                 request_tag="xml",
                 text_segments=text_segments,
