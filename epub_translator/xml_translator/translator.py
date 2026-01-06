@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
 from typing import TypeVar
 from xml.etree.ElementTree import Element
 
@@ -31,15 +31,30 @@ class XMLTranslator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate_element(self, element: Element) -> Element:
-        for translated in self.translate_elements(((element),)):
+    def translate_element(
+        self,
+        element: Element,
+        filter_text_segments: Callable[[TextSegment], bool] | None = None,
+    ) -> Element:
+        for translated in self.translate_elements(
+            elements=((element),),
+            filter_text_segments=filter_text_segments,
+        ):
             return translated
+
         raise RuntimeError("Translation failed unexpectedly")
 
-    def translate_elements(self, elements: Iterable[Element]) -> Generator[Element, None, None]:
+    def translate_elements(
+        self,
+        elements: Iterable[Element],
+        filter_text_segments: Callable[[TextSegment], bool] | None = None,
+    ) -> Generator[Element, None, None]:
         for element, mappings in self._stream_mapper.map_stream(
             elements=iter(elements),
-            map=self._translate_inline_segments,
+            map=lambda inline_segments: self._translate_inline_segments(
+                inline_segments=inline_segments,
+                filter_text_segments=filter_text_segments,
+            ),
         ):
             yield submit_text_segments(
                 element=element,
@@ -49,6 +64,7 @@ class XMLTranslator:
     def _translate_inline_segments(
         self,
         inline_segments: list[InlineSegment],
+        filter_text_segments: Callable[[TextSegment], bool] | None,
     ) -> list[InlineSegmentMapping | None]:
         hill_climbing = HillClimbing(
             encoding=self._llm.encoding,
@@ -67,7 +83,17 @@ class XMLTranslator:
             source_text=source_text,
             translated_text=translated_text,
         )
-        return list(hill_climbing.gen_mappings())
+        mappings: list[InlineSegmentMapping | None] = []
+        for mapping in hill_climbing.gen_mappings():
+            if mapping and filter_text_segments is not None:
+                text_segments = [t for t in text_segments if filter_text_segments(t)]
+                if text_segments:
+                    mapping = (mapping[0], text_segments)
+                else:
+                    mapping = None
+            mappings.append(mapping)
+
+        return mappings
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):
         iterator = iter(segments)
