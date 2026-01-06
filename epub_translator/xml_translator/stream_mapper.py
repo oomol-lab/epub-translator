@@ -28,25 +28,22 @@ class XMLStreamMapper:
         current_element: Element | None = None
         text_segments_buffer: list[list[TextSegment]] = []
 
-        for origin, target in self._split_and_map(elements, map):
-            origin_element = origin.head.root
-            if current_element is None:
-                current_element = origin_element
+        for head, body, tail in self._split_into_groups(elements):
+            target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
+            for origin, target in zip(body, target_body):
+                origin_element = origin.head.root
+                if current_element is None:
+                    current_element = origin_element
 
-            if id(current_element) != id(origin_element):
-                yield current_element, text_segments_buffer
-                current_element = origin_element
-                text_segments_buffer = []
-            elif target:
-                text_segments_buffer.append(target)
+                if id(current_element) != id(origin_element):
+                    yield current_element, text_segments_buffer
+                    current_element = origin_element
+                    text_segments_buffer = []
+                elif target:
+                    text_segments_buffer.append(target)
 
         if current_element is not None:
             yield current_element, text_segments_buffer
-
-    def _split_and_map(self, elements: Iterator[Element], map: InlineSegmentGroupMap):
-        for head, body, tail in self._split_into_groups(elements):
-            target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-            yield from zip(body, target_body)
 
     def _split_into_groups(self, elements: Iterator[Element]):
         for group in split(

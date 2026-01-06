@@ -38,7 +38,8 @@ class XMLTranslator:
 
     def translate_elements(self, elements: Iterable[Element]) -> Generator[Element, None, None]:
         for element, text_segments in self._stream_mapper.map_stream(
-            elements=iter(elements), map=self._translate_inline_segments
+            elements=iter(elements),
+            map=self._translate_inline_segments,
         ):
             yield submit_text_segments(
                 element=element,
