@@ -7,6 +7,7 @@ from tiktoken import Encoding
 from ..segment import BlockSegment, BlockSubmitter, TextSegment, search_text_segments
 from ..xml import plain_text
 from .common import DATA_ORIGIN_LEN_KEY
+from .stream_mapper import InlineSegmentMapping
 from .validation import LEVEL_DEPTH, generate_error_message, nest_as_errors_group, truncate_errors_group
 
 
@@ -38,34 +39,36 @@ class HillClimbing:
             child_element.set(DATA_ORIGIN_LEN_KEY, str(len(tokens)))
         return element
 
-    def gen_text_segments(self) -> Generator[list[TextSegment] | None, None, None]:
+    def gen_mappings(self) -> Generator[InlineSegmentMapping | None, None, None]:
         for inline_segment in self._block_segment:
             id = inline_segment.id
             assert id is not None
             status = self._block_statuses.get(id, None)
+            text_segments: list[TextSegment] | None = None
             if status is None:
                 yield None
             else:
-                yield list(
-                    search_text_segments(root=status.submitter.submitted_element),
-                )
+                submitted_element = status.submitter.submitted_element
+                text_segments = list(search_text_segments(submitted_element))
+                yield inline_segment, text_segments
 
     def submit(self, element: Element) -> str | None:
-        error_message, elevatory_block_weights = self._validate_block_weights_and_error_message(element)
-        if elevatory_block_weights:
-            for submitter in self._block_segment.submit(element):
-                weight = elevatory_block_weights.get(submitter.id, None)
-                if weight is None:
-                    pass
-                elif submitter.id not in self._block_statuses:
-                    self._block_statuses[submitter.id] = _BlockStatus(
-                        weight=weight,
-                        submitter=submitter,
-                    )
-                else:
-                    status = self._block_statuses[submitter.id]
-                    status.weight = weight
-                    status.submitter = submitter
+        error_message, block_weights = self._validate_block_weights_and_error_message(element)
+
+        for submitter in self._block_segment.submit(element):
+            weight: int = 0  # 未出现在 block_weights 说明没有错误，已完成
+            if block_weights:
+                weight = block_weights.get(submitter.id, 0)
+            status = self._block_statuses.get(submitter.id, None)
+            if status is None:
+                self._block_statuses[submitter.id] = _BlockStatus(
+                    weight=weight,
+                    submitter=submitter,
+                )
+            elif weight < status.weight:
+                status.weight = weight
+                status.submitter = submitter
+
         return error_message
 
     def _validate_block_weights_and_error_message(self, element: Element) -> tuple[str | None, dict[int, int] | None]:
@@ -75,14 +78,13 @@ class HillClimbing:
         if errors_group is None:
             return None, None
 
-        elevatory_block_weights: dict[int, int] = {}
+        block_weights: dict[int, int] = {}
         for block_group in errors_group.block_groups:
             block_id = block_group.block_id
             status = self._block_statuses.get(block_id, None)
-            if status is None or status.weight >= block_group.weight:
-                elevatory_block_weights[block_id] = block_group.weight
-            else:
-                # 对于 AI 显著提升的块，下次应该让出注意力，让 AI 提升那些没有被提升的块
+            block_weights[block_id] = block_group.weight
+            if status is not None and status.weight > block_group.weight:
+                # 本轮完成度得到改善（weight 下降）应该排后，让出注意力给完成度尚未改善的部分
                 for child_error in block_group.errors:
                     child_error.level -= LEVEL_DEPTH
 
@@ -92,11 +94,11 @@ class HillClimbing:
             max_errors=self._max_fill_displaying_errors,
         )
         if errors_group is None:
-            return None, elevatory_block_weights
+            return None, block_weights
 
         message = generate_error_message(
             encoding=self._encoding,
             errors_group=errors_group,
             omitted_count=origin_errors_count - errors_group.errors_count,
         )
-        return message, elevatory_block_weights
+        return message, block_weights

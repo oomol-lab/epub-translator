@@ -6,7 +6,7 @@ from ..llm import LLM, Message, MessageRole
 from ..segment import BlockSegment, InlineSegment, TextSegment
 from ..xml import decode_friendly, encode_friendly
 from .hill_climbing import HillClimbing
-from .stream_mapper import XMLStreamMapper
+from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
 from .submitter import submit_text_segments
 
 T = TypeVar("T")
@@ -37,16 +37,19 @@ class XMLTranslator:
         raise RuntimeError("Translation failed unexpectedly")
 
     def translate_elements(self, elements: Iterable[Element]) -> Generator[Element, None, None]:
-        for element, text_segments in self._stream_mapper.map_stream(
+        for element, mappings in self._stream_mapper.map_stream(
             elements=iter(elements),
             map=self._translate_inline_segments,
         ):
             yield submit_text_segments(
                 element=element,
-                text_segments_groups=text_segments,
+                mappings=mappings,
             )
 
-    def _translate_inline_segments(self, inline_segments: list[InlineSegment]) -> list[list[TextSegment] | None]:
+    def _translate_inline_segments(
+        self,
+        inline_segments: list[InlineSegment],
+    ) -> list[InlineSegmentMapping | None]:
         hill_climbing = HillClimbing(
             encoding=self._llm.encoding,
             max_fill_displaying_errors=self._max_fill_displaying_errors,
@@ -64,7 +67,7 @@ class XMLTranslator:
             source_text=source_text,
             translated_text=translated_text,
         )
-        return list(hill_climbing.gen_text_segments())
+        return list(hill_climbing.gen_mappings())
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):
         iterator = iter(segments)

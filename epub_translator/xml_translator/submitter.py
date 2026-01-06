@@ -2,19 +2,21 @@ from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
 from ..xml import iter_with_stack
+from .stream_mapper import InlineSegmentMapping
 
 
-def submit_text_segments(element: Element, text_segments_groups: list[list[TextSegment]]) -> Element:
-    grouped_map = _group_text_segments(text_segments_groups)
+def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping]) -> Element:
+    grouped_map = _group_text_segments(mappings)
     _append_text_segments(element, grouped_map)
     return element
 
 
-def _group_text_segments(text_segments_groups: list[list[TextSegment]]):
+def _group_text_segments(mappings: list[InlineSegmentMapping]):
     grouped_map: dict[int, list[TextSegment]] = {}
-    for text_segments in text_segments_groups:
-        parent_id = id(text_segments[0].block_parent)
+    for inline_segment, text_segments in mappings:
+        parent_id = id(inline_segment.parent)
         grouped_map[parent_id] = text_segments
+    # TODO: 过滤拦截 block
     return grouped_map
 
 
