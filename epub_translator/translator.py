@@ -10,7 +10,8 @@ from .xml_translator import XMLTranslator
 
 
 def translate(
-    llm: LLM,
+    translate_llm: LLM,
+    fill_llm: LLM,
     source_path: Path,
     target_path: Path,
     target_language: str,
@@ -20,7 +21,8 @@ def translate(
     on_progress: Callable[[float], None] | None = None,
 ) -> None:
     translator = XMLTranslator(
-        llm=llm,
+        translate_llm=translate_llm,
+        fill_llm=fill_llm,
         target_language=target_language,
         user_prompt=user_prompt,
         ignore_translated_error=False,

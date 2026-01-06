@@ -47,6 +47,8 @@ class LLMContext:
         input: str | list[Message],
         parser: Callable[[str], R] = lambda x: x,
         max_tokens: int | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
     ) -> R:
         messages: list[Message]
         if isinstance(input, str):
@@ -72,6 +74,8 @@ class LLMContext:
             messages=messages,
             parser=lambda x: x,
             max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
         )
 
         # Save to temporary cache if cache_path is set
@@ -164,9 +168,17 @@ class LLM:
         input: str | list[Message],
         parser: Callable[[str], R] = lambda x: x,
         max_tokens: int | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
     ) -> R:
         with self.context() as ctx:
-            return ctx.request(input=input, parser=parser, max_tokens=max_tokens)
+            return ctx.request(
+                input=input,
+                parser=parser,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
 
     def template(self, template_name: str) -> Template:
         template = self._templates.get(template_name, None)

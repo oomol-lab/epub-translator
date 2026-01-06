@@ -1,0 +1,16 @@
+{
+  "key": "<YOUR_API_KEY>",
+  "url": "https://ark.cn-beijing.volces.com/api/v3",
+  "model": "deepseek-v3-2-251201",
+  "token_encoding": "o200k_base",
+  "timeout": 360.0,
+
+  "translate_temperature": 0.8,
+  "translate_top_p": 0.6,
+
+  "fill_temperature": 0.3,
+  "fill_top_p": 0.7,
+
+  "retry_times": 10,
+  "retry_interval_seconds": 0.75
+}

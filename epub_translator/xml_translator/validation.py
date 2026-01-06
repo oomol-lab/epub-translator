@@ -121,7 +121,10 @@ def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitte
     if not message_lines:
         return None
 
-    header = f"Found {errors_group.errors_count} error(s) in total. Fix all errors below and return the corrected XML:"
+    header = (
+        f"Found {errors_group.errors_count} error(s). Fix them and return "
+        "the COMPLETE corrected XML (not just the changed parts):"
+    )
     message_lines.insert(0, "")
     message_lines.insert(0, header)
 
@@ -131,6 +134,11 @@ def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitte
             f"... and {omitted_count} more error(s) omitted. "
             f"Fix the above errors first, then resubmit for remaining issues."
         )
+        message_lines.append("")
+        message_lines.append("Remember: Return the entire <xml>...</xml> block with all corrections applied.")
+    else:
+        message_lines.append("")
+        message_lines.append("Return the entire <xml>...</xml> block with corrections.")
 
     return "\n".join(message_lines)
 
@@ -300,9 +308,24 @@ def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
                 f"Fix: Change the tag to `<{error.expected_tag}>`."
             )
     elif isinstance(error, BlockExpectedIDsError):
-        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
-        elements_str = ", ".join(missing_elements)
-        return f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
+        # Add context hints with original text content
+        context_hints: list[str] = []
+        for id, elem in sorted(error.id2element.items()):
+            original_text = plain_text(elem).strip()
+            if original_text:
+                # Truncate to first 30 chars for block-level hints
+                text_preview = original_text[:30] + "..." if len(original_text) > 30 else original_text
+                context_hints.append(f'  - `<{elem.tag} id="{id}">`: "{text_preview}"')
+
+        if context_hints:
+            message = "Missing block elements (find translation and wrap):\n" + "\n".join(context_hints)
+        else:
+            # Fallback if no text hints available
+            missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+            elements_str = ", ".join(missing_elements)
+            message = f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
+
+        return message
 
     elif isinstance(error, BlockUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"
@@ -324,9 +347,23 @@ def _format_inline_error(encoding: Encoding, error: InlineError | FoundInvalidID
         return f"Element at `{selector}` is missing an ID attribute. Fix: Add the required ID attribute."
 
     elif isinstance(error, InlineExpectedIDsError):
-        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
-        elements_str = ", ".join(missing_elements)
-        return f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
+        # Add context hints with original text content
+        context_hints: list[str] = []
+        for id, elem in sorted(error.id2element.items()):
+            original_text = plain_text(elem).strip()
+            if original_text:
+                text_hint = _extract_text_hint(encoding, elem)
+                context_hints.append(f'  - `<{elem.tag} id="{id}">`: "{text_hint}"')
+
+        if context_hints:
+            message = "Missing inline elements (find translation and wrap):\n" + "\n".join(context_hints)
+        else:
+            # Fallback if no text hints available
+            missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+            elements_str = ", ".join(missing_elements)
+            message = f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
+
+        return message
 
     elif isinstance(error, InlineUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"
