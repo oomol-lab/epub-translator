@@ -23,18 +23,41 @@ def main() -> None:
     print("\n✓ Loaded configuration from format.json")
     print(f"  Model: {config['model']}")
 
-    # Create LLM instance
-    temp_path = read_and_clean_temp()
-    llm = LLM(
-        **config,
-        log_dir_path=temp_path / "logs",
-        cache_path=Path(__file__).parent / ".." / "cache",
-    )
-    print("✓ Created LLM instance")
+    # Extract separate parameters for translate and fill tasks
+    translate_temperature = config.pop("translate_temperature", 0.8)
+    translate_top_p = config.pop("translate_top_p", 0.6)
+    fill_temperature = config.pop("fill_temperature", 0.3)
+    fill_top_p = config.pop("fill_top_p", 0.7)
 
-    # Create Filler instance
+    # Create two LLM instances with different configurations
+    temp_path = read_and_clean_temp()
+    cache_path = Path(__file__).parent / ".." / "cache"
+    log_dir_path = temp_path / "logs"
+
+    # LLM for translation task (higher temperature for creativity)
+    translate_llm = LLM(
+        **config,
+        temperature=translate_temperature,
+        top_p=translate_top_p,
+        log_dir_path=log_dir_path,
+        cache_path=cache_path,
+    )
+    print(f"✓ Created translate_llm (temperature={translate_temperature}, top_p={translate_top_p})")
+
+    # LLM for fill task (lower temperature for structure accuracy)
+    fill_llm = LLM(
+        **config,
+        temperature=fill_temperature,
+        top_p=fill_top_p,
+        log_dir_path=log_dir_path,
+        cache_path=cache_path,
+    )
+    print(f"✓ Created fill_llm (temperature={fill_temperature}, top_p={fill_top_p})")
+
+    # Create XMLTranslator instance with two LLM objects
     translator = XMLTranslator(
-        llm=llm,
+        translate_llm=translate_llm,
+        fill_llm=fill_llm,
         target_language=CHINESE,
         user_prompt=None,
         ignore_translated_error=False,
@@ -42,7 +65,7 @@ def main() -> None:
         max_fill_displaying_errors=10,
         max_group_tokens=1200,
     )
-    print("✓ Created Filler instance")
+    print("✓ Created XMLTranslator instance")
 
     # Create a test XML structure with nested elements
     source_ele = _create_test_xml()

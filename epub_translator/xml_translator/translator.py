@@ -15,7 +15,8 @@ T = TypeVar("T")
 class XMLTranslator:
     def __init__(
         self,
-        llm: LLM,
+        translate_llm: LLM,
+        fill_llm: LLM,
         target_language: str,
         user_prompt: str | None,
         ignore_translated_error: bool,
@@ -23,14 +24,15 @@ class XMLTranslator:
         max_fill_displaying_errors: int,
         max_group_tokens: int,
     ) -> None:
-        self._llm: LLM = llm
+        self._translate_llm: LLM = translate_llm
+        self._fill_llm: LLM = fill_llm
         self._target_language: str = target_language
         self._user_prompt: str | None = user_prompt
         self._ignore_translated_error: bool = ignore_translated_error
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
         self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
-            encoding=llm.encoding,
+            encoding=translate_llm.encoding,
             max_group_tokens=max_group_tokens,
         )
 
@@ -70,7 +72,7 @@ class XMLTranslator:
         filter_text_segments: Callable[[TextSegment], bool] | None,
     ) -> list[InlineSegmentMapping | None]:
         hill_climbing = HillClimbing(
-            encoding=self._llm.encoding,
+            encoding=self._fill_llm.encoding,
             max_fill_displaying_errors=self._max_fill_displaying_errors,
             block_segment=BlockSegment(
                 root_tag="xml",
@@ -115,11 +117,11 @@ class XMLTranslator:
         yield segment.text
 
     def _translate_text(self, text: str) -> str:
-        return self._llm.request(
+        return self._translate_llm.request(
             input=[
                 Message(
                     role=MessageRole.SYSTEM,
-                    message=self._llm.template("translate").render(
+                    message=self._translate_llm.template("translate").render(
                         target_language=self._target_language,
                         user_prompt=self._user_prompt,
                     ),
@@ -137,7 +139,7 @@ class XMLTranslator:
         fixed_messages: list[Message] = [
             Message(
                 role=MessageRole.SYSTEM,
-                message=self._llm.template("fill").render(),
+                message=self._fill_llm.template("fill").render(),
             ),
             Message(
                 role=MessageRole.USER,
@@ -146,7 +148,7 @@ class XMLTranslator:
         ]
         conversation_history: list[Message] = []
 
-        with self._llm.context() as llm_context:
+        with self._fill_llm.context() as llm_context:
             did_success: bool = False
             for _ in range(self._max_retries):
                 response = llm_context.request(fixed_messages + conversation_history)
