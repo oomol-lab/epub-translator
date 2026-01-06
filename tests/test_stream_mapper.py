@@ -5,7 +5,7 @@ from xml.etree.ElementTree import Element, SubElement
 from tiktoken import Encoding
 
 from epub_translator.segment import search_text_segments
-from epub_translator.xml_translator.group import XMLGroupContext
+from epub_translator.xml_translator.stream_mapper import XMLStreamMapper
 
 
 class MockEncoding:
@@ -52,12 +52,12 @@ class MockEncoding:
 
 # pylint: disable=W0212
 class TestTruncateTextSegment(unittest.TestCase):
-    """测试 XMLGroupContext._truncate_text_segment 的截断逻辑"""
+    """测试 XMLStreamMapper._truncate_text_segment 的截断逻辑"""
 
     def setUp(self):
         """初始化测试环境"""
         self.encoding: Encoding = cast(Encoding, MockEncoding())
-        self.context = XMLGroupContext(encoding=self.encoding, max_group_tokens=1000)
+        self.mapper = XMLStreamMapper(encoding=self.encoding, max_group_tokens=1000)
 
     def test_truncate_head_chinese_text(self):
         """测试从头部截断中文文本"""
@@ -73,7 +73,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         # tokens: ['<div id="99" data-orig-len="999">', '你', '好', '</div>']
         # 保留前 3 个 token: 开标签 + '你' + '好'
         remain_count = 3
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -101,7 +101,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         # tokens: ['<div id="99" data-orig-len="999">', '你', '好', '世', '界', '</div>']
         # 从尾部保留 3 个 token: '世' + '界' + '</div>'
         remain_count = 3
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -129,7 +129,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         # tokens: ['<p id="99" data-orig-len="999">', 'Hello', ' ', 'World', ...]
         # 保留前 4 个 token: 开标签 + 'Hello' + ' ' + 'World'
         remain_count = 4
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -156,7 +156,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         # tokens: ['<div id="99" data-orig-len="999">', 'Hello', '你', '好', 'World', '</div>']
         # 保留前 4 个 token: 开标签 + 'Hello' + '你' + '好'
         remain_count = 4
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -183,7 +183,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 只保留 1 个 token（开标签），不包含任何文本
         remain_count = 1
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -206,7 +206,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # remain_count 足够大，包含所有内容
         remain_count = len(tokens)
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -232,7 +232,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 保留开标签 + 部分文本
         remain_count = 5  # 两个开标签 + 3 个字
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -257,7 +257,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 保留部分文本
         remain_count = 3  # 开标签 + 'ABCDEFGHIJ' 的前面部分
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -284,7 +284,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 从尾部只保留 1 个 token（闭标签）
         remain_count = 1
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -314,7 +314,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 只保留开标签和空格
         remain_count = 2  # 开标签 + 空格
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,
@@ -338,7 +338,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         # tokens: ['<div id="99" data-orig-len="999">', 'ABC', '</div>']
         # 保留前 2 个 token: 开标签 + 'ABC'
         remain_count = 2
-        result = self.context._truncate_text_segment(
+        result = self.mapper._truncate_text_segment(
             segment=segment,
             tokens=tokens,
             raw_xml_text=raw_xml_text,

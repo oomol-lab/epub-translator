@@ -16,20 +16,23 @@ class XMLTranslator:
     def __init__(
         self,
         llm: LLM,
-        stream_mapper: XMLStreamMapper,
         target_language: str,
         user_prompt: str | None,
         ignore_translated_error: bool,
         max_retries: int,
         max_fill_displaying_errors: int,
+        max_group_tokens: int,
     ) -> None:
         self._llm: LLM = llm
-        self._stream_mapper: XMLStreamMapper = stream_mapper
         self._target_language: str = target_language
         self._user_prompt: str | None = user_prompt
         self._ignore_translated_error: bool = ignore_translated_error
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
+        self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
+            encoding=llm.encoding,
+            max_group_tokens=max_group_tokens,
+        )
 
     def translate_element(
         self,

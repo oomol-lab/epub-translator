@@ -6,7 +6,7 @@ from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_p
 from .epub.common import find_opf_path
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
-from .xml_translator import XMLStreamMapper, XMLTranslator
+from .xml_translator import XMLTranslator
 
 
 def translate(
@@ -26,10 +26,7 @@ def translate(
         ignore_translated_error=False,
         max_retries=max_retries,
         max_fill_displaying_errors=10,
-        stream_mapper=XMLStreamMapper(
-            encoding=llm.encoding,
-            max_group_tokens=max_group_tokens,
-        ),
+        max_group_tokens=max_group_tokens,
     )
     with Zip(source_path, target_path) as zip:
         # Progress distribution: TOC 3%, metadata 2%, chapters 95%
