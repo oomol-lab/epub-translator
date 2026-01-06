@@ -12,7 +12,8 @@ _BLOCK_INCISION = 1
 _ELLIPSIS = "..."
 
 
-InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[list[TextSegment]]]
+InlineSegmentMapping = tuple[InlineSegment, list[TextSegment]]
+InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[InlineSegmentMapping | None]]
 
 
 class XMLStreamMapper:
@@ -24,28 +25,26 @@ class XMLStreamMapper:
         self,
         elements: Iterator[Element],
         map: InlineSegmentGroupMap,
-    ) -> Generator[tuple[Element, list[list[TextSegment]]], None, None]:
+    ) -> Generator[tuple[Element, list[InlineSegmentMapping]], None, None]:
         current_element: Element | None = None
-        text_segments_buffer: list[list[TextSegment]] = []
+        mapping_buffer: list[InlineSegmentMapping] = []
 
-        for origin, target in self._split_and_map(elements, map):
-            origin_element = origin.head.root
-            if current_element is None:
-                current_element = origin_element
-            if id(current_element) == id(origin_element):
-                text_segments_buffer.append(target)
-            else:
-                yield current_element, text_segments_buffer
-                current_element = origin_element
-                text_segments_buffer = []
-
-        if text_segments_buffer and current_element is not None:
-            yield current_element, text_segments_buffer
-
-    def _split_and_map(self, elements: Iterator[Element], map: InlineSegmentGroupMap):
         for head, body, tail in self._split_into_groups(elements):
             target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-            yield from zip(body, target_body)
+            for origin, target in zip(body, target_body):
+                origin_element = origin.head.root
+                if current_element is None:
+                    current_element = origin_element
+
+                if id(current_element) != id(origin_element):
+                    yield current_element, mapping_buffer
+                    current_element = origin_element
+                    mapping_buffer = []
+                elif target:
+                    mapping_buffer.append(target)
+
+        if current_element is not None:
+            yield current_element, mapping_buffer
 
     def _split_into_groups(self, elements: Iterator[Element]):
         for group in split(

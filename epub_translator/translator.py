@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
@@ -6,7 +6,7 @@ from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_p
 from .epub.common import find_opf_path
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
-from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
+from .xml_translator import XMLStreamMapper, XMLTranslator
 
 
 def translate(
@@ -26,7 +26,7 @@ def translate(
         ignore_translated_error=False,
         max_retries=max_retries,
         max_fill_displaying_errors=10,
-        group_context=XMLGroupContext(
+        stream_mapper=XMLStreamMapper(
             encoding=llm.encoding,
             max_group_tokens=max_group_tokens,
         ),
@@ -57,22 +57,7 @@ def translate(
 
         # Translate chapters
         processed_chapters = 0
-        for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
-            items=_search_chapter_items(zip),
-        ):
-            submit_text_segments(
-                element=element,
-                text_segments=(
-                    segment
-                    for segment in text_segments
-                    if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
-                ),
-            )
-            placeholder.recover()
-            deduplicate_ids_in_element(xml.element)
-            with zip.replace(chapter_path) as target_file:
-                xml.save(target_file)
-
+        for _ in _translate_chapters(translator, zip):
             # Update progress after each chapter
             processed_chapters += 1
             current_progress = TOC_PROGRESS + METADATA_PROGRESS + (processed_chapters * chapter_progress_step)
@@ -102,7 +87,7 @@ def _translate_toc(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
 
     # Translate all titles at once
-    translated_element = translator.translate_to_element(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Extract translated texts
     from builtins import zip as builtin_zip
@@ -174,7 +159,7 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
 
     # Translate all metadata at once
-    translated_element = translator.translate_to_element(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Fill back translated texts
     from builtins import zip as builtin_zip
@@ -190,12 +175,28 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
         xml.save(f)
 
 
+def _translate_chapters(translator: XMLTranslator, zip: Zip) -> Generator[Path, None, None]:
+    items_cache: dict[int, tuple[Path, XMLLikeNode, Placeholder]] = {}
+    for body_element in translator.translate_elements(
+        elements=_search_chapter_items(zip, items_cache),
+        filter_text_segments=lambda segment: not any(is_placeholder_tag(e.tag) for e in segment.parent_stack),
+    ):
+        item = items_cache.pop(id(body_element), None)
+        if item is not None:
+            chapter_path, xml, placeholder = item
+            placeholder.recover()
+            deduplicate_ids_in_element(xml.element)
+            with zip.replace(chapter_path) as target_file:
+                xml.save(target_file)
+            yield chapter_path
+
+
 def _count_chapters(zip: Zip) -> int:
     """Count total chapters without loading content (lightweight)."""
     return sum(1 for _ in search_spine_paths(zip))
 
 
-def _search_chapter_items(zip: Zip):
+def _search_chapter_items(zip: Zip, items_cache: dict[int, tuple[Path, XMLLikeNode, Placeholder]]):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(
@@ -205,7 +206,8 @@ def _search_chapter_items(zip: Zip):
         body_element = find_first(xml.element, "body")
         if body_element is not None:
             placeholder = Placeholder(body_element)
-            yield body_element, (chapter_path, xml, placeholder)
+            items_cache[id(body_element)] = (chapter_path, xml, placeholder)
+            yield body_element
 
 
 def _create_text_element(text: str) -> Element:

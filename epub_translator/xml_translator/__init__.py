@@ -1,3 +1,2 @@
-from .group import XMLGroupContext
-from .submitter import submit_text_segments
+from .stream_mapper import InlineSegmentGroupMap, XMLStreamMapper
 from .translator import XMLTranslator

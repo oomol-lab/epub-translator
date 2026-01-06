@@ -7,6 +7,7 @@ from epub_translator.segment.inline_segment import (
     InlineSegment,
     InlineUnexpectedIDError,
     InlineWrongTagCountError,
+    _collect_next_inline_segment,
     collect_next_inline_segment,
 )
 from epub_translator.segment.text_segment import search_text_segments
@@ -530,6 +531,79 @@ class TestEdgeCases(unittest.TestCase):
         # 验证至少包含一个标签
         result_str = tostring(element, encoding="unicode")
         self.assertIn("<em>", result_str)
+
+    def test_parent_with_text_and_child_blocks_not_merged(self):
+        root = fromstring("<body>The main text begins:<p>Paragraph text</p><div>Division text</div></body>")
+        segments = list(search_text_segments(root))
+
+        # 应该有 3 个 text segments:
+        # 1. "The main text begins:" in body
+        # 2. "Paragraph text" in p
+        # 3. "Division text" in div
+        self.assertEqual(len(segments), 3)
+        self.assertEqual(segments[0].block_parent.tag, "body")
+        self.assertEqual(segments[1].block_parent.tag, "p")
+        self.assertEqual(segments[2].block_parent.tag, "div")
+
+        # 测试第一个 inline segment (body 的文本)
+        segments_iter = iter(segments)
+        first_segment = next(segments_iter)
+
+        inline1, remaining = _collect_next_inline_segment(
+            first_text_segment=first_segment,
+            text_segments_iter=segments_iter,
+        )
+
+        # body 的 inline segment 应该只包含 "The main text begins:"
+        self.assertIsNotNone(inline1)
+        assert inline1 is not None
+        body_texts = list(inline1)
+        self.assertEqual(len(body_texts), 1)
+        self.assertEqual(body_texts[0].text, "The main text begins:")
+        self.assertEqual(inline1.parent.tag, "body")
+
+        # 应该还有剩余的 segment (p 的文本)
+        self.assertIsNotNone(remaining)
+        assert remaining is not None
+        self.assertEqual(remaining.text, "Paragraph text")
+        self.assertEqual(remaining.block_parent.tag, "p")
+
+        # 测试第二个 inline segment (p 的文本)
+        inline2, remaining = _collect_next_inline_segment(
+            first_text_segment=remaining,
+            text_segments_iter=segments_iter,
+        )
+
+        # p 的 inline segment 应该只包含 "Paragraph text"
+        self.assertIsNotNone(inline2)
+        assert inline2 is not None
+        p_texts = list(inline2)
+        self.assertEqual(len(p_texts), 1)
+        self.assertEqual(p_texts[0].text, "Paragraph text")
+        self.assertEqual(inline2.parent.tag, "p")
+
+        # 应该还有剩余的 segment (div 的文本)
+        self.assertIsNotNone(remaining)
+        assert remaining is not None
+        self.assertEqual(remaining.text, "Division text")
+        self.assertEqual(remaining.block_parent.tag, "div")
+
+        # 测试第三个 inline segment (div 的文本)
+        inline3, remaining = _collect_next_inline_segment(
+            first_text_segment=remaining,
+            text_segments_iter=segments_iter,
+        )
+
+        # div 的 inline segment 应该只包含 "Division text"
+        self.assertIsNotNone(inline3)
+        assert inline3 is not None
+        div_texts = list(inline3)
+        self.assertEqual(len(div_texts), 1)
+        self.assertEqual(div_texts[0].text, "Division text")
+        self.assertEqual(inline3.parent.tag, "div")
+
+        # 应该没有剩余的 segment
+        self.assertIsNone(remaining)
 
 
 if __name__ == "__main__":

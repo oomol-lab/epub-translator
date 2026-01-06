@@ -1,69 +1,37 @@
-from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
-from ..segment import TextPosition, TextSegment, combine_text_segments
-from ..xml import append_text_in_element, iter_with_stack
+from ..segment import TextSegment, combine_text_segments
+from ..xml import iter_with_stack
+from .stream_mapper import InlineSegmentMapping
 
 
-def submit_text_segments(element: Element, text_segments: Iterable[TextSegment]):
-    grouped_map = _group_text_segments(text_segments)
-    flatten_text_segments = dict(_extract_flatten_text_segments(element, grouped_map))
+def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping]) -> Element:
+    grouped_map = _group_text_segments(mappings)
     _append_text_segments(element, grouped_map)
-    _replace_text_segments(element, flatten_text_segments)
+    return element
 
 
-def _group_text_segments(text_segments: Iterable[TextSegment]):
+def _group_text_segments(mappings: list[InlineSegmentMapping]):
     grouped_map: dict[int, list[TextSegment]] = {}
-    for text_segment in text_segments:
-        parent_id = id(text_segment.block_parent)
-        grouped = grouped_map.get(parent_id, None)
-        if grouped is None:
-            grouped_map[parent_id] = grouped = []
-        grouped_map[parent_id].append(text_segment)
+    for inline_segment, text_segments in mappings:
+        parent_id = id(inline_segment.parent)
+        grouped_map[parent_id] = text_segments
+
+    # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
+    #       这是书籍中可能出现的一种情况，虽然不多见。
+    #       例如，作为非叶子的块元素，它的子块元素之间会夹杂文本，当前 collect_next_inline_segment 会忽略这些文字：
+    #       <div>
+    #         Some text before.
+    #         <!-- 只有下一行作为叶子节点的块元素内的文字会被处理 -->
+    #         <div>Paragraph 1.</div>
+    #         Some text in between.
+    #       </div>
+    for _, text_segments in mappings:
+        for text_segment in text_segments:
+            for parent_block in text_segment.parent_stack[: text_segment.block_depth - 1]:
+                grouped_map.pop(id(parent_block), None)
+
     return grouped_map
-
-
-# 被覆盖的 block 表示一种偶然现象，由于它的子元素会触发 append 操作，若对它也进行 append 操作阅读顺序会混乱
-# 此时只能在它的所有文本后立即接上翻译后的文本
-def _extract_flatten_text_segments(element: Element, grouped_map: dict[int, list[TextSegment]]):
-    override_parent_ids: set[int] = set()
-    for parents, child_element in iter_with_stack(element):
-        if id(child_element) not in grouped_map:
-            continue
-        for parent in parents[:-1]:
-            parent_id = id(parent)
-            if parent_id in grouped_map:
-                override_parent_ids.add(parent_id)
-
-    if id(element) in grouped_map:
-        override_parent_ids.add(id(element))  # root 不会出现在 parents 中需单独添加
-
-    for parent_id in override_parent_ids:
-        yield parent_id, grouped_map.pop(parent_id)
-
-
-def _replace_text_segments(element: Element, text_segments: dict[int, list[TextSegment]]):
-    for _, child_element in iter_with_stack(element):
-        tail_text_segments: list[TextSegment] = []
-        for text_segment in text_segments.get(id(child_element), ()):
-            if text_segment.position == TextPosition.TEXT:
-                child_element.text = append_text_in_element(
-                    origin_text=child_element.text,
-                    append_text=text_segment.text,
-                )
-            elif text_segment.position == TextPosition.TAIL:
-                tail_text_segments.append(text_segment)
-
-        tail_text_segments.sort(key=lambda t: t.index)
-        tail_text_segments.reverse()
-        for cc_element in child_element:
-            if not tail_text_segments:
-                break
-            if cc_element.tail is not None:
-                cc_element.tail = append_text_in_element(
-                    origin_text=cc_element.tail,
-                    append_text=tail_text_segments.pop().text,
-                )
 
 
 def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegment]]):

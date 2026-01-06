@@ -74,15 +74,21 @@ def _collect_next_inline_segment(
 
     current_text_segment: TextSegment | None = first_text_segment
     children: list[TextSegment | InlineSegment] = []
+    last_block_parent: Element | None = None
 
     while current_text_segment is not None:
         text_segment_depth = len(current_text_segment.parent_stack)
         if text_segment_depth < depth:
             break
         elif text_segment_depth == depth:
+            if last_block_parent is not None and last_block_parent is not current_text_segment.block_parent:
+                break
             children.append(current_text_segment)
+            last_block_parent = current_text_segment.block_parent
             current_text_segment = next(text_segments_iter, None)
         else:
+            if current_text_segment.block_depth > depth:
+                break
             inline_text, current_text_segment = _collect_next_inline_segment(
                 first_text_segment=current_text_segment,
                 text_segments_iter=text_segments_iter,
@@ -90,6 +96,12 @@ def _collect_next_inline_segment(
             )
             if inline_text is not None:
                 children.append(inline_text)
+            if current_text_segment is not None:
+                reference_block_parent = (
+                    last_block_parent if last_block_parent is not None else first_text_segment.block_parent
+                )
+                if reference_block_parent is not current_text_segment.block_parent:
+                    break
 
     if not children:
         return None, current_text_segment
@@ -269,8 +281,13 @@ class InlineSegment:
     # 即便 self.validate(...) 的错误没有排除干净，也要尽可能匹配一个质量较高（尽力而为）的版本
     def assign_attributes(self, template_element: Element) -> Element:
         assigned_element = Element(self.parent.tag, self.parent.attrib)
-        matched_child_element_ids: set[int] = set()
+        if template_element.text and template_element.text.strip():
+            assigned_element.text = append_text_in_element(
+                origin_text=assigned_element.text,
+                append_text=template_element.text,
+            )
 
+        matched_child_element_ids: set[int] = set()
         for child, child_element in self._match_children(template_element):
             child_assigned_element = child.assign_attributes(child_element)
             assigned_element.append(child_assigned_element)

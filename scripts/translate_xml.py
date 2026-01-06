@@ -7,10 +7,9 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
-from epub_translator.epub import is_placeholder_tag
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
-from epub_translator.xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
+from epub_translator.xml_translator import XMLStreamMapper, XMLTranslator
 from scripts.utils import read_and_clean_temp, read_format_json
 
 
@@ -41,7 +40,7 @@ def main() -> None:
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
-        group_context=XMLGroupContext(
+        stream_mapper=XMLStreamMapper(
             encoding=llm.encoding,
             max_group_tokens=1200,
         ),
@@ -56,17 +55,7 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_element, translated_text_segments, _ = next(
-            translator.translate_to_text_segments(((source_ele, None),))
-        )
-        submit_text_segments(
-            element=translated_element,
-            text_segments=(
-                segment
-                for segment in translated_text_segments
-                if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
-            ),
-        )
+        translated_element = translator.translate_element(source_ele)
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
         print(f"\n{encode_friendly(translated_element)}\n")
@@ -85,7 +74,9 @@ def main() -> None:
 def _create_test_xml() -> Element:
     xml_string = """
 <body>
+    <div>
     Sigmund Freud
+    </div>
     <description>
         "Freud" and "Freudian" redirect here. For other uses, see
         <a>Freudian slip</a> and <strong>Freud</strong>
@@ -103,7 +94,7 @@ def _create_test_xml() -> Element:
         Freud was born to <a class="link">Galician Jewish parents</a> in the Moravian town of Freiberg,
         in the Austrian Empire. He qualified as a doctor of medicine in 1881
         at the University of Vienna.<sup>[5][6]</sup> Upon completing his habilitation in 1885,
-        he was appointed a docent in neuropathology and became an affiliated professor
+        he was appointed a docent in <a href="foobar">neuropathology</a> and became an affiliated professor
         in 1902.<sup>[7]</sup> Freud lived and worked in Vienna, having set up his clinical practice
         there in 1886. Following the German annexation of Austria in March 1938, Freud left
         Austria to escape Nazi persecution. He died in exile in the United Kingdom in September 1939.
