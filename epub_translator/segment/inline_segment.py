@@ -81,7 +81,10 @@ def _collect_next_inline_segment(
             break
         elif text_segment_depth == depth:
             children.append(current_text_segment)
+            last_block_parent = current_text_segment.block_parent
             current_text_segment = next(text_segments_iter, None)
+            if current_text_segment is not None and last_block_parent is not current_text_segment.block_parent:
+                break
         else:
             inline_text, current_text_segment = _collect_next_inline_segment(
                 first_text_segment=current_text_segment,

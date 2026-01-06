@@ -74,7 +74,9 @@ def main() -> None:
 def _create_test_xml() -> Element:
     xml_string = """
 <body>
+    <div>
     Sigmund Freud
+    </div>
     <description>
         "Freud" and "Freudian" redirect here. For other uses, see
         <a>Freudian slip</a> and <strong>Freud</strong>
@@ -92,7 +94,7 @@ def _create_test_xml() -> Element:
         Freud was born to <a class="link">Galician Jewish parents</a> in the Moravian town of Freiberg,
         in the Austrian Empire. He qualified as a doctor of medicine in 1881
         at the University of Vienna.<sup>[5][6]</sup> Upon completing his habilitation in 1885,
-        he was appointed a docent in neuropathology and became an affiliated professor
+        he was appointed a docent in <a href="foobar">neuropathology</a> and became an affiliated professor
         in 1902.<sup>[7]</sup> Freud lived and worked in Vienna, having set up his clinical practice
         there in 1886. Following the German annexation of Austria in March 1938, Freud left
         Austria to escape Nazi persecution. He died in exile in the United Kingdom in September 1939.
