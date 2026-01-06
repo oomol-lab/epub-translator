@@ -86,9 +86,10 @@ class XMLTranslator:
         mappings: list[InlineSegmentMapping | None] = []
         for mapping in hill_climbing.gen_mappings():
             if mapping and filter_text_segments is not None:
+                inline_segment, text_segments = mapping
                 text_segments = [t for t in text_segments if filter_text_segments(t)]
                 if text_segments:
-                    mapping = (mapping[0], text_segments)
+                    mapping = (inline_segment, text_segments)
                 else:
                     mapping = None
             mappings.append(mapping)
