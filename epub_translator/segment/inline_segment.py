@@ -272,8 +272,13 @@ class InlineSegment:
     # 即便 self.validate(...) 的错误没有排除干净，也要尽可能匹配一个质量较高（尽力而为）的版本
     def assign_attributes(self, template_element: Element) -> Element:
         assigned_element = Element(self.parent.tag, self.parent.attrib)
-        matched_child_element_ids: set[int] = set()
+        if template_element.text:
+            assigned_element.text = append_text_in_element(
+                origin_text=assigned_element.text,
+                append_text=template_element.text,
+            )
 
+        matched_child_element_ids: set[int] = set()
         for child, child_element in self._match_children(template_element):
             child_assigned_element = child.assign_attributes(child_element)
             assigned_element.append(child_assigned_element)
