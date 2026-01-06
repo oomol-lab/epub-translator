@@ -15,6 +15,7 @@ from .inline_segment import (
     InlineSegment,
     InlineUnexpectedIDError,
     InlineWrongTagCountError,
+    search_inline_segments,
 )
 from .text_segment import (
     TextPosition,

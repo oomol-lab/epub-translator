@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterator
+from collections.abc import Generator, Iterable, Iterator
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
@@ -50,6 +50,18 @@ def collect_next_inline_segment(
         inline_segment.id = id_generator.next_id()
         inline_segment.recreate_ids(id_generator)
     return inline_segment, next_text_segment
+
+
+def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
+    text_segments_iter = iter(text_segments)
+    text_segment = next(text_segments_iter, None)
+    while text_segment is not None:
+        inline_segment, text_segment = _collect_next_inline_segment(
+            first_text_segment=text_segment,
+            text_segments_iter=text_segments_iter,
+        )
+        if inline_segment is not None:
+            yield inline_segment
 
 
 def _collect_next_inline_segment(
@@ -115,6 +127,22 @@ class InlineSegment:
                     next_temp_id += 1
 
     @property
+    def head(self) -> TextSegment:
+        first_child = self._children[0]
+        if isinstance(first_child, TextSegment):
+            return first_child
+        else:
+            return first_child.head
+
+    @property
+    def tail(self) -> TextSegment:
+        last_child = self._children[-1]
+        if isinstance(last_child, TextSegment):
+            return last_child
+        else:
+            return last_child.tail
+
+    @property
     def children(self) -> list["TextSegment | InlineSegment"]:
         return self._children
 
@@ -174,6 +202,9 @@ class InlineSegment:
                 remain_expected_elements[child.id] = child.parent
 
         for _, child_element in iter_with_stack(validated_element):
+            if child_element is validated_element:
+                continue  # skip the root self
+
             element_id = id_in_element(child_element)
             if element_id is None:
                 validated_id = validate_id_in_element(

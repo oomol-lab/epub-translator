@@ -12,7 +12,7 @@ from .utils import IDGenerator, id_in_element
 @dataclass
 class BlockSubmitter:
     id: int
-    origin_elements_stack: list[Element]
+    origin_text_segments: list[TextSegment]
     submitted_element: Element
 
 
@@ -57,6 +57,9 @@ class BlockSegment:
         self._root_tag: str = root_tag
         self._inline_segments: list[InlineSegment] = list(_transform_to_inline_segments(text_segments))
         self._id2inline_segment: dict[int, InlineSegment] = dict((cast(int, s.id), s) for s in self._inline_segments)
+
+    def __iter__(self) -> Generator[InlineSegment, None, None]:
+        yield from self._inline_segments
 
     def create_element(self) -> Element:
         root_element = Element(self._root_tag)
@@ -119,7 +122,7 @@ class BlockSegment:
             assert inline_segment_id is not None
             yield BlockSubmitter(
                 id=inline_segment_id,
-                origin_elements_stack=inline_segment.parent_stack,
+                origin_text_segments=list(inline_segment),
                 submitted_element=inline_segment.assign_attributes(child_element),
             )
 
