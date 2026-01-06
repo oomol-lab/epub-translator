@@ -29,6 +29,10 @@ def main() -> None:
     fill_temperature = config.pop("fill_temperature", 0.3)
     fill_top_p = config.pop("fill_top_p", 0.7)
 
+    # Remove legacy parameters if they exist (to avoid conflicts)
+    config.pop("temperature", None)
+    config.pop("top_p", None)
+
     # Create two LLM instances with different configurations
     temp_path = read_and_clean_temp()
     cache_path = Path(__file__).parent / ".." / "cache"
