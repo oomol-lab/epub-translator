@@ -36,22 +36,6 @@ class InlineWrongTagCountError:
 InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDsError | InlineWrongTagCountError
 
 
-# @return collected InlineSegment and the next TextSegment that is not included
-def collect_next_inline_segment(
-    id_generator: IDGenerator,
-    first_text_segment: TextSegment,
-    text_segments_iter: Iterator[TextSegment],
-) -> tuple["InlineSegment | None", TextSegment | None]:
-    inline_segment, next_text_segment = _collect_next_inline_segment(
-        first_text_segment=first_text_segment,
-        text_segments_iter=text_segments_iter,
-    )
-    if inline_segment is not None:
-        inline_segment.id = id_generator.next_id()
-        inline_segment.recreate_ids(id_generator)
-    return inline_segment, next_text_segment
-
-
 def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
     text_segments_iter = iter(text_segments)
     text_segment = next(text_segments_iter, None)
@@ -64,6 +48,7 @@ def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["I
             yield inline_segment
 
 
+# @return collected InlineSegment and the next TextSegment that is not included
 def _collect_next_inline_segment(
     first_text_segment: TextSegment,
     text_segments_iter: Iterator[TextSegment],
@@ -130,7 +115,8 @@ class InlineSegment:
         next_temp_id: int = 0
         terms = nest((child.parent.tag, child) for child in children if isinstance(child, InlineSegment))
 
-        for _, child_terms in terms.items():
+        for tag, child_terms in terms.items():
+            self._child_tag2count[tag] = len(child_terms)
             if not is_the_same(  # 仅当 tag 彼此无法区分时才分配 id，以尽可能减少 id 的数量
                 elements=(element_fingerprint(t.parent) for t in child_terms),
             ):
@@ -174,6 +160,9 @@ class InlineSegment:
                 yield from child
 
     def recreate_ids(self, id_generator: IDGenerator) -> None:
+        self._child_tag2count.clear()
+        self._child_tag2ids.clear()
+
         for child in self._children:
             if isinstance(child, InlineSegment):
                 child_tag = child.parent.tag
