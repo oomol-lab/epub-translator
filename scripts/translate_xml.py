@@ -9,7 +9,7 @@ from xml.etree.ElementTree import Element, fromstring
 from epub_translator import LLM
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
-from epub_translator.xml_translator import XMLStreamMapper, XMLTranslator
+from epub_translator.xml_translator import XMLTranslator
 from scripts.utils import read_and_clean_temp, read_format_json
 
 
@@ -40,10 +40,7 @@ def main() -> None:
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
-        stream_mapper=XMLStreamMapper(
-            encoding=llm.encoding,
-            max_group_tokens=1200,
-        ),
+        max_group_tokens=1200,
     )
     print("✓ Created Filler instance")
 
