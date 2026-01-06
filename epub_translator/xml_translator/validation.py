@@ -307,7 +307,23 @@ def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
     elif isinstance(error, BlockExpectedIDsError):
         missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
         elements_str = ", ".join(missing_elements)
-        return f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
+
+        # Add context hints with original text content
+        context_hints: list[str] = []
+        for id, elem in sorted(error.id2element.items()):
+            # Use a private encoding instance for block errors (not passed as parameter)
+            original_text = plain_text(elem).strip()
+            if original_text:
+                # Truncate to first 30 chars for block-level hints
+                text_preview = original_text[:30] + "..." if len(original_text) > 30 else original_text
+                context_hints.append(f'    - `<{elem.tag} id="{id}">` contains: "{text_preview}" (original text)')
+
+        message = f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
+        if context_hints:
+            message += "\n" + "\n".join(context_hints)
+            message += "\n    Hint: Find the corresponding translated text and wrap it with the correct tag and ID."
+
+        return message
 
     elif isinstance(error, BlockUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"
@@ -331,7 +347,21 @@ def _format_inline_error(encoding: Encoding, error: InlineError | FoundInvalidID
     elif isinstance(error, InlineExpectedIDsError):
         missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
         elements_str = ", ".join(missing_elements)
-        return f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
+
+        # Add context hints with original text content
+        context_hints: list[str] = []
+        for id, elem in sorted(error.id2element.items()):
+            original_text = plain_text(elem).strip()
+            if original_text:
+                text_hint = _extract_text_hint(encoding, elem)
+                context_hints.append(f'    - `<{elem.tag} id="{id}">` wraps: "{text_hint}" (original text)')
+
+        message = f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
+        if context_hints:
+            message += "\n" + "\n".join(context_hints)
+            message += "\n    Hint: Find the corresponding translated text and wrap it with the correct tag and ID."
+
+        return message
 
     elif isinstance(error, InlineUnexpectedIDError):
         selector = f"{error.element.tag}#{error.id}"
