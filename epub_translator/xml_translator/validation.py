@@ -121,7 +121,10 @@ def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitte
     if not message_lines:
         return None
 
-    header = f"Found {errors_group.errors_count} error(s). Fix them and return the COMPLETE corrected XML (not just the changed parts):"
+    header = (
+        f"Found {errors_group.errors_count} error(s). Fix them and return "
+        "the COMPLETE corrected XML (not just the changed parts):"
+    )
     message_lines.insert(0, "")
     message_lines.insert(0, header)
 
@@ -305,23 +308,22 @@ def _format_block_error(error: BlockError | FoundInvalidIDError) -> str:
                 f"Fix: Change the tag to `<{error.expected_tag}>`."
             )
     elif isinstance(error, BlockExpectedIDsError):
-        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
-        elements_str = ", ".join(missing_elements)
-
         # Add context hints with original text content
         context_hints: list[str] = []
         for id, elem in sorted(error.id2element.items()):
-            # Use a private encoding instance for block errors (not passed as parameter)
             original_text = plain_text(elem).strip()
             if original_text:
                 # Truncate to first 30 chars for block-level hints
                 text_preview = original_text[:30] + "..." if len(original_text) > 30 else original_text
-                context_hints.append(f'    - `<{elem.tag} id="{id}">` contains: "{text_preview}" (original text)')
+                context_hints.append(f'  - `<{elem.tag} id="{id}">`: "{text_preview}"')
 
-        message = f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
         if context_hints:
-            message += "\n" + "\n".join(context_hints)
-            message += "\n    Hint: Find the corresponding translated text and wrap it with the correct tag and ID."
+            message = "Missing block elements (find translation and wrap):\n" + "\n".join(context_hints)
+        else:
+            # Fallback if no text hints available
+            missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+            elements_str = ", ".join(missing_elements)
+            message = f"Missing expected blocks: {elements_str}. Fix: Add these missing blocks with the correct IDs."
 
         return message
 
@@ -345,21 +347,21 @@ def _format_inline_error(encoding: Encoding, error: InlineError | FoundInvalidID
         return f"Element at `{selector}` is missing an ID attribute. Fix: Add the required ID attribute."
 
     elif isinstance(error, InlineExpectedIDsError):
-        missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
-        elements_str = ", ".join(missing_elements)
-
         # Add context hints with original text content
         context_hints: list[str] = []
         for id, elem in sorted(error.id2element.items()):
             original_text = plain_text(elem).strip()
             if original_text:
                 text_hint = _extract_text_hint(encoding, elem)
-                context_hints.append(f'    - `<{elem.tag} id="{id}">` wraps: "{text_hint}" (original text)')
+                context_hints.append(f'  - `<{elem.tag} id="{id}">`: "{text_hint}"')
 
-        message = f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
         if context_hints:
-            message += "\n" + "\n".join(context_hints)
-            message += "\n    Hint: Find the corresponding translated text and wrap it with the correct tag and ID."
+            message = "Missing inline elements (find translation and wrap):\n" + "\n".join(context_hints)
+        else:
+            # Fallback if no text hints available
+            missing_elements = [f'<{elem.tag} id="{id}">' for id, elem in sorted(error.id2element.items())]
+            elements_str = ", ".join(missing_elements)
+            message = f"Missing expected inline elements: {elements_str}. Fix: Add these missing inline elements."
 
         return message
 
