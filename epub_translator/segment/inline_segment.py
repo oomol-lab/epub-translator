@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterator
+from collections.abc import Generator, Iterable, Iterator
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
@@ -50,6 +50,18 @@ def collect_next_inline_segment(
         inline_segment.id = id_generator.next_id()
         inline_segment.recreate_ids(id_generator)
     return inline_segment, next_text_segment
+
+
+def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
+    text_segments_iter = iter(text_segments)
+    text_segment = next(text_segments_iter, None)
+    while text_segment is not None:
+        inline_segment, text_segment = _collect_next_inline_segment(
+            first_text_segment=text_segment,
+            text_segments_iter=text_segments_iter,
+        )
+        if inline_segment is not None:
+            yield inline_segment
 
 
 def _collect_next_inline_segment(
@@ -113,6 +125,22 @@ class InlineSegment:
                 for child in child_terms:
                     child.id = next_temp_id
                     next_temp_id += 1
+
+    @property
+    def head(self) -> TextSegment:
+        first_child = self._children[0]
+        if isinstance(first_child, TextSegment):
+            return first_child
+        else:
+            return first_child.head
+
+    @property
+    def tail(self) -> TextSegment:
+        last_child = self._children[-1]
+        if isinstance(last_child, TextSegment):
+            return last_child
+        else:
+            return last_child.tail
 
     @property
     def children(self) -> list["TextSegment | InlineSegment"]:
