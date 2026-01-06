@@ -2,11 +2,11 @@ from collections.abc import Callable
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
+from .epub import Placeholder, Zip, read_toc, search_spine_paths, write_toc
 from .epub.common import find_opf_path
 from .llm import LLM
-from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
-from .xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
+from .xml import XMLLikeNode, find_first, plain_text
+from .xml_translator import XMLStreamMapper, XMLTranslator
 
 
 def translate(
@@ -26,7 +26,7 @@ def translate(
         ignore_translated_error=False,
         max_retries=max_retries,
         max_fill_displaying_errors=10,
-        group_context=XMLGroupContext(
+        stream_mapper=XMLStreamMapper(
             encoding=llm.encoding,
             max_group_tokens=max_group_tokens,
         ),
@@ -55,29 +55,30 @@ def translate(
         if on_progress:
             on_progress(current_progress)
 
+        # TODO:
         # Translate chapters
-        processed_chapters = 0
-        for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
-            items=_search_chapter_items(zip),
-        ):
-            submit_text_segments(
-                element=element,
-                text_segments=(
-                    segment
-                    for segment in text_segments
-                    if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
-                ),
-            )
-            placeholder.recover()
-            deduplicate_ids_in_element(xml.element)
-            with zip.replace(chapter_path) as target_file:
-                xml.save(target_file)
+        # processed_chapters = 0
+        # for element, text_segments, (chapter_path, xml, placeholder) in translator.translate_to_text_segments(
+        #     items=_search_chapter_items(zip),
+        # ):
+        #     submit_text_segments(
+        #         element=element,
+        #         text_segments=(
+        #             segment
+        #             for segment in text_segments
+        #             if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
+        #         ),
+        #     )
+        #     placeholder.recover()
+        #     deduplicate_ids_in_element(xml.element)
+        #     with zip.replace(chapter_path) as target_file:
+        #         xml.save(target_file)
 
-            # Update progress after each chapter
-            processed_chapters += 1
-            current_progress = TOC_PROGRESS + METADATA_PROGRESS + (processed_chapters * chapter_progress_step)
-            if on_progress:
-                on_progress(current_progress)
+        #     # Update progress after each chapter
+        #     processed_chapters += 1
+        #     current_progress = TOC_PROGRESS + METADATA_PROGRESS + (processed_chapters * chapter_progress_step)
+        #     if on_progress:
+        #         on_progress(current_progress)
 
 
 def _translate_toc(translator: XMLTranslator, zip: Zip):
@@ -102,7 +103,7 @@ def _translate_toc(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
 
     # Translate all titles at once
-    translated_element = translator.translate_to_element(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Extract translated texts
     from builtins import zip as builtin_zip
@@ -174,7 +175,7 @@ def _translate_metadata(translator: XMLTranslator, zip: Zip):
     elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
 
     # Translate all metadata at once
-    translated_element = translator.translate_to_element(elements_to_translate)
+    translated_element = translator.translate_element(elements_to_translate)
 
     # Fill back translated texts
     from builtins import zip as builtin_zip

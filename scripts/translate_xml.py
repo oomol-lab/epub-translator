@@ -7,10 +7,9 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
 from epub_translator import LLM
-from epub_translator.epub import is_placeholder_tag
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
-from epub_translator.xml_translator import XMLGroupContext, XMLTranslator, submit_text_segments
+from epub_translator.xml_translator import XMLStreamMapper, XMLTranslator
 from scripts.utils import read_and_clean_temp, read_format_json
 
 
@@ -41,7 +40,7 @@ def main() -> None:
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
-        group_context=XMLGroupContext(
+        stream_mapper=XMLStreamMapper(
             encoding=llm.encoding,
             max_group_tokens=1200,
         ),
@@ -56,17 +55,7 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_element, translated_text_segments, _ = next(
-            translator.translate_to_text_segments(((source_ele, None),))
-        )
-        submit_text_segments(
-            element=translated_element,
-            text_segments=(
-                segment
-                for segment in translated_text_segments
-                if not any(is_placeholder_tag(e.tag) for e in segment.parent_stack)
-            ),
-        )
+        translated_element = translator.translate_element(source_ele)
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
         print(f"\n{encode_friendly(translated_element)}\n")

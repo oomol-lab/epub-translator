@@ -2,12 +2,12 @@ from collections.abc import Generator, Iterable
 from typing import TypeVar
 from xml.etree.ElementTree import Element
 
-from ..iter_sync import IterSync
 from ..llm import LLM, Message, MessageRole
-from ..segment import TextSegment
+from ..segment import BlockSegment, InlineSegment, TextSegment
 from ..xml import decode_friendly, encode_friendly
-from .group import XMLGroupContext
 from .hill_climbing import HillClimbing
+from .stream_mapper import XMLStreamMapper
+from .submitter import submit_text_segments
 
 T = TypeVar("T")
 
@@ -16,7 +16,7 @@ class XMLTranslator:
     def __init__(
         self,
         llm: LLM,
-        group_context: XMLGroupContext,
+        stream_mapper: XMLStreamMapper,
         target_language: str,
         user_prompt: str | None,
         ignore_translated_error: bool,
@@ -24,60 +24,46 @@ class XMLTranslator:
         max_fill_displaying_errors: int,
     ) -> None:
         self._llm: LLM = llm
-        self._group_context: XMLGroupContext = group_context
+        self._stream_mapper: XMLStreamMapper = stream_mapper
         self._target_language: str = target_language
         self._user_prompt: str | None = user_prompt
         self._ignore_translated_error: bool = ignore_translated_error
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
 
-    def translate_to_element(self, element: Element) -> Element:
-        for translated, _, _ in self.translate_to_text_segments(((element, None),)):
+    def translate_element(self, element: Element) -> Element:
+        for translated in self.translate_elements(((element),)):
             return translated
         raise RuntimeError("Translation failed unexpectedly")
 
-    def translate_to_text_segments(
-        self, items: Iterable[tuple[Element, T]]
-    ) -> Generator[tuple[Element, list[TextSegment], T], None, None]:
-        sync: IterSync[tuple[Element, T]] = IterSync()
-        text_segments: list[TextSegment] = []
-
-        for text_segment in self._translate_text_segments(
-            elements=(e for e, _ in sync.iter(items)),
+    def translate_elements(self, elements: Iterable[Element]) -> Generator[Element, None, None]:
+        for element, text_segments in self._stream_mapper.map_stream(
+            elements=iter(elements), map=self._translate_inline_segments
         ):
-            while True:
-                if sync.tail is None:
-                    break
-                tail_element, _ = sync.tail
-                if id(tail_element) == id(text_segment.root):
-                    break
-                tail_element, payload = sync.take()
-                yield tail_element, text_segments, payload
-                text_segments = []
-            text_segments.append(text_segment)
-
-        while sync.tail is not None:
-            tail_element, payload = sync.take()
-            yield tail_element, text_segments, payload
-            text_segments = []
-
-    def _translate_text_segments(self, elements: Iterable[Element]):
-        for group in self._group_context.split_groups(elements):
-            text_segments = list(group)
-            source_text = "".join(self._render_text_segments(text_segments))
-            translated_text = self._translate_text(source_text)
-            hill_climbing = HillClimbing(
-                encoding=self._llm.encoding,
-                request_tag="xml",
-                text_segments=text_segments,
-                max_fill_displaying_errors=self._max_fill_displaying_errors,
+            yield submit_text_segments(
+                element=element,
+                text_segments_groups=text_segments,
             )
-            self._request_and_submit(
-                hill_climbing=hill_climbing,
-                source_text=source_text,
-                translated_text=translated_text,
-            )
-            yield from group.body
+
+    def _translate_inline_segments(self, inline_segments: list[InlineSegment]) -> list[list[TextSegment] | None]:
+        hill_climbing = HillClimbing(
+            encoding=self._llm.encoding,
+            max_fill_displaying_errors=self._max_fill_displaying_errors,
+            block_segment=BlockSegment(
+                root_tag="xml",
+                inline_segments=inline_segments,
+            ),
+        )
+        text_segments = (text for inline in inline_segments for text in inline)
+        source_text = "".join(self._render_text_segments(text_segments))
+        translated_text = self._translate_text(source_text)
+
+        self._request_and_submit(
+            hill_climbing=hill_climbing,
+            source_text=source_text,
+            translated_text=translated_text,
+        )
+        return list(hill_climbing.gen_text_segments())
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):
         iterator = iter(segments)

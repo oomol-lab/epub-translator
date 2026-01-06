@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Generator
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
@@ -22,17 +22,13 @@ class HillClimbing:
     def __init__(
         self,
         encoding: Encoding,
-        request_tag: str,
         max_fill_displaying_errors: int,
-        text_segments: Iterable[TextSegment],
+        block_segment: BlockSegment,
     ) -> None:
         self._encoding: Encoding = encoding
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
         self._block_statuses: dict[int, _BlockStatus] = {}
-        self._block_segment: BlockSegment = BlockSegment(
-            root_tag=request_tag,
-            text_segments=text_segments,
-        )
+        self._block_segment: BlockSegment = block_segment
 
     def request_element(self) -> Element:
         element = self._block_segment.create_element()
@@ -42,15 +38,16 @@ class HillClimbing:
             child_element.set(DATA_ORIGIN_LEN_KEY, str(len(tokens)))
         return element
 
-    def text_segments_pairs(self) -> Iterable[tuple[list[TextSegment], list[TextSegment]]]:
+    def gen_text_segments(self) -> Generator[list[TextSegment] | None, None, None]:
         for inline_segment in self._block_segment:
             id = inline_segment.id
             assert id is not None
             status = self._block_statuses.get(id, None)
-            if status is not None:
-                yield (
-                    status.submitter.origin_text_segments,
-                    list(search_text_segments(status.submitter.submitted_element)),
+            if status is None:
+                yield None
+            else:
+                yield list(
+                    search_text_segments(root=status.submitter.submitted_element),
                 )
 
     def submit(self, element: Element) -> str | None:

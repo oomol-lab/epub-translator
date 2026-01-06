@@ -12,7 +12,7 @@ _BLOCK_INCISION = 1
 _ELLIPSIS = "..."
 
 
-InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[list[TextSegment]]]
+InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[list[TextSegment] | None]]
 
 
 class XMLStreamMapper:
@@ -32,14 +32,15 @@ class XMLStreamMapper:
             origin_element = origin.head.root
             if current_element is None:
                 current_element = origin_element
-            if id(current_element) == id(origin_element):
-                text_segments_buffer.append(target)
-            else:
+
+            if id(current_element) != id(origin_element):
                 yield current_element, text_segments_buffer
                 current_element = origin_element
                 text_segments_buffer = []
+            elif target:
+                text_segments_buffer.append(target)
 
-        if text_segments_buffer and current_element is not None:
+        if current_element is not None:
             yield current_element, text_segments_buffer
 
     def _split_and_map(self, elements: Iterator[Element], map: InlineSegmentGroupMap):

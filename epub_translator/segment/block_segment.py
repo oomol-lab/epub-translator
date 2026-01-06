@@ -1,10 +1,10 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from dataclasses import dataclass
 from typing import cast
 from xml.etree.ElementTree import Element
 
 from .common import FoundInvalidIDError, validate_id_in_element
-from .inline_segment import InlineError, InlineSegment, collect_next_inline_segment
+from .inline_segment import InlineError, InlineSegment
 from .text_segment import TextSegment
 from .utils import IDGenerator, id_in_element
 
@@ -53,9 +53,14 @@ class BlockSegment:
     #         <div>Paragraph 1.</div>
     #         Some text in between.
     #       </div>
-    def __init__(self, root_tag: str, text_segments: Iterable[TextSegment]) -> None:
+    def __init__(self, root_tag: str, inline_segments: list[InlineSegment]) -> None:
+        id_generator = IDGenerator()
+        for inline_segment in inline_segments:
+            inline_segment.id = id_generator.next_id()
+            inline_segment.recreate_ids(id_generator)
+
         self._root_tag: str = root_tag
-        self._inline_segments: list[InlineSegment] = list(_transform_to_inline_segments(text_segments))
+        self._inline_segments: list[InlineSegment] = inline_segments
         self._id2inline_segment: dict[int, InlineSegment] = dict((cast(int, s.id), s) for s in self._inline_segments)
 
     def __iter__(self) -> Generator[InlineSegment, None, None]:
@@ -125,17 +130,3 @@ class BlockSegment:
                 origin_text_segments=list(inline_segment),
                 submitted_element=inline_segment.assign_attributes(child_element),
             )
-
-
-def _transform_to_inline_segments(text_segments: Iterable[TextSegment]) -> Generator[InlineSegment, None, None]:
-    id_generator = IDGenerator()
-    text_segments_iter = iter(text_segments)
-    text_segment = next(text_segments_iter, None)
-    while text_segment is not None:
-        inline_segment, text_segment = collect_next_inline_segment(
-            id_generator=id_generator,
-            first_text_segment=text_segment,
-            text_segments_iter=text_segments_iter,
-        )
-        if inline_segment is not None:
-            yield inline_segment
