@@ -77,7 +77,6 @@ class XMLTranslator:
                 source_text=source_text,
                 translated_text=translated_text,
             )
-            hill_climbing.append()
             yield from group.body
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):

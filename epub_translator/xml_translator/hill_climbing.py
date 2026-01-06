@@ -4,8 +4,8 @@ from xml.etree.ElementTree import Element
 
 from tiktoken import Encoding
 
-from ..segment import BlockSegment, TextSegment
-from ..xml import index_in_parent, plain_text
+from ..segment import BlockSegment, BlockSubmitter, TextSegment, search_text_segments
+from ..xml import plain_text
 from .common import DATA_ORIGIN_LEN_KEY
 from .validation import LEVEL_DEPTH, generate_error_message, nest_as_errors_group, truncate_errors_group
 
@@ -13,8 +13,7 @@ from .validation import LEVEL_DEPTH, generate_error_message, nest_as_errors_grou
 @dataclass
 class _BlockStatus:
     weight: int
-    submitted: Element
-    stack: list[Element]
+    submitter: BlockSubmitter
 
 
 # 以爬山算法，将 LLM 中提交的内容中挑选出完成度更高的部分。
@@ -43,6 +42,17 @@ class HillClimbing:
             child_element.set(DATA_ORIGIN_LEN_KEY, str(len(tokens)))
         return element
 
+    def text_segments_pairs(self) -> Iterable[tuple[list[TextSegment], list[TextSegment]]]:
+        for inline_segment in self._block_segment:
+            id = inline_segment.id
+            assert id is not None
+            status = self._block_statuses.get(id, None)
+            if status is not None:
+                yield (
+                    status.submitter.origin_text_segments,
+                    list(search_text_segments(status.submitter.submitted_element)),
+                )
+
     def submit(self, element: Element) -> str | None:
         error_message, elevatory_block_weights = self._validate_block_weights_and_error_message(element)
         if elevatory_block_weights:
@@ -53,21 +63,13 @@ class HillClimbing:
                 elif submitter.id not in self._block_statuses:
                     self._block_statuses[submitter.id] = _BlockStatus(
                         weight=weight,
-                        submitted=submitter.submitted_element,
-                        stack=submitter.origin_elements_stack,
+                        submitter=submitter,
                     )
                 else:
                     status = self._block_statuses[submitter.id]
                     status.weight = weight
-                    status.submitted = submitter.submitted_element
-                    status.stack = submitter.origin_elements_stack
+                    status.submitter = submitter
         return error_message
-
-    def append(self) -> None:
-        self._append_submitted_elements(remove_origin=False)
-
-    def replace(self) -> None:
-        self._append_submitted_elements(remove_origin=True)
 
     def _validate_block_weights_and_error_message(self, element: Element) -> tuple[str | None, dict[int, int] | None]:
         errors_group = nest_as_errors_group(
@@ -101,20 +103,3 @@ class HillClimbing:
             omitted_count=origin_errors_count - errors_group.errors_count,
         )
         return message, elevatory_block_weights
-
-    def _append_submitted_elements(self, remove_origin: bool) -> None:
-        for status in self._block_statuses.values():
-            if len(status.stack) < 2:
-                print("Warning: stack length less than 2, cannot replace.")
-                continue
-
-            origin_element = status.stack[-1]
-            parent_element = status.stack[-2]
-            origin_index = index_in_parent(parent_element, origin_element)
-            if origin_index is None:
-                print("Warning: origin element not found in parent, cannot replace.")
-                continue
-
-            parent_element.insert(origin_index, status.submitted)
-            if remove_origin:
-                parent_element.remove(origin_element)
