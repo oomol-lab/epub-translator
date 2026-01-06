@@ -121,7 +121,7 @@ def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitte
     if not message_lines:
         return None
 
-    header = f"Found {errors_group.errors_count} error(s) in total. Fix all errors below and return the corrected XML:"
+    header = f"Found {errors_group.errors_count} error(s). Fix them and return the COMPLETE corrected XML (not just the changed parts):"
     message_lines.insert(0, "")
     message_lines.insert(0, header)
 
@@ -131,6 +131,11 @@ def generate_error_message(encoding: Encoding, errors_group: ErrorsGroup, omitte
             f"... and {omitted_count} more error(s) omitted. "
             f"Fix the above errors first, then resubmit for remaining issues."
         )
+        message_lines.append("")
+        message_lines.append("Remember: Return the entire <xml>...</xml> block with all corrections applied.")
+    else:
+        message_lines.append("")
+        message_lines.append("Return the entire <xml>...</xml> block with corrections.")
 
     return "\n".join(message_lines)
 
