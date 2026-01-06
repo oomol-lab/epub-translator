@@ -16,7 +16,21 @@ def _group_text_segments(mappings: list[InlineSegmentMapping]):
     for inline_segment, text_segments in mappings:
         parent_id = id(inline_segment.parent)
         grouped_map[parent_id] = text_segments
-    # TODO: 过滤拦截 block
+
+    # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
+    #       这是书籍中可能出现的一种情况，虽然不多见。
+    #       例如，作为非叶子的块元素，它的子块元素之间会夹杂文本，当前 collect_next_inline_segment 会忽略这些文字：
+    #       <div>
+    #         Some text before.
+    #         <!-- 只有下一行作为叶子节点的块元素内的文字会被处理 -->
+    #         <div>Paragraph 1.</div>
+    #         Some text in between.
+    #       </div>
+    for _, text_segments in mappings:
+        for text_segment in text_segments:
+            for parent_block in text_segment.parent_stack[: text_segment.block_depth - 1]:
+                grouped_map.pop(id(parent_block), None)
+
     return grouped_map
 
 

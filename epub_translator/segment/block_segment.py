@@ -45,14 +45,6 @@ BlockError = BlockWrongTagError | BlockUnexpectedIDError | BlockExpectedIDsError
 
 
 class BlockSegment:
-    # TODO: 当前版本忽略了嵌入文字的 Block 概念，这是书籍中可能出现的一种情况，虽然不多见。
-    #       例如，作为非叶子的块元素，它的子块元素之间会夹杂文本，当前 collect_next_inline_segment 会忽略这些文字：
-    #       <div>
-    #         Some text before.
-    #         <!-- 只有下一行作为叶子节点的块元素内的文字会被处理 -->
-    #         <div>Paragraph 1.</div>
-    #         Some text in between.
-    #       </div>
     def __init__(self, root_tag: str, inline_segments: list[InlineSegment]) -> None:
         id_generator = IDGenerator()
         for inline_segment in inline_segments:
