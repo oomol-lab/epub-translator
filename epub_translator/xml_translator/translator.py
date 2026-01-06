@@ -150,7 +150,7 @@ class XMLTranslator:
 
         with self._fill_llm.context() as llm_context:
             did_success: bool = False
-            for _ in range(self._max_retries):
+            for retry_count in range(self._max_retries):
                 response = llm_context.request(fixed_messages + conversation_history)
                 validated_element = self._extract_xml_element(response)
                 error_message: str | None = None
@@ -163,6 +163,12 @@ class XMLTranslator:
                 if error_message is None:
                     did_success = True
                     break
+
+                # TODO: for debug
+                # Print retry failure log (not max retries reached, just a single retry failure)
+                print(f"[Retry {retry_count + 1}/{self._max_retries}] Validation failed:")
+                print(f"{error_message}")
+                print("---\n")
 
                 conversation_history = [
                     Message(role=MessageRole.ASSISTANT, message=response),
