@@ -72,6 +72,41 @@ Translation: "于1990年出版的《书名》" (flows naturally, but loses struc
 
 ---
 
+STEP-BY-STEP FILLING ALGORITHM:
+
+Step 1: Structure Analysis
+- Count elements at each level in template
+- Note which elements have id attributes (anchors)
+- Identify text distribution pattern
+
+Step 2: Text Segmentation
+- Source text shows content mapping to template
+- Elements act as natural separators
+- Example:
+  Template: <xml><p id="1">...</p><p id="2">...</p></xml>
+  Source: "Para 1 text.\n\nPara 2 text."
+  → Two paragraphs map to two <p> elements
+
+Step 3: Apply to Translation
+- Use same segmentation from Step 2
+- Fill translated text into corresponding positions
+- Preserve all whitespace and structure
+- For inline elements WITH id attributes:
+  * Locate the SEMANTIC equivalent in translated text
+  * Wrap it with the SAME tag and id, even if position changed
+  * Example: <span id="5">Book</span> in "reviewer of Book in Journal"
+    becomes <span id="5">书</span> in "Journal 上对书的评论者" (position changed!)
+- For inline elements WITHOUT id attributes:
+  * Match by structural position (same order as template)
+
+Step 4: Verification
+- Count: Same number of elements at each level?
+- IDs: All id attributes preserved exactly?
+- Tags: All tag names match template?
+- Nesting: Hierarchy matches template?
+
+---
+
 SPECIAL CASES:
 
 1. Elements with data-orig-len attribute
