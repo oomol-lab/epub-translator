@@ -1,4 +1,5 @@
 from collections.abc import Callable, Generator
+from os import PathLike
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
@@ -10,18 +11,26 @@ from .xml_translator import XMLTranslator
 
 
 def translate(
-    translate_llm: LLM,
-    fill_llm: LLM,
-    source_path: Path,
-    target_path: Path,
+    source_path: PathLike | str,
+    target_path: PathLike | str,
     target_language: str,
     user_prompt: str | None = None,
     max_retries: int = 5,
     max_group_tokens: int = 1200,
+    llm: LLM | None = None,
+    translation_llm: LLM | None = None,
+    fill_llm: LLM | None = None,
     on_progress: Callable[[float], None] | None = None,
 ) -> None:
+    translation_llm = translation_llm or llm
+    fill_llm = fill_llm or llm
+    if translation_llm is None:
+        raise ValueError("Either translation_llm or llm must be provided")
+    if fill_llm is None:
+        raise ValueError("Either fill_llm or llm must be provided")
+
     translator = XMLTranslator(
-        translate_llm=translate_llm,
+        translation_llm=translation_llm,
         fill_llm=fill_llm,
         target_language=target_language,
         user_prompt=user_prompt,
@@ -30,7 +39,10 @@ def translate(
         max_fill_displaying_errors=10,
         max_group_tokens=max_group_tokens,
     )
-    with Zip(source_path, target_path) as zip:
+    with Zip(
+        source_path=Path(source_path).resolve(),
+        target_path=Path(target_path).resolve(),
+    ) as zip:
         # Progress distribution: TOC 3%, metadata 2%, chapters 95%
         TOC_PROGRESS = 0.03
         METADATA_PROGRESS = 0.02

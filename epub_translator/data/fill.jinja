@@ -7,6 +7,10 @@ CRITICAL RULES:
    - Same nesting hierarchy
    - Same attributes (especially id attributes)
 
+   IMPORTANT: Translation fluency is SECONDARY to structure preservation.
+   If the translated text flows naturally but doesn't match template structure,
+   you MUST break the flow to insert required tags.
+
 2. ID Handling:
    - Tags WITH id="X": Disambiguation markers for structurally similar elements
    - Tags WITHOUT id: Structurally unique, match by position and tag name
@@ -50,13 +54,49 @@ Error Type 5: Missing ID on required elements
 ✓ CORRECT: <span id="5">译文</span>
 
 Error Type 6: Wrong text mapping when word order changes
-Example: Template has "reviewer of <span id="5">Book</span> in <span id="6">Journal</span>"
+Example 1: Template has "reviewer of <span id="5">Book</span> in <span id="6">Journal</span>"
 Translation: "Journal 上对 Book 的评论者"
 
 ❌ WRONG: Journal 上对 <span id="5">Book</span> 的评论者<span id="6">Journal</span>
   (appending original text at end)
 ✓ CORRECT: <span id="6">Journal</span> 上对 <span id="5">Book</span> 的评论者
   (wrapping semantic equivalents in translated positions)
+
+Example 2: Breaking fluent translation to preserve structure
+Template: "published in <span id="5">Book Title</span> in 1990"
+Translation: "于1990年出版的《书名》" (flows naturally, but loses structure)
+
+❌ WRONG: 于1990年出版的《书名》 (fluent but missing <span id="5">)
+✓ CORRECT: 于1990年出版的<span id="5">《书名》</span>
+  (Break fluency to preserve structure - this is REQUIRED)
+
+Error Type 7: Adjacent elements with different semantic types
+CRITICAL: When template has adjacent elements of DIFFERENT semantic types (book title + year, person name + date, place + number, etc.),
+you MUST match by SEMANTIC TYPE, NOT by position in translated text.
+
+Example 1: Book title and year adjacent
+Template: "<span id="3">Book Title</span> in <span id="4"><a>1990</a></span>"
+Translation: "《书名》于1990年出版"
+
+❌ WRONG: 《书名》于<span id="3">1990</span>年出版<span id="4">...</span>
+  (Matching by position: "1990" appears after "于", so wrapping it with id="3")
+  (This is WRONG because you matched a YEAR to a template that expects a BOOK TITLE)
+
+✓ CORRECT: <span id="3">《书名》</span>于<span id="4"><a>1990</a></span>年出版
+  (Matching by SEMANTIC TYPE: book title → book title, year → year)
+  (Even though word order changed, semantic types match correctly)
+
+Example 2: Multiple elements of same semantic type require position tracking
+Template: "<span id="3">Book A</span> in 1990... second edition of <span id="5">Book A</span>"
+Translation: "《书A》于1990年出版...《书A》第二版"
+
+✓ CORRECT: <span id="3">《书A》</span>于1990年出版...<span id="5">《书A》</span>第二版
+  (First occurrence of book title → id="3", second occurrence → id="5")
+
+KEY PRINCIPLE: Semantic type matching beats position matching!
+- If template shows <book> <year>, find the book and year in translation, regardless of their positions
+- data-orig-len can help: book titles usually have longer token counts than years
+- Years are typically 4-digit numbers (1687, 1990, 2024, etc.) - easy to identify
 
 ---
 
@@ -97,55 +137,44 @@ Step 4: Verification
 
 SPECIAL CASES:
 
-1. Empty Elements
-Template: <span id="5"></span>
-→ Fill if source/translation mapping indicates text
-→ Keep empty if intentionally empty in source
+1. Elements with data-orig-len attribute
+Template: <span id="5" data-orig-len="42">text</span>
+→ The data-orig-len shows token count of ORIGINAL text
+→ Use as HINT for locating element, not strict constraint
+→ Translation length may differ significantly across languages
+→ Focus on semantic matching, not length matching
 
-2. Nested IDs
-Template: <div id="10"><span id="11">...</span></div>
-→ Both IDs must be preserved
-→ Fill text according to nesting indicated by source
-
-3. Mixed Content (text + elements)
-Template: <p id="1">Some <em>emphasized</em> text.</p>
-→ Distribute translated text to match pattern
-→ Keep <em> in same relative position
-
-4. Multiple Elements Without IDs
-Template: <p id="1"><br/><br/></p>
-→ Count matters! Same number of <br/> tags
-→ Preserve exact count even if redundant
-
-5. Deeply Nested Structures
-→ Process level by level from outside to inside
-→ Maintain parent-child relationships exactly
-
-6. Length Hints (Optional Guidance)
-- Some elements may have data-orig-len="X" attribute
-- This indicates original text was approximately X tokens long
-- Use as rough guide for text distribution
-- Structure rules take priority over length hints
-
-7. Word Order Changes in Translation (CRITICAL)
-When error messages show original text for missing IDs, use SEMANTIC matching:
+2. When Translation Simplifies or Omits Source Elements
+Sometimes the translation legitimately simplifies/merges/omits elements from the source.
+This is a valid translation decision, but creates a filling challenge.
 
 Example scenario:
-- Template: The reviewer of <span id="5">Book A</span> in <span id="6">Journal B</span>
-- Translation: Journal B 上对 Book A 的评论者 (word order reversed!)
-- Error message: Missing <span id="6">, wraps "Journal B" (original text)
+- Template: <span id="1">Latin Name</span>, or <span id="2">English Translation</span>
+- Translation: 中文名称 (merged both into one concept, no "or" connector)
+- Error message: Missing <span id="2">: "English Translation"
 
-CORRECT approach:
-1. Identify "Journal B" in translation: "Journal B" → find semantic match
-2. Wrap the translated equivalent: <span id="6">Journal B</span> (if kept as-is) or <span id="6">杂志B</span> (if translated)
-3. Place it where it appears in the TRANSLATED text, not the original position
+CORRECT approach (in priority order):
+1. FIRST: Exhaust semantic matching
+   - Check for synonyms, paraphrases, merged concepts
+   - Consider that translation may express the same meaning differently
+
+2. IF genuinely no match exists after thorough analysis:
+   - Use source text as fallback: <span id="2">English Translation</span>
+   - Place it in a natural position in the translated sentence
+
+3. Mixed language output is ACCEPTABLE
+   - Common in academic translation (technical terms, proper nouns, book titles)
+   - Better than leaving structure incomplete
 
 WRONG approaches:
-❌ Appending original English text at the end: ...text.<span id="6">Journal B</span>
-❌ Ignoring the error because text "looks complete"
-❌ Using original text position instead of translated text position
+❌ Leaving element empty: <span id="2"></span>
+❌ Using placeholder text: <span id="2">内容</span> or <span id="2">译文</span>
+❌ Duplicating other elements: <span id="2">中文名称</span> (when id="1" already has this)
+❌ Failing to insert the element at all
 
-Key principle: IDs mark SEMANTIC units, not positional anchors. Find the meaning, then wrap it.
+IMPORTANT: Using source text as fallback is a last resort, but it is VALID and REQUIRED
+when the alternative is broken structure. Readers can understand mixed language better
+than missing or malformed XML.
 
 ---
 

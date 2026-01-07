@@ -2,14 +2,12 @@ from collections.abc import Callable
 from io import StringIO
 from logging import Logger
 from time import sleep
-from typing import cast
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
-from .increasable import Increasable, Increaser
-from .types import Message, MessageRole, R
+from .types import Message, MessageRole
 
 
 class LLMExecutor:
@@ -19,16 +17,12 @@ class LLMExecutor:
         url: str,
         model: str,
         timeout: float | None,
-        top_p: Increasable,
-        temperature: Increasable,
         retry_times: int,
         retry_interval_seconds: float,
         create_logger: Callable[[], Logger | None],
     ) -> None:
         self._model_name: str = model
         self._timeout: float | None = timeout
-        self._top_p: Increasable = top_p
-        self._temperature: Increasable = temperature
         self._retry_times: int = retry_times
         self._retry_interval_seconds: float = retry_interval_seconds
         self._create_logger: Callable[[], Logger | None] = create_logger
@@ -41,39 +35,26 @@ class LLMExecutor:
     def request(
         self,
         messages: list[Message],
-        parser: Callable[[str], R],
         max_tokens: int | None,
         temperature: float | None = None,
         top_p: float | None = None,
-    ) -> R:
-        result: R | None = None
+    ) -> str:
+        response: str = ""
         last_error: Exception | None = None
         did_success = False
-
-        # 确定是否使用固定参数（用户传入的覆盖值）
-        use_fixed_temperature = temperature is not None
-        use_fixed_top_p = top_p is not None
-
-        # 初始化 increaser（只在非固定时使用，重试失败时自动调整）
-        top_p_increaser: Increaser = self._top_p.context()
-        temperature_increaser: Increaser = self._temperature.context()
-
         logger = self._create_logger()
 
         if logger is not None:
+            logger.debug(f"[[Parameters]]:\n\ttemperature={temperature}\n\ttop_p={top_p}\n\tmax_tokens={max_tokens}\n")
             logger.debug(f"[[Request]]:\n{self._input2str(messages)}\n")
 
         try:
             for i in range(self._retry_times + 1):
-                # 确定本次请求使用的参数（固定值或当前 increaser 值）
-                final_top_p = top_p if use_fixed_top_p else top_p_increaser.current
-                final_temperature = temperature if use_fixed_temperature else temperature_increaser.current
-
                 try:
                     response = self._invoke_model(
                         input_messages=messages,
-                        top_p=final_top_p,
-                        temperature=final_temperature,
+                        temperature=temperature,
+                        top_p=top_p,
                         max_tokens=max_tokens,
                     )
                     if logger is not None:
@@ -89,27 +70,8 @@ class LLMExecutor:
                         sleep(self._retry_interval_seconds)
                     continue
 
-                try:
-                    result = parser(response)
-                    did_success = True
-                    break
-
-                except Exception as err:
-                    last_error = err
-                    warn_message = f"request failed with parsing error, retrying... ({i + 1} times)"
-                    if logger is not None:
-                        logger.warning(warn_message)
-                    print(warn_message)
-
-                    # 只在非固定参数时增加参数值（固定参数不应该在重试时变化）
-                    if not use_fixed_top_p:
-                        top_p_increaser.increase()
-                    if not use_fixed_temperature:
-                        temperature_increaser.increase()
-
-                    if self._retry_interval_seconds > 0.0 and i < self._retry_times:
-                        sleep(self._retry_interval_seconds)
-                    continue
+                did_success = True
+                break
 
         except KeyboardInterrupt as err:
             if last_error is not None and logger is not None:
@@ -122,7 +84,7 @@ class LLMExecutor:
             else:
                 raise last_error
 
-        return cast(R, result)
+        return response
 
     def _input2str(self, input: str | list[Message]) -> str:
         if isinstance(input, str):
@@ -156,7 +118,7 @@ class LLMExecutor:
         top_p: float | None,
         temperature: float | None,
         max_tokens: int | None,
-    ):
+    ) -> str:
         messages: list[ChatCompletionMessageParam] = []
         for item in input_messages:
             if item.role == MessageRole.SYSTEM:

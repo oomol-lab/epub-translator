@@ -2,6 +2,25 @@ import json
 import shutil
 from pathlib import Path
 
+from epub_translator import LLM
+
+
+def load_llm(**args):
+    config = read_format_json()
+    translation_config = config.pop("translation", {})
+    fill_config = config.pop("fill", {})
+    translate_llm = LLM(
+        **config,
+        **translation_config,
+        **args,
+    )
+    fill_llm = LLM(
+        **config,
+        **fill_config,
+        **args,
+    )
+    return translate_llm, fill_llm
+
 
 def read_format_json() -> dict:
     path = Path(__file__).parent / ".." / "format.json"
