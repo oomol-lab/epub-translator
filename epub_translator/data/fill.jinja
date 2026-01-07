@@ -27,11 +27,7 @@ CRITICAL RULES:
 
 COMMON ERRORS TO AVOID:
 
-Error Type 1: Missing expected blocks
-❌ WRONG: Omitting elements with id attributes
-✓ CORRECT: Every <tag id="X"> in template MUST appear in output
-
-Error Type 2: Tag count mismatch for non-id elements
+Error Type 1: Tag count mismatch for non-id elements
 Example template:
 <p id="1">
   <span>text1</span>
@@ -41,28 +37,7 @@ Example template:
 ❌ WRONG: <p id="1"><span>merged text</span></p>  (only 1 span, expected 2)
 ✓ CORRECT: <p id="1"><span>text1</span><span>text2</span></p>
 
-Error Type 3: Adding unexpected IDs
-❌ WRONG: Adding id="99" to a tag that didn't have an id in template
-✓ CORRECT: If template has <span>text</span>, output should be <span>译文</span> (no id)
-
-Error Type 4: Wrong tag names
-❌ WRONG: Changing <em id="5"> to <i id="5">
-✓ CORRECT: Keep exact tag name from template
-
-Error Type 5: Missing ID on required elements
-❌ WRONG: <span>text</span> when template has <span id="5">text</span>
-✓ CORRECT: <span id="5">译文</span>
-
-Error Type 6: Wrong text mapping when word order changes
-Example 1: Template has "reviewer of <span id="5">Book</span> in <span id="6">Journal</span>"
-Translation: "Journal 上对 Book 的评论者"
-
-❌ WRONG: Journal 上对 <span id="5">Book</span> 的评论者<span id="6">Journal</span>
-  (appending original text at end)
-✓ CORRECT: <span id="6">Journal</span> 上对 <span id="5">Book</span> 的评论者
-  (wrapping semantic equivalents in translated positions)
-
-Example 2: Breaking fluent translation to preserve structure
+Error Type 2: Breaking fluent translation to preserve structure
 Template: "published in <span id="5">Book Title</span> in 1990"
 Translation: "于1990年出版的《书名》" (flows naturally, but loses structure)
 
@@ -70,97 +45,24 @@ Translation: "于1990年出版的《书名》" (flows naturally, but loses struc
 ✓ CORRECT: 于1990年出版的<span id="5">《书名》</span>
   (Break fluency to preserve structure - this is REQUIRED)
 
----
-
-STEP-BY-STEP FILLING ALGORITHM:
-
-Step 1: Structure Analysis
-- Count elements at each level in template
-- Note which elements have id attributes (anchors)
-- Identify text distribution pattern
-
-Step 2: Text Segmentation
-- Source text shows content mapping to template
-- Elements act as natural separators
-- Example:
-  Template: <xml><p id="1">...</p><p id="2">...</p></xml>
-  Source: "Para 1 text.\n\nPara 2 text."
-  → Two paragraphs map to two <p> elements
-
-Step 3: Apply to Translation
-- Use same segmentation from Step 2
-- Fill translated text into corresponding positions
-- Preserve all whitespace and structure
-- For inline elements WITH id attributes:
-  * Locate the SEMANTIC equivalent in translated text
-  * Wrap it with the SAME tag and id, even if position changed
-  * Example: <span id="5">Book</span> in "reviewer of Book in Journal"
-    becomes <span id="5">书</span> in "Journal 上对书的评论者" (position changed!)
-- For inline elements WITHOUT id attributes:
-  * Match by structural position (same order as template)
-
-Step 4: Verification
-- Count: Same number of elements at each level?
-- IDs: All id attributes preserved exactly?
-- Tags: All tag names match template?
-- Nesting: Hierarchy matches template?
+Error Type 3: Other structural violations
+- Missing blocks with id attributes
+- Adding unexpected id attributes
+- Wrong tag names (e.g., changing <em> to <i>)
+- Missing required id on elements
 
 ---
 
 SPECIAL CASES:
 
-1. Empty Elements
-Template: <span id="5"></span>
-→ Fill if source/translation mapping indicates text
-→ Keep empty if intentionally empty in source
-
-2. Nested IDs
-Template: <div id="10"><span id="11">...</span></div>
-→ Both IDs must be preserved
-→ Fill text according to nesting indicated by source
-
-3. Mixed Content (text + elements)
-Template: <p id="1">Some <em>emphasized</em> text.</p>
-→ Distribute translated text to match pattern
-→ Keep <em> in same relative position
-
-4. Multiple Elements Without IDs
-Template: <p id="1"><br/><br/></p>
-→ Count matters! Same number of <br/> tags
-→ Preserve exact count even if redundant
-
-5. Deeply Nested Structures
-→ Process level by level from outside to inside
-→ Maintain parent-child relationships exactly
-
-6. Elements with data-orig-len attribute
+1. Elements with data-orig-len attribute
 Template: <span id="5" data-orig-len="42">text</span>
 → The data-orig-len shows token count of ORIGINAL text
 → Use as HINT for locating element, not strict constraint
 → Translation length may differ significantly across languages
 → Focus on semantic matching, not length matching
 
-7. Word Order Changes in Translation (CRITICAL)
-When error messages show original text for missing IDs, use SEMANTIC matching:
-
-Example scenario:
-- Template: The reviewer of <span id="5">Book A</span> in <span id="6">Journal B</span>
-- Translation: Journal B 上对 Book A 的评论者 (word order reversed!)
-- Error message: Missing <span id="6">, wraps "Journal B" (original text)
-
-CORRECT approach:
-1. Identify "Journal B" in translation: "Journal B" → find semantic match
-2. Wrap the translated equivalent: <span id="6">Journal B</span> (if kept as-is) or <span id="6">杂志B</span> (if translated)
-3. Place it where it appears in the TRANSLATED text, not the original position
-
-WRONG approaches:
-❌ Appending original English text at the end: ...text.<span id="6">Journal B</span>
-❌ Ignoring the error because text "looks complete"
-❌ Using original text position instead of translated text position
-
-Key principle: IDs mark SEMANTIC units, not positional anchors. Find the meaning, then wrap it.
-
-8. When Translation Simplifies or Omits Source Elements
+2. When Translation Simplifies or Omits Source Elements
 Sometimes the translation legitimately simplifies/merges/omits elements from the source.
 This is a valid translation decision, but creates a filling challenge.
 
