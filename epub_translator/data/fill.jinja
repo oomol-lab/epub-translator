@@ -7,6 +7,10 @@ CRITICAL RULES:
    - Same nesting hierarchy
    - Same attributes (especially id attributes)
 
+   IMPORTANT: Translation fluency is SECONDARY to structure preservation.
+   If the translated text flows naturally but doesn't match template structure,
+   you MUST break the flow to insert required tags.
+
 2. ID Handling:
    - Tags WITH id="X": Disambiguation markers for structurally similar elements
    - Tags WITHOUT id: Structurally unique, match by position and tag name
@@ -50,13 +54,21 @@ Error Type 5: Missing ID on required elements
 ✓ CORRECT: <span id="5">译文</span>
 
 Error Type 6: Wrong text mapping when word order changes
-Example: Template has "reviewer of <span id="5">Book</span> in <span id="6">Journal</span>"
+Example 1: Template has "reviewer of <span id="5">Book</span> in <span id="6">Journal</span>"
 Translation: "Journal 上对 Book 的评论者"
 
 ❌ WRONG: Journal 上对 <span id="5">Book</span> 的评论者<span id="6">Journal</span>
   (appending original text at end)
 ✓ CORRECT: <span id="6">Journal</span> 上对 <span id="5">Book</span> 的评论者
   (wrapping semantic equivalents in translated positions)
+
+Example 2: Breaking fluent translation to preserve structure
+Template: "published in <span id="5">Book Title</span> in 1990"
+Translation: "于1990年出版的《书名》" (flows naturally, but loses structure)
+
+❌ WRONG: 于1990年出版的《书名》 (fluent but missing <span id="5">)
+✓ CORRECT: 于1990年出版的<span id="5">《书名》</span>
+  (Break fluency to preserve structure - this is REQUIRED)
 
 ---
 

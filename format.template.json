@@ -8,7 +8,7 @@
   "translate_temperature": 0.8,
   "translate_top_p": 0.6,
 
-  "fill_temperature": 0.3,
+  "fill_temperature": 0.2,
   "fill_top_p": 0.7,
 
   "retry_times": 10,
