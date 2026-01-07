@@ -160,6 +160,38 @@ WRONG approaches:
 
 Key principle: IDs mark SEMANTIC units, not positional anchors. Find the meaning, then wrap it.
 
+8. When Translation Simplifies or Omits Source Elements
+Sometimes the translation legitimately simplifies/merges/omits elements from the source.
+This is a valid translation decision, but creates a filling challenge.
+
+Example scenario:
+- Template: <span id="1">Latin Name</span>, or <span id="2">English Translation</span>
+- Translation: 中文名称 (merged both into one concept, no "or" connector)
+- Error message: Missing <span id="2">: "English Translation"
+
+CORRECT approach (in priority order):
+1. FIRST: Exhaust semantic matching
+   - Check for synonyms, paraphrases, merged concepts
+   - Consider that translation may express the same meaning differently
+
+2. IF genuinely no match exists after thorough analysis:
+   - Use source text as fallback: <span id="2">English Translation</span>
+   - Place it in a natural position in the translated sentence
+
+3. Mixed language output is ACCEPTABLE
+   - Common in academic translation (technical terms, proper nouns, book titles)
+   - Better than leaving structure incomplete
+
+WRONG approaches:
+❌ Leaving element empty: <span id="2"></span>
+❌ Using placeholder text: <span id="2">内容</span> or <span id="2">译文</span>
+❌ Duplicating other elements: <span id="2">中文名称</span> (when id="1" already has this)
+❌ Failing to insert the element at all
+
+IMPORTANT: Using source text as fallback is a last resort, but it is VALID and REQUIRED
+when the alternative is broken structure. Readers can understand mixed language better
+than missing or malformed XML.
+
 ---
 
 OUTPUT FORMAT:
