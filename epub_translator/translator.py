@@ -1,4 +1,5 @@
 from collections.abc import Callable, Generator
+from os import PathLike
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
@@ -10,8 +11,8 @@ from .xml_translator import XMLTranslator
 
 
 def translate(
-    source_path: Path,
-    target_path: Path,
+    source_path: PathLike | str,
+    target_path: PathLike | str,
     target_language: str,
     user_prompt: str | None = None,
     max_retries: int = 5,
@@ -38,7 +39,10 @@ def translate(
         max_fill_displaying_errors=10,
         max_group_tokens=max_group_tokens,
     )
-    with Zip(source_path, target_path) as zip:
+    with Zip(
+        source_path=Path(source_path).resolve(),
+        target_path=Path(target_path).resolve(),
+    ) as zip:
         # Progress distribution: TOC 3%, metadata 2%, chapters 95%
         TOC_PROGRESS = 0.03
         METADATA_PROGRESS = 0.02

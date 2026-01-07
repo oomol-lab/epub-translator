@@ -22,13 +22,13 @@ class LLM:
         url: str,
         model: str,
         token_encoding: str,
-        cache_path: PathLike | None = None,
         timeout: float | None = None,
         top_p: float | tuple[float, float] | None = None,
         temperature: float | tuple[float, float] | None = None,
         retry_times: int = 5,
         retry_interval_seconds: float = 6.0,
-        log_dir_path: PathLike | None = None,
+        cache_path: PathLike | str | None = None,
+        log_dir_path: PathLike | str | None = None,
     ) -> None:
         prompts_path = Path(str(files("epub_translator"))) / "data"
         self._templates: dict[str, Template] = {}
@@ -36,22 +36,8 @@ class LLM:
         self._env: Environment = create_env(prompts_path)
         self._top_p: Increasable = Increasable(top_p)
         self._temperature: Increasable = Increasable(temperature)
-        self._logger_save_path: Path | None = None
-        self._cache_path: Path | None = None
-
-        if cache_path is not None:
-            self._cache_path = Path(cache_path)
-            if not self._cache_path.exists():
-                self._cache_path.mkdir(parents=True, exist_ok=True)
-            elif not self._cache_path.is_dir():
-                self._cache_path = None
-
-        if log_dir_path is not None:
-            self._logger_save_path = Path(log_dir_path)
-            if not self._logger_save_path.exists():
-                self._logger_save_path.mkdir(parents=True, exist_ok=True)
-            elif not self._logger_save_path.is_dir():
-                self._logger_save_path = None
+        self._cache_path: Path | None = self._ensure_dir_path(cache_path)
+        self._logger_save_path: Path | None = self._ensure_dir_path(log_dir_path)
 
         self._executor = LLMExecutor(
             url=url,
@@ -96,6 +82,16 @@ class LLM:
             template = self._env.get_template(template_name)
             self._templates[template_name] = template
         return template
+
+    def _ensure_dir_path(self, path: PathLike | str | None) -> Path | None:
+        if path is None:
+            return None
+        dir_path = Path(path)
+        if not dir_path.exists():
+            dir_path.mkdir(parents=True, exist_ok=True)
+        elif not dir_path.is_dir():
+            return None
+        return dir_path.resolve()
 
     def _create_logger(self) -> Logger | None:
         if self._logger_save_path is None:
