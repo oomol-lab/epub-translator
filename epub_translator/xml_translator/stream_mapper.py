@@ -40,7 +40,7 @@ class XMLStreamMapper:
                     yield current_element, mapping_buffer
                     current_element = origin_element
                     mapping_buffer = []
-                elif target:
+                if target:
                     mapping_buffer.append(target)
 
         if current_element is not None:
