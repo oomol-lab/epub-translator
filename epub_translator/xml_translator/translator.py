@@ -15,7 +15,7 @@ T = TypeVar("T")
 class XMLTranslator:
     def __init__(
         self,
-        translate_llm: LLM,
+        translation_llm: LLM,
         fill_llm: LLM,
         target_language: str,
         user_prompt: str | None,
@@ -24,7 +24,7 @@ class XMLTranslator:
         max_fill_displaying_errors: int,
         max_group_tokens: int,
     ) -> None:
-        self._translate_llm: LLM = translate_llm
+        self._translation_llm: LLM = translation_llm
         self._fill_llm: LLM = fill_llm
         self._target_language: str = target_language
         self._user_prompt: str | None = user_prompt
@@ -32,7 +32,7 @@ class XMLTranslator:
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
         self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
-            encoding=translate_llm.encoding,
+            encoding=translation_llm.encoding,
             max_group_tokens=max_group_tokens,
         )
 
@@ -117,11 +117,11 @@ class XMLTranslator:
         yield segment.text
 
     def _translate_text(self, text: str) -> str:
-        return self._translate_llm.request(
+        return self._translation_llm.request(
             input=[
                 Message(
                     role=MessageRole.SYSTEM,
-                    message=self._translate_llm.template("translate").render(
+                    message=self._translation_llm.template("translate").render(
                         target_language=self._target_language,
                         user_prompt=self._user_prompt,
                     ),

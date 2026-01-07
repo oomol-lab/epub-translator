@@ -6,11 +6,10 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
-from epub_translator import LLM
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
 from epub_translator.xml_translator import XMLTranslator
-from scripts.utils import read_and_clean_temp, read_format_json
+from scripts.utils import load_llm, read_and_clean_temp
 
 
 def main() -> None:
@@ -18,49 +17,15 @@ def main() -> None:
     print("Filler Test - Filling translated text into XML structure")
     print("=" * 60)
 
-    # Read configuration from format.json
-    config = read_format_json()
-    print("\n✓ Loaded configuration from format.json")
-    print(f"  Model: {config['model']}")
-
-    # Extract separate parameters for translate and fill tasks
-    translate_temperature = config.pop("translate_temperature", 0.8)
-    translate_top_p = config.pop("translate_top_p", 0.6)
-    fill_temperature = config.pop("fill_temperature", 0.3)
-    fill_top_p = config.pop("fill_top_p", 0.7)
-
-    # Remove legacy parameters if they exist (to avoid conflicts)
-    config.pop("temperature", None)
-    config.pop("top_p", None)
-
     # Create two LLM instances with different configurations
     temp_path = read_and_clean_temp()
-    cache_path = Path(__file__).parent / ".." / "cache"
-    log_dir_path = temp_path / "logs"
-
-    # LLM for translation task (higher temperature for creativity)
-    translate_llm = LLM(
-        **config,
-        temperature=translate_temperature,
-        top_p=translate_top_p,
-        log_dir_path=log_dir_path,
-        cache_path=cache_path,
+    translation_llm, fill_llm = load_llm(
+        cache_path=Path(__file__).parent / ".." / "cache",
+        log_dir_path=temp_path / "logs",
     )
-    print(f"✓ Created translate_llm (temperature={translate_temperature}, top_p={translate_top_p})")
-
-    # LLM for fill task (lower temperature for structure accuracy)
-    fill_llm = LLM(
-        **config,
-        temperature=fill_temperature,
-        top_p=fill_top_p,
-        log_dir_path=log_dir_path,
-        cache_path=cache_path,
-    )
-    print(f"✓ Created fill_llm (temperature={fill_temperature}, top_p={fill_top_p})")
-
     # Create XMLTranslator instance with two LLM objects
     translator = XMLTranslator(
-        translate_llm=translate_llm,
+        translation_llm=translation_llm,
         fill_llm=fill_llm,
         target_language=CHINESE,
         user_prompt=None,

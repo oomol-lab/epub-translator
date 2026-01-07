@@ -21,7 +21,7 @@ class Increasable:
             param = float(param)
         if isinstance(param, float):
             param = (param, param)
-        if isinstance(param, tuple):
+        if isinstance(param, (tuple, list)):
             if len(param) != 2:
                 raise ValueError(f"Expected a tuple of length 2, got {len(param)}")
             begin, end = param
