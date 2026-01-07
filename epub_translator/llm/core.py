@@ -34,6 +34,8 @@ class LLM:
         self._templates: dict[str, Template] = {}
         self._encoding: Encoding = get_encoding(token_encoding)
         self._env: Environment = create_env(prompts_path)
+        self._top_p: Increasable = Increasable(top_p)
+        self._temperature: Increasable = Increasable(temperature)
         self._logger_save_path: Path | None = None
         self._cache_path: Path | None = None
 
@@ -56,8 +58,6 @@ class LLM:
             model=model,
             api_key=key,
             timeout=timeout,
-            top_p=Increasable(top_p),
-            temperature=Increasable(temperature),
             retry_times=retry_times,
             retry_interval_seconds=retry_interval_seconds,
             create_logger=self._create_logger,
@@ -71,6 +71,8 @@ class LLM:
         return LLMContext(
             executor=self._executor,
             cache_path=self._cache_path,
+            top_p=self._top_p,
+            temperature=self._temperature,
         )
 
     def request(

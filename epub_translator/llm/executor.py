@@ -8,7 +8,6 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
-from .increasable import Increasable, Increaser
 from .types import Message, MessageRole, R
 
 
@@ -19,16 +18,12 @@ class LLMExecutor:
         url: str,
         model: str,
         timeout: float | None,
-        top_p: Increasable,
-        temperature: Increasable,
         retry_times: int,
         retry_interval_seconds: float,
         create_logger: Callable[[], Logger | None],
     ) -> None:
         self._model_name: str = model
         self._timeout: float | None = timeout
-        self._top_p: Increasable = top_p
-        self._temperature: Increasable = temperature
         self._retry_times: int = retry_times
         self._retry_interval_seconds: float = retry_interval_seconds
         self._create_logger: Callable[[], Logger | None] = create_logger
@@ -49,15 +44,6 @@ class LLMExecutor:
         result: R | None = None
         last_error: Exception | None = None
         did_success = False
-
-        # 确定是否使用固定参数（用户传入的覆盖值）
-        use_fixed_temperature = temperature is not None
-        use_fixed_top_p = top_p is not None
-
-        # 初始化 increaser（只在非固定时使用，重试失败时自动调整）
-        top_p_increaser: Increaser = self._top_p.context()
-        temperature_increaser: Increaser = self._temperature.context()
-
         logger = self._create_logger()
 
         if logger is not None:
@@ -65,15 +51,11 @@ class LLMExecutor:
 
         try:
             for i in range(self._retry_times + 1):
-                # 确定本次请求使用的参数（固定值或当前 increaser 值）
-                final_top_p = top_p if use_fixed_top_p else top_p_increaser.current
-                final_temperature = temperature if use_fixed_temperature else temperature_increaser.current
-
                 try:
                     response = self._invoke_model(
                         input_messages=messages,
-                        top_p=final_top_p,
-                        temperature=final_temperature,
+                        temperature=temperature,
+                        top_p=top_p,
                         max_tokens=max_tokens,
                     )
                     if logger is not None:
@@ -100,12 +82,6 @@ class LLMExecutor:
                     if logger is not None:
                         logger.warning(warn_message)
                     print(warn_message)
-
-                    # 只在非固定参数时增加参数值（固定参数不应该在重试时变化）
-                    if not use_fixed_top_p:
-                        top_p_increaser.increase()
-                    if not use_fixed_temperature:
-                        temperature_increaser.increase()
 
                     if self._retry_interval_seconds > 0.0 and i < self._retry_times:
                         sleep(self._retry_interval_seconds)

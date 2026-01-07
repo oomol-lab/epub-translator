@@ -6,19 +6,22 @@ from pathlib import Path
 from typing import Self
 
 from .executor import LLMExecutor
+from .increasable import Increasable, Increaser
 from .types import Message, MessageRole, R
 
 
 class LLMContext:
-    """Context manager for LLM requests with transactional caching."""
-
     def __init__(
         self,
         executor: LLMExecutor,
         cache_path: Path | None,
+        top_p: Increasable,
+        temperature: Increasable,
     ) -> None:
         self._executor = executor
         self._cache_path = cache_path
+        self._top_p: Increaser = top_p.context()
+        self._temperature: Increaser = temperature.context()
         self._context_id = uuid.uuid4().hex[:12]
         self._temp_files: list[Path] = []
 
@@ -47,35 +50,45 @@ class LLMContext:
         else:
             messages = input
 
-        cache_key: str | None = None
-        if self._cache_path is not None:
-            cache_key = self._compute_messages_hash(messages)
-            permanent_cache_file = self._cache_path / f"{cache_key}.txt"
-            if permanent_cache_file.exists():
-                cached_content = permanent_cache_file.read_text(encoding="utf-8")
-                return parser(cached_content)
+        try:
+            cache_key: str | None = None
+            if self._cache_path is not None:
+                cache_key = self._compute_messages_hash(messages)
+                permanent_cache_file = self._cache_path / f"{cache_key}.txt"
+                if permanent_cache_file.exists():
+                    cached_content = permanent_cache_file.read_text(encoding="utf-8")
+                    return parser(cached_content)
 
-            temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
-            if temp_cache_file.exists():
-                cached_content = temp_cache_file.read_text(encoding="utf-8")
-                return parser(cached_content)
+                temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
+                if temp_cache_file.exists():
+                    cached_content = temp_cache_file.read_text(encoding="utf-8")
+                    return parser(cached_content)
 
-        # Make the actual request
-        response = self._executor.request(
-            messages=messages,
-            parser=lambda x: x,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-        )
+            if temperature is None:
+                temperature = self._temperature.current
+            if top_p is None:
+                top_p = self._top_p.current
 
-        # Save to temporary cache if cache_path is set
-        if self._cache_path is not None and cache_key is not None:
-            temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
-            temp_cache_file.write_text(response, encoding="utf-8")
-            self._temp_files.append(temp_cache_file)
+            # Make the actual request
+            response = self._executor.request(
+                messages=messages,
+                parser=lambda x: x,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
 
-        return parser(response)
+            # Save to temporary cache if cache_path is set
+            if self._cache_path is not None and cache_key is not None:
+                temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
+                temp_cache_file.write_text(response, encoding="utf-8")
+                self._temp_files.append(temp_cache_file)
+
+            return parser(response)
+
+        finally:
+            self._temperature.increase()
+            self._top_p.increase()
 
     def _compute_messages_hash(self, messages: list[Message]) -> str:
         messages_dict = [{"role": msg.role.value, "message": msg.message} for msg in messages]
