@@ -1,13 +1,35 @@
-from collections.abc import Callable, Generator
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum, auto
 from os import PathLike
 from pathlib import Path
-from xml.etree.ElementTree import Element
 
-from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
-from .epub.common import find_opf_path
+from .epub import (
+    Placeholder,
+    Zip,
+    is_placeholder_tag,
+    read_metadata,
+    read_toc,
+    search_spine_paths,
+    write_metadata,
+    write_toc,
+)
+from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, encode_toc_list
 from .llm import LLM
-from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
+from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_translator import XMLTranslator
+
+
+class _ElementType(Enum):
+    TOC = auto()
+    METADATA = auto()
+    CHAPTER = auto()
+
+
+@dataclass
+class _ElementContext:
+    element_type: _ElementType
+    chapter_data: tuple[Path, XMLLikeNode, Placeholder] | None = None
 
 
 def translate(
@@ -39,175 +61,87 @@ def translate(
         max_fill_displaying_errors=10,
         max_group_tokens=max_group_tokens,
     )
+
     with Zip(
         source_path=Path(source_path).resolve(),
         target_path=Path(target_path).resolve(),
     ) as zip:
-        # Progress distribution: TOC 3%, metadata 2%, chapters 95%
-        TOC_PROGRESS = 0.03
-        METADATA_PROGRESS = 0.02
-        CHAPTERS_PROGRESS = 0.95
+        total_chapters = sum(1 for _ in search_spine_paths(zip))
+        toc_list = read_toc(zip)
+        metadata_fields = read_metadata(zip)
 
-        # Count total chapters for progress calculation (lightweight, no content loading)
-        total_chapters = _count_chapters(zip)
-        chapter_progress_step = CHAPTERS_PROGRESS / total_chapters if total_chapters > 0 else 0
+        # Calculate weights: TOC (5%), Metadata (5%), Chapters (90%)
+        toc_has_items = len(toc_list) > 0
+        metadata_has_items = len(metadata_fields) > 0
+        total_items = (1 if toc_has_items else 0) + (1 if metadata_has_items else 0) + total_chapters
 
+        if total_items == 0:
+            return
+
+        element_contexts: dict[int, _ElementContext] = {}
+        toc_weight = 0.05 if toc_has_items else 0
+        metadata_weight = 0.05 if metadata_has_items else 0
+        chapters_weight = 1.0 - toc_weight - metadata_weight
+        progress_per_chapter = chapters_weight / total_chapters if total_chapters > 0 else 0
         current_progress = 0.0
 
-        # Translate TOC
-        _translate_toc(translator, zip)
-        current_progress += TOC_PROGRESS
-        if on_progress:
-            on_progress(current_progress)
+        for translated_elem in translator.translate_elements(
+            elements=_generate_elements_from_book(zip, toc_list, metadata_fields, element_contexts),
+            filter_text_segments=lambda segment: not any(is_placeholder_tag(e.tag) for e in segment.parent_stack),
+        ):
+            elem_id = id(translated_elem)
+            context = element_contexts.pop(elem_id, None)
 
-        # Translate metadata
-        _translate_metadata(translator, zip)
-        current_progress += METADATA_PROGRESS
-        if on_progress:
-            on_progress(current_progress)
+            if context is None:
+                continue
 
-        # Translate chapters
-        processed_chapters = 0
-        for _ in _translate_chapters(translator, zip):
-            # Update progress after each chapter
-            processed_chapters += 1
-            current_progress = TOC_PROGRESS + METADATA_PROGRESS + (processed_chapters * chapter_progress_step)
-            if on_progress:
-                on_progress(current_progress)
+            if context.element_type == _ElementType.TOC:
+                decoded_toc = decode_toc_list(translated_elem)
+                write_toc(zip, decoded_toc)
 
+                current_progress += toc_weight
+                if on_progress:
+                    on_progress(current_progress)
 
-def _translate_toc(translator: XMLTranslator, zip: Zip):
-    """Translate TOC (Table of Contents) titles."""
-    toc_list = read_toc(zip)
-    if not toc_list:
-        return
+            elif context.element_type == _ElementType.METADATA:
+                decoded_metadata = decode_metadata(translated_elem)
+                write_metadata(zip, decoded_metadata)
 
-    # Collect all titles recursively
-    titles_to_translate: list[str] = []
+                current_progress += metadata_weight
+                if on_progress:
+                    on_progress(current_progress)
 
-    def collect_titles(items):
-        for item in items:
-            titles_to_translate.append(item.title)
-            if item.children:
-                collect_titles(item.children)
+            elif context.element_type == _ElementType.CHAPTER:
+                if context.chapter_data is not None:
+                    chapter_path, xml, placeholder = context.chapter_data
+                    placeholder.recover()
+                    deduplicate_ids_in_element(xml.element)
+                    with zip.replace(chapter_path) as target_file:
+                        xml.save(target_file)
 
-    collect_titles(toc_list)
-
-    # Create XML elements for translation
-    elements_to_translate = Element("toc")
-    elements_to_translate.extend(_create_text_element(title) for title in titles_to_translate)
-
-    # Translate all titles at once
-    translated_element = translator.translate_element(elements_to_translate)
-
-    # Extract translated texts
-    from builtins import zip as builtin_zip
-
-    translated_titles = [
-        plain_text(elem) if elem is not None else original
-        for elem, original in builtin_zip(translated_element, titles_to_translate)
-    ]
-
-    # Fill back translated titles
-    title_index = 0
-
-    def fill_titles(items):
-        nonlocal title_index
-        for item in items:
-            item.title = translated_titles[title_index]
-            title_index += 1
-            if item.children:
-                fill_titles(item.children)
-
-    fill_titles(toc_list)
-
-    # Write back the translated TOC
-    write_toc(zip, toc_list)
+                current_progress += progress_per_chapter
+                if on_progress:
+                    on_progress(current_progress)
 
 
-def _translate_metadata(translator: XMLTranslator, zip: Zip):
-    """Translate metadata fields in OPF file."""
-    opf_path = find_opf_path(zip)
+def _generate_elements_from_book(
+    zip: Zip,
+    toc_list: list,
+    metadata_fields: list,
+    element_contexts: dict[int, _ElementContext],
+):
+    if toc_list:
+        toc_elem = encode_toc_list(toc_list)
+        elem_id = id(toc_elem)
+        element_contexts[elem_id] = _ElementContext(element_type=_ElementType.TOC)
+        yield toc_elem
 
-    with zip.read(opf_path) as f:
-        xml = XMLLikeNode(f)
+    if metadata_fields:
+        metadata_elem = encode_metadata(metadata_fields)
+        elem_id = id(metadata_elem)
+        element_contexts[elem_id] = _ElementContext(element_type=_ElementType.METADATA)
+        yield metadata_elem
 
-    # Find metadata element
-    metadata_elem = None
-    for child in xml.element:
-        if child.tag.endswith("metadata"):
-            metadata_elem = child
-            break
-
-    if metadata_elem is None:
-        return
-
-    # Collect metadata fields to translate
-    # Skip fields that should not be translated
-    skip_fields = {
-        "language",
-        "identifier",
-        "date",
-        "meta",
-        "contributor",  # Usually technical information
-    }
-
-    fields_to_translate: list[tuple[Element, str]] = []
-
-    for elem in metadata_elem:
-        # Get tag name without namespace
-        tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
-
-        # Check if element has text content and should be translated
-        if elem.text and elem.text.strip() and tag_name not in skip_fields:
-            fields_to_translate.append((elem, elem.text.strip()))
-
-    if not fields_to_translate:
-        return
-
-    # Create XML elements for translation
-    elements_to_translate = Element("metadata")
-    elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
-
-    # Translate all metadata at once
-    translated_element = translator.translate_element(elements_to_translate)
-
-    # Fill back translated texts
-    from builtins import zip as builtin_zip
-
-    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_element, strict=True):
-        if translated_elem is not None:
-            translated_text = plain_text(translated_elem)
-            if translated_text:
-                elem.text = translated_text
-
-    # Write back the modified OPF file
-    with zip.replace(opf_path) as f:
-        xml.save(f)
-
-
-def _translate_chapters(translator: XMLTranslator, zip: Zip) -> Generator[Path, None, None]:
-    items_cache: dict[int, tuple[Path, XMLLikeNode, Placeholder]] = {}
-    for body_element in translator.translate_elements(
-        elements=_search_chapter_items(zip, items_cache),
-        filter_text_segments=lambda segment: not any(is_placeholder_tag(e.tag) for e in segment.parent_stack),
-    ):
-        item = items_cache.pop(id(body_element), None)
-        if item is not None:
-            chapter_path, xml, placeholder = item
-            placeholder.recover()
-            deduplicate_ids_in_element(xml.element)
-            with zip.replace(chapter_path) as target_file:
-                xml.save(target_file)
-            yield chapter_path
-
-
-def _count_chapters(zip: Zip) -> int:
-    """Count total chapters without loading content (lightweight)."""
-    return sum(1 for _ in search_spine_paths(zip))
-
-
-def _search_chapter_items(zip: Zip, items_cache: dict[int, tuple[Path, XMLLikeNode, Placeholder]]):
     for chapter_path in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(
@@ -217,11 +151,9 @@ def _search_chapter_items(zip: Zip, items_cache: dict[int, tuple[Path, XMLLikeNo
         body_element = find_first(xml.element, "body")
         if body_element is not None:
             placeholder = Placeholder(body_element)
-            items_cache[id(body_element)] = (chapter_path, xml, placeholder)
+            elem_id = id(body_element)
+            element_contexts[elem_id] = _ElementContext(
+                element_type=_ElementType.CHAPTER,
+                chapter_data=(chapter_path, xml, placeholder),
+            )
             yield body_element
-
-
-def _create_text_element(text: str) -> Element:
-    elem = Element("text")
-    elem.text = text
-    return elem
