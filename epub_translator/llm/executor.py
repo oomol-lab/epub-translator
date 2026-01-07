@@ -2,13 +2,12 @@ from collections.abc import Callable
 from io import StringIO
 from logging import Logger
 from time import sleep
-from typing import cast
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
-from .types import Message, MessageRole, R
+from .types import Message, MessageRole
 
 
 class LLMExecutor:
@@ -36,12 +35,11 @@ class LLMExecutor:
     def request(
         self,
         messages: list[Message],
-        parser: Callable[[str], R],
         max_tokens: int | None,
         temperature: float | None = None,
         top_p: float | None = None,
-    ) -> R:
-        result: R | None = None
+    ) -> str:
+        response: str = ""
         last_error: Exception | None = None
         did_success = False
         logger = self._create_logger()
@@ -71,21 +69,8 @@ class LLMExecutor:
                         sleep(self._retry_interval_seconds)
                     continue
 
-                try:
-                    result = parser(response)
-                    did_success = True
-                    break
-
-                except Exception as err:
-                    last_error = err
-                    warn_message = f"request failed with parsing error, retrying... ({i + 1} times)"
-                    if logger is not None:
-                        logger.warning(warn_message)
-                    print(warn_message)
-
-                    if self._retry_interval_seconds > 0.0 and i < self._retry_times:
-                        sleep(self._retry_interval_seconds)
-                    continue
+                did_success = True
+                break
 
         except KeyboardInterrupt as err:
             if last_error is not None and logger is not None:
@@ -98,7 +83,7 @@ class LLMExecutor:
             else:
                 raise last_error
 
-        return cast(R, result)
+        return response
 
     def _input2str(self, input: str | list[Message]) -> str:
         if isinstance(input, str):
@@ -132,7 +117,7 @@ class LLMExecutor:
         top_p: float | None,
         temperature: float | None,
         max_tokens: int | None,
-    ):
+    ) -> str:
         messages: list[ChatCompletionMessageParam] = []
         for item in input_messages:
             if item.role == MessageRole.SYSTEM:

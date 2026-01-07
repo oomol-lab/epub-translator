@@ -1,13 +1,12 @@
 import hashlib
 import json
 import uuid
-from collections.abc import Callable
 from pathlib import Path
 from typing import Self
 
 from .executor import LLMExecutor
 from .increasable import Increasable, Increaser
-from .types import Message, MessageRole, R
+from .types import Message, MessageRole
 
 
 class LLMContext:
@@ -39,11 +38,10 @@ class LLMContext:
     def request(
         self,
         input: str | list[Message],
-        parser: Callable[[str], R] = lambda x: x,
         max_tokens: int | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
-    ) -> R:
+    ) -> str:
         messages: list[Message]
         if isinstance(input, str):
             messages = [Message(role=MessageRole.USER, message=input)]
@@ -57,12 +55,12 @@ class LLMContext:
                 permanent_cache_file = self._cache_path / f"{cache_key}.txt"
                 if permanent_cache_file.exists():
                     cached_content = permanent_cache_file.read_text(encoding="utf-8")
-                    return parser(cached_content)
+                    return cached_content
 
                 temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
                 if temp_cache_file.exists():
                     cached_content = temp_cache_file.read_text(encoding="utf-8")
-                    return parser(cached_content)
+                    return cached_content
 
             if temperature is None:
                 temperature = self._temperature.current
@@ -72,7 +70,6 @@ class LLMContext:
             # Make the actual request
             response = self._executor.request(
                 messages=messages,
-                parser=lambda x: x,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
@@ -84,7 +81,7 @@ class LLMContext:
                 temp_cache_file.write_text(response, encoding="utf-8")
                 self._temp_files.append(temp_cache_file)
 
-            return parser(response)
+            return response
 
         finally:
             self._temperature.increase()

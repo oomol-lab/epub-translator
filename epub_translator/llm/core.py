@@ -1,5 +1,5 @@
 import datetime
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
 from os import PathLike
@@ -12,7 +12,7 @@ from ..template import create_env
 from .context import LLMContext
 from .executor import LLMExecutor
 from .increasable import Increasable
-from .types import Message, R
+from .types import Message
 
 
 class LLM:
@@ -78,15 +78,13 @@ class LLM:
     def request(
         self,
         input: str | list[Message],
-        parser: Callable[[str], R] = lambda x: x,
         max_tokens: int | None = None,
         temperature: float | None = None,
         top_p: float | None = None,
-    ) -> R:
+    ) -> str:
         with self.context() as ctx:
             return ctx.request(
                 input=input,
-                parser=parser,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
