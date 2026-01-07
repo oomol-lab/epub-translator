@@ -45,6 +45,7 @@ class LLMExecutor:
         logger = self._create_logger()
 
         if logger is not None:
+            logger.debug(f"[[Parameters]]:\n\ttemperature={temperature}\n\ttop_p={top_p}\n\tmax_tokens={max_tokens}\n")
             logger.debug(f"[[Request]]:\n{self._input2str(messages)}\n")
 
         try:

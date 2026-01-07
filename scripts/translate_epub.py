@@ -36,8 +36,8 @@ def main() -> None:
 
     fill_llm = LLM(
         **config,
-        temperature=fill_temperature,
-        top_p=fill_top_p,
+        temperature=(0.2, 0.9),
+        top_p=(0.9, 1.0),
         log_dir_path=log_dir_path,
         cache_path=cache_path,
     )
