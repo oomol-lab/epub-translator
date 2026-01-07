@@ -70,6 +70,34 @@ Translation: "于1990年出版的《书名》" (flows naturally, but loses struc
 ✓ CORRECT: 于1990年出版的<span id="5">《书名》</span>
   (Break fluency to preserve structure - this is REQUIRED)
 
+Error Type 7: Adjacent elements with different semantic types
+CRITICAL: When template has adjacent elements of DIFFERENT semantic types (book title + year, person name + date, place + number, etc.),
+you MUST match by SEMANTIC TYPE, NOT by position in translated text.
+
+Example 1: Book title and year adjacent
+Template: "<span id="3">Book Title</span> in <span id="4"><a>1990</a></span>"
+Translation: "《书名》于1990年出版"
+
+❌ WRONG: 《书名》于<span id="3">1990</span>年出版<span id="4">...</span>
+  (Matching by position: "1990" appears after "于", so wrapping it with id="3")
+  (This is WRONG because you matched a YEAR to a template that expects a BOOK TITLE)
+
+✓ CORRECT: <span id="3">《书名》</span>于<span id="4"><a>1990</a></span>年出版
+  (Matching by SEMANTIC TYPE: book title → book title, year → year)
+  (Even though word order changed, semantic types match correctly)
+
+Example 2: Multiple elements of same semantic type require position tracking
+Template: "<span id="3">Book A</span> in 1990... second edition of <span id="5">Book A</span>"
+Translation: "《书A》于1990年出版...《书A》第二版"
+
+✓ CORRECT: <span id="3">《书A》</span>于1990年出版...<span id="5">《书A》</span>第二版
+  (First occurrence of book title → id="3", second occurrence → id="5")
+
+KEY PRINCIPLE: Semantic type matching beats position matching!
+- If template shows <book> <year>, find the book and year in translation, regardless of their positions
+- data-orig-len can help: book titles usually have longer token counts than years
+- Years are typically 4-digit numbers (1687, 1990, 2024, etc.) - easy to identify
+
 ---
 
 STEP-BY-STEP FILLING ALGORITHM:
