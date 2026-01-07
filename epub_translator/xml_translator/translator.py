@@ -132,6 +132,7 @@ class XMLTranslator:
 
     def _request_and_submit(self, hill_climbing: HillClimbing, source_text: str, translated_text: str) -> None:
         user_message = (
+            f"Source text:\n{source_text}\n\n"
             f"XML template:\n```XML\n{encode_friendly(hill_climbing.request_element())}\n```\n\n"
             f"Translated text:\n{translated_text}"
         )

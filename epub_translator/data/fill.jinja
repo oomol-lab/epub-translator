@@ -121,7 +121,14 @@ Template: <p id="1"><br/><br/></p>
 → Process level by level from outside to inside
 → Maintain parent-child relationships exactly
 
-6. Word Order Changes in Translation (CRITICAL)
+6. Elements with data-orig-len attribute
+Template: <span id="5" data-orig-len="42">text</span>
+→ The data-orig-len shows token count of ORIGINAL text
+→ Use as HINT for locating element, not strict constraint
+→ Translation length may differ significantly across languages
+→ Focus on semantic matching, not length matching
+
+7. Word Order Changes in Translation (CRITICAL)
 When error messages show original text for missing IDs, use SEMANTIC matching:
 
 Example scenario:
