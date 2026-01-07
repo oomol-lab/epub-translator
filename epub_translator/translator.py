@@ -3,8 +3,16 @@ from os import PathLike
 from pathlib import Path
 from xml.etree.ElementTree import Element
 
-from .epub import Placeholder, Zip, is_placeholder_tag, read_toc, search_spine_paths, write_toc
-from .epub.common import find_opf_path
+from .epub import (
+    Placeholder,
+    Zip,
+    is_placeholder_tag,
+    read_metadata,
+    read_toc,
+    search_spine_paths,
+    write_metadata,
+    write_toc,
+)
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first, plain_text
 from .xml_translator import XMLTranslator
@@ -127,63 +135,35 @@ def _translate_toc(translator: XMLTranslator, zip: Zip):
 
 def _translate_metadata(translator: XMLTranslator, zip: Zip):
     """Translate metadata fields in OPF file."""
-    opf_path = find_opf_path(zip)
+    # Read metadata fields from EPUB
+    fields = read_metadata(zip)
 
-    with zip.read(opf_path) as f:
-        xml = XMLLikeNode(f)
-
-    # Find metadata element
-    metadata_elem = None
-    for child in xml.element:
-        if child.tag.endswith("metadata"):
-            metadata_elem = child
-            break
-
-    if metadata_elem is None:
+    if not fields:
         return
 
-    # Collect metadata fields to translate
-    # Skip fields that should not be translated
-    skip_fields = {
-        "language",
-        "identifier",
-        "date",
-        "meta",
-        "contributor",  # Usually technical information
-    }
+    # Translate each field directly (metadata is simple, no complex structure)
+    from .llm import Message, MessageRole
 
-    fields_to_translate: list[tuple[Element, str]] = []
+    for field in fields:
+        # Translate using translate_llm directly
+        translated_text = translator._translation_llm.request(
+            input=[
+                Message(
+                    role=MessageRole.SYSTEM,
+                    message=translator._translation_llm.template("translate").render(
+                        target_language=translator._target_language,
+                        user_prompt=translator._user_prompt,
+                    ),
+                ),
+                Message(role=MessageRole.USER, message=field.text),
+            ]
+        )
+        # Update field with translated text
+        if translated_text and translated_text.strip():
+            field.text = translated_text.strip()
 
-    for elem in metadata_elem:
-        # Get tag name without namespace
-        tag_name = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
-
-        # Check if element has text content and should be translated
-        if elem.text and elem.text.strip() and tag_name not in skip_fields:
-            fields_to_translate.append((elem, elem.text.strip()))
-
-    if not fields_to_translate:
-        return
-
-    # Create XML elements for translation
-    elements_to_translate = Element("metadata")
-    elements_to_translate.extend(_create_text_element(text) for _, text in fields_to_translate)
-
-    # Translate all metadata at once
-    translated_element = translator.translate_element(elements_to_translate)
-
-    # Fill back translated texts
-    from builtins import zip as builtin_zip
-
-    for (elem, _), translated_elem in builtin_zip(fields_to_translate, translated_element, strict=True):
-        if translated_elem is not None:
-            translated_text = plain_text(translated_elem)
-            if translated_text:
-                elem.text = translated_text
-
-    # Write back the modified OPF file
-    with zip.replace(opf_path) as f:
-        xml.save(f)
+    # Write back the translated metadata
+    write_metadata(zip, fields)
 
 
 def _translate_chapters(translator: XMLTranslator, zip: Zip) -> Generator[Path, None, None]:
