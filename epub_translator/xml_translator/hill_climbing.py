@@ -33,10 +33,11 @@ class HillClimbing:
 
     def request_element(self) -> Element:
         element = self._block_segment.create_element()
-        for child_element in element:
-            text = plain_text(child_element)
-            tokens = self._encoding.encode(text)
-            child_element.set(DATA_ORIGIN_LEN_KEY, str(len(tokens)))
+        # B测试：去掉 data-orig-len 属性，减少token消耗和注意力噪声
+        # for child_element in element:
+        #     text = plain_text(child_element)
+        #     tokens = self._encoding.encode(text)
+        #     child_element.set(DATA_ORIGIN_LEN_KEY, str(len(tokens)))
         return element
 
     def gen_mappings(self) -> Generator[InlineSegmentMapping | None, None, None]:
