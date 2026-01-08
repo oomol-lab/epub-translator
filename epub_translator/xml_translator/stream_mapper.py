@@ -13,7 +13,7 @@ _BLOCK_INCISION = 1
 _ELLIPSIS = "..."
 
 
-InlineSegmentMapping = tuple[InlineSegment, list[TextSegment]]
+InlineSegmentMapping = tuple[Element, list[TextSegment]]
 InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[InlineSegmentMapping | None]]
 
 
@@ -49,10 +49,10 @@ class XMLStreamMapper:
                     mapping_buffer = []
 
                 if target:
-                    inline_segment, text_segments = target
+                    block_element, text_segments = target
                     text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
                     if text_segments:
-                        mapping_buffer.append((inline_segment, text_segments))
+                        mapping_buffer.append((block_element, text_segments))
 
         if current_element is not None:
             yield current_element, mapping_buffer

@@ -79,7 +79,7 @@ class XMLInterrupter:
                 position=text_segments[0].position,
             )
             for text_segment in text_segments:
-                # 原始栈退光，仅留下相对 interrupted 元素的栈，下一个步骤会与新的栈连接
+                # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
                 text_segment.block_depth = 1
                 text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
 
@@ -108,10 +108,8 @@ class XMLInterrupter:
             # 区块级公式不必重复出现，出现时突兀。但行内公式穿插在译文中更有利于读者阅读顺畅。
             return
 
-        translated_stack = text_segment.parent_stack[: len(text_segment.parent_stack) - text_segment.block_depth]
         for raw_text_segment in raw_text_segments:
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
-            raw_text_segment.parent_stack = translated_stack + raw_text_segment.parent_stack
             yield raw_text_segment
 
     def _is_inline_math(self, element: Element) -> bool:

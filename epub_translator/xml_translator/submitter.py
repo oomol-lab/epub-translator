@@ -13,8 +13,8 @@ def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping])
 
 def _group_text_segments(mappings: list[InlineSegmentMapping]):
     grouped_map: dict[int, list[TextSegment]] = {}
-    for inline_segment, text_segments in mappings:
-        parent_id = id(inline_segment.parent)
+    for block_element, text_segments in mappings:
+        parent_id = id(block_element)
         grouped_map[parent_id] = text_segments
 
     # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
