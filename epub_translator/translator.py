@@ -7,7 +7,6 @@ from pathlib import Path
 from .epub import (
     Placeholder,
     Zip,
-    is_placeholder_tag,
     read_metadata,
     read_toc,
     search_spine_paths,
@@ -86,8 +85,12 @@ def translate(
         current_progress = 0.0
 
         for translated_elem in translator.translate_elements(
-            elements=_generate_elements_from_book(zip, toc_list, metadata_fields, element_contexts),
-            filter_text_segments=lambda segment: not any(is_placeholder_tag(e.tag) for e in segment.parent_stack),
+            elements=_generate_elements_from_book(
+                zip=zip,
+                toc_list=toc_list,
+                metadata_fields=metadata_fields,
+                element_contexts=element_contexts,
+            ),
         ):
             elem_id = id(translated_elem)
             context = element_contexts.pop(elem_id, None)

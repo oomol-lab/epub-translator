@@ -5,6 +5,7 @@ from resource_segmentation import Resource, Segment, split
 from tiktoken import Encoding
 
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
+from .callbacks import Callbacks
 
 _PAGE_INCISION = 0
 _BLOCK_INCISION = 1
@@ -24,12 +25,18 @@ class XMLStreamMapper:
     def map_stream(
         self,
         elements: Iterator[Element],
+        callbacks: Callbacks,
         map: InlineSegmentGroupMap,
     ) -> Generator[tuple[Element, list[InlineSegmentMapping]], None, None]:
         current_element: Element | None = None
         mapping_buffer: list[InlineSegmentMapping] = []
 
-        for head, body, tail in self._split_into_groups(elements):
+        for head, body, tail in self._split_into_groups(
+            resources=self._expand_to_resources(
+                elements=elements,
+                callbacks=callbacks,
+            ),
+        ):
             target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
             for origin, target in zip(body, target_body):
                 origin_element = origin.head.root
@@ -40,17 +47,25 @@ class XMLStreamMapper:
                     yield current_element, mapping_buffer
                     current_element = origin_element
                     mapping_buffer = []
+
                 if target:
-                    mapping_buffer.append(target)
+                    inline_segment, text_segments = target
+                    text_segments = list(
+                        interrupted
+                        for raw in text_segments
+                        for interrupted in callbacks.interrupt_translated_text_segments(raw)
+                    )
+                    if text_segments:
+                        mapping_buffer.append((inline_segment, text_segments))
 
         if current_element is not None:
             yield current_element, mapping_buffer
 
-    def _split_into_groups(self, elements: Iterator[Element]):
+    def _split_into_groups(self, resources: Iterable[Resource[InlineSegment]]):
         for group in split(
-            resources=self._expand_to_resources(elements),
             max_segment_count=self._max_group_tokens,
             border_incision=_PAGE_INCISION,
+            resources=iter(resources),
         ):
             head = list(
                 self._truncate_inline_segments(
@@ -69,11 +84,17 @@ class XMLStreamMapper:
             )
             yield head, body, tail
 
-    def _expand_to_resources(self, elements: Iterator[Element]) -> Generator[Resource[InlineSegment], None, None]:
+    def _expand_to_resources(
+        self,
+        elements: Iterator[Element],
+        callbacks: Callbacks,
+    ) -> Generator[Resource[InlineSegment], None, None]:
         def expand(elements: Iterator[Element]):
             for element in elements:
                 yield from search_inline_segments(
-                    text_segments=search_text_segments(element),
+                    interrupted
+                    for raw in search_text_segments(element)
+                    for interrupted in callbacks.interrupt_source_text_segments(raw)
                 )
 
         inline_segment_generator = expand(elements)
