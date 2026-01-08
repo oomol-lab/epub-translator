@@ -159,9 +159,9 @@ def test_greek_letters():
 
 
 def test_non_math_element():
-    """非 math 元素应该返回 None"""
+    """非 math 元素应该返回空字符串"""
     xml = """<div>not a math element</div>"""
     element = fromstring(xml)
     result = xml_to_latex(element)
 
-    assert result is None
+    assert result == ""
