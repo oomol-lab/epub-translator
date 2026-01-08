@@ -50,11 +50,7 @@ class XMLStreamMapper:
 
                 if target:
                     inline_segment, text_segments = target
-                    text_segments = list(
-                        interrupted
-                        for raw in text_segments
-                        for interrupted in callbacks.interrupt_translated_text_segments(raw)
-                    )
+                    text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
                     if text_segments:
                         mapping_buffer.append((inline_segment, text_segments))
 
@@ -91,11 +87,9 @@ class XMLStreamMapper:
     ) -> Generator[Resource[InlineSegment], None, None]:
         def expand(elements: Iterator[Element]):
             for element in elements:
-                yield from search_inline_segments(
-                    interrupted
-                    for raw in search_text_segments(element)
-                    for interrupted in callbacks.interrupt_source_text_segments(raw)
-                )
+                text_segments = search_text_segments(element)
+                text_segments = callbacks.interrupt_source_text_segments(text_segments)
+                yield from search_inline_segments(text_segments)
 
         inline_segment_generator = expand(elements)
         start_incision = _PAGE_INCISION

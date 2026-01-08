@@ -40,8 +40,8 @@ class XMLTranslator:
     def translate_element(
         self,
         element: Element,
-        interrupt_source_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None = None,
-        interrupt_translated_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None = None,
+        interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Element:
         for translated in self.translate_elements(
@@ -57,8 +57,8 @@ class XMLTranslator:
     def translate_elements(
         self,
         elements: Iterable[Element],
-        interrupt_source_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None = None,
-        interrupt_translated_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None = None,
+        interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Generator[Element, None, None]:
         callbacks = warp_callbacks(

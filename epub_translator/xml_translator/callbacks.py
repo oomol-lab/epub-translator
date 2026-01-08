@@ -13,18 +13,18 @@ class FillFailedEvent:
 
 @dataclass
 class Callbacks:
-    interrupt_source_text_segments: Callable[[TextSegment], Iterable[TextSegment]]
-    interrupt_translated_text_segments: Callable[[TextSegment], Iterable[TextSegment]]
+    interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]]
+    interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]]
     on_fill_failed: Callable[[FillFailedEvent], None]
 
 
 def warp_callbacks(
-    interrupt_source_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None,
-    interrupt_translated_text_segments: Callable[[TextSegment], Iterable[TextSegment]] | None,
+    interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None,
+    interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None,
     on_fill_failed: Callable[[FillFailedEvent], None] | None,
 ) -> Callbacks:
     return Callbacks(
-        interrupt_source_text_segments=interrupt_source_text_segments or (lambda segment: (segment,)),
-        interrupt_translated_text_segments=interrupt_translated_text_segments or (lambda segment: (segment,)),
+        interrupt_source_text_segments=interrupt_source_text_segments or (lambda x: x),
+        interrupt_translated_text_segments=interrupt_translated_text_segments or (lambda x: x),
         on_fill_failed=on_fill_failed or (lambda event: None),
     )

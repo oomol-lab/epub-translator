@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from typing import cast
 from xml.etree.ElementTree import Element
 
@@ -16,7 +16,24 @@ class XMLInterrupter:
         self._last_interrupted_id: str | None = None
         self._raw_text_segments: dict[str, list[TextSegment]] = {}
 
-    def interrupt_source_text_segments(self, text_segment: TextSegment) -> Generator[TextSegment, None, None]:
+    def interrupt_source_text_segments(
+        self, text_segments: Iterable[TextSegment]
+    ) -> Generator[TextSegment, None, None]:
+        for text_segment in text_segments:
+            yield from self._expand_source_text_segment(text_segment)
+
+        if self._last_interrupted_id is not None:
+            merged_text_segment = self._pop_and_merge_from_buffered(self._last_interrupted_id)
+            if merged_text_segment:
+                yield merged_text_segment
+
+    def interrupt_translated_text_segments(
+        self, text_segments: Iterable[TextSegment]
+    ) -> Generator[TextSegment, None, None]:
+        for text_segment in text_segments:
+            yield from self._expand_translated_text_segment(text_segment)
+
+    def _expand_source_text_segment(self, text_segment: TextSegment):
         interrupted_index = self._interrupted_index(text_segment)
         interrupted_id: str | None = None
 
@@ -76,7 +93,7 @@ class XMLInterrupter:
                 break
         return interrupted_index
 
-    def interrupt_translated_text_segments(self, text_segment: TextSegment) -> Generator[TextSegment, None, None]:
+    def _expand_translated_text_segment(self, text_segment: TextSegment):
         interrupted_id = text_segment.block_parent.attrib.pop(_ID_KEY, None)
         if interrupted_id is None:
             yield text_segment
