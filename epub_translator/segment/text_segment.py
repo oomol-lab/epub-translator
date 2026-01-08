@@ -91,6 +91,10 @@ class TextSegment:
         return self.parent_stack[0]
 
     @property
+    def depth(self) -> int:
+        return len(self.parent_stack) - self.block_depth
+
+    @property
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 

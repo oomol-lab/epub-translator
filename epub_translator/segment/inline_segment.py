@@ -48,6 +48,71 @@ def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["I
             yield inline_segment
 
 
+def search_inline_segments2(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
+    stack_data: tuple[list[list[TextSegment | InlineSegment]], Element, int] | None = None
+    inline_segment: InlineSegment | None = None
+
+    for text_segment in text_segments:
+        if stack_data is not None:
+            stack, stack_block, stack_base_depth = stack_data
+            if stack_block is not text_segment.block_parent:
+                inline_segment = _pop_stack_data(stack_data)
+                stack_data = None
+                if inline_segment:
+                    yield inline_segment
+
+        if stack_data is None:
+            stack_data = (
+                [],
+                text_segment.block_parent,
+                text_segment.block_depth,
+            )
+
+        stack, stack_block, stack_base_depth = stack_data
+
+        while len(stack) < text_segment.depth + 1:
+            stack.append([])
+
+        while len(stack) > text_segment.depth + 1:
+            _pop_stack(
+                stack=stack,
+                stack_base_depth=stack_base_depth,
+            )
+
+        # text_segment.depth 可视为它在 stack 中的 index，必须令 len(stack) == text_segment.depth + 1
+        stack[-1].append(text_segment)
+
+    if stack_data is not None:
+        inline_segment = _pop_stack_data(stack_data)
+        if inline_segment:
+            yield inline_segment
+
+
+def _pop_stack_data(stack_data: tuple[list[list["TextSegment | InlineSegment"]], Element, int]):
+    stack, _, stack_base_depth = stack_data
+    inline_segment: InlineSegment | None = None
+    while stack:
+        inline_segment = _pop_stack(
+            stack=stack,
+            stack_base_depth=stack_base_depth,
+        )
+    return inline_segment
+
+
+def _pop_stack(
+    stack: list[list["TextSegment | InlineSegment"]],
+    stack_base_depth: int,
+) -> "InlineSegment | None":
+    inline_segment: InlineSegment | None = None
+    depth = len(stack) + stack_base_depth - 1
+    popped = stack.pop()
+    if popped:
+        inline_segment = InlineSegment(depth, popped)
+    if stack and inline_segment is not None:
+        stack[-1].append(inline_segment)
+    return inline_segment
+
+
 # @return collected InlineSegment and the next TextSegment that is not included
 def _collect_next_inline_segment(
     first_text_segment: TextSegment,
@@ -174,6 +239,15 @@ class InlineSegment:
                 self._child_tag2count[child_tag] = self._child_tag2count.get(child_tag, 0) + 1
 
     def create_element(self) -> Element:
+        if len(self._children) >= 2:
+            sb = self._children[1]
+            if isinstance(sb, TextSegment) and sb.text.strip().startswith(
+                "我不会在本书中，如我在其他地方（Fink,1997，第七章)"
+            ):
+                print(">>>>>>>>")
+                for text_segment in self:
+                    print("Found:", [(e.tag, id(e)) for e in text_segment.parent_stack])
+
         element = Element(self.parent.tag)
         previous_element: Element | None = None
         for child in self._children:
