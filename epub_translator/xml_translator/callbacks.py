@@ -9,7 +9,7 @@ from ..segment import TextSegment
 class FillFailedEvent:
     error_message: str
     retried_count: int
-    over_maximum_retries: int
+    over_maximum_retries: bool
 
 
 @dataclass
