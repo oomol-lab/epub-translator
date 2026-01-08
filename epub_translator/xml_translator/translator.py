@@ -5,7 +5,7 @@ from xml.etree.ElementTree import Element
 from ..llm import LLM, Message, MessageRole
 from ..segment import BlockSegment, InlineSegment, TextSegment
 from ..xml import decode_friendly, encode_friendly
-from .callbacks import FillFailedEvent, warp_callbacks
+from .callbacks import Callbacks, FillFailedEvent, warp_callbacks
 from .hill_climbing import HillClimbing
 from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
 from .submitter import submit_text_segments
@@ -73,14 +73,21 @@ class XMLTranslator:
         for element, mappings in self._stream_mapper.map_stream(
             elements=iter(elements),
             callbacks=callbacks,
-            map=self._translate_inline_segments,
+            map=lambda inline_segments: self._translate_inline_segments(
+                inline_segments=inline_segments,
+                callbacks=callbacks,
+            ),
         ):
             yield submit_text_segments(
                 element=element,
                 mappings=mappings,
             )
 
-    def _translate_inline_segments(self, inline_segments: list[InlineSegment]) -> list[InlineSegmentMapping | None]:
+    def _translate_inline_segments(
+        self,
+        inline_segments: list[InlineSegment],
+        callbacks: Callbacks,
+    ) -> list[InlineSegmentMapping | None]:
         hill_climbing = HillClimbing(
             encoding=self._fill_llm.encoding,
             max_fill_displaying_errors=self._max_fill_displaying_errors,
@@ -97,6 +104,7 @@ class XMLTranslator:
             hill_climbing=hill_climbing,
             source_text=source_text,
             translated_text=translated_text,
+            callbacks=callbacks,
         )
         mappings: list[InlineSegmentMapping | None] = []
         for mapping in hill_climbing.gen_mappings():
@@ -138,7 +146,13 @@ class XMLTranslator:
             ]
         )
 
-    def _request_and_submit(self, hill_climbing: HillClimbing, source_text: str, translated_text: str) -> None:
+    def _request_and_submit(
+        self,
+        hill_climbing: HillClimbing,
+        source_text: str,
+        translated_text: str,
+        callbacks: Callbacks,
+    ) -> None:
         user_message = (
             f"Source text:\n{source_text}\n\n"
             f"XML template:\n```XML\n{encode_friendly(hill_climbing.request_element())}\n```\n\n"
@@ -157,33 +171,39 @@ class XMLTranslator:
         conversation_history: list[Message] = []
 
         with self._fill_llm.context() as llm_context:
-            did_success: bool = False
+            error_message: str | None = None
+
             for retry_count in range(self._max_retries):
                 response = llm_context.request(fixed_messages + conversation_history)
                 validated_element = self._extract_xml_element(response)
-                error_message: str | None = None
-
+                error_message = None
                 if isinstance(validated_element, str):
                     error_message = validated_element
                 elif isinstance(validated_element, Element):
                     error_message = hill_climbing.submit(validated_element)
 
                 if error_message is None:
-                    did_success = True
                     break
 
-                # TODO: for debug
-                # Print retry failure log (not max retries reached, just a single retry failure)
-                print(f"[Retry {retry_count + 1}/{self._max_retries}] Validation failed:")
-                print(f"{error_message}")
-                print("---\n")
-
+                callbacks.on_fill_failed(
+                    FillFailedEvent(
+                        error_message=error_message,
+                        retried_count=retry_count + 1,
+                        over_maximum_retries=False,
+                    )
+                )
                 conversation_history = [
                     Message(role=MessageRole.ASSISTANT, message=response),
                     Message(role=MessageRole.USER, message=error_message),
                 ]
-            if not did_success:
-                print("Warning: Maximum retries reached without successful XML filling. Will ignore remaining errors.")
+            if error_message is not None:
+                callbacks.on_fill_failed(
+                    FillFailedEvent(
+                        error_message=error_message,
+                        retried_count=self._max_retries,
+                        over_maximum_retries=True,
+                    )
+                )
 
     def _extract_xml_element(self, text: str) -> Element | str:
         first_xml_element: Element | None = None

@@ -92,24 +92,32 @@ class XMLInterrupter:
                 position=text_segments[0].position,
             )
             self._placeholder2interrupted[id(placeholder_element)] = interrupted_element
-            parent_element: Element | None = None
-            if interrupted_index > 0:
-                parent_element = text_segment.parent_stack[interrupted_index - 1]
 
-            if (
-                not self._is_inline_math(interrupted_element)
-                or parent_element is None
-                or self._has_no_math_texts(parent_element)
-            ):
-                # 区块级公式不必重复出现，出现时突兀。但行内公式穿插在译文中更有利于读者阅读顺畅。
-                self._raw_text_segments.pop(interrupted_id, None)
-            else:
-                for text_segment in text_segments:
-                    # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
-                    text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
-                    text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
-                    text_segment.block_depth = 1
-                    text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
+            # TODO: 比较难搞，先关了再说
+            # parent_element: Element | None = None
+            # if interrupted_index > 0:
+            #     parent_element = text_segment.parent_stack[interrupted_index - 1]
+
+            # if (
+            #     not self._is_inline_math(interrupted_element)
+            #     or parent_element is None
+            #     or self._has_no_math_texts(parent_element)
+            # ):
+            #     # 区块级公式不必重复出现，出现时突兀。但行内公式穿插在译文中更有利于读者阅读顺畅。
+            #     self._raw_text_segments.pop(interrupted_id, None)
+            # else:
+            #     for text_segment in text_segments:
+            #         # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
+            #         text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
+            #         text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
+            #         text_segment.block_depth = 1
+            #         text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
+            for text_segment in text_segments:
+                # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
+                text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
+                text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
+                text_segment.block_depth = 1
+                text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
 
         return merged_text_segment
 
