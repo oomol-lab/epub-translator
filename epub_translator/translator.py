@@ -5,7 +5,6 @@ from os import PathLike
 from pathlib import Path
 
 from .epub import (
-    Placeholder,
     Zip,
     read_metadata,
     read_toc,
@@ -28,7 +27,7 @@ class _ElementType(Enum):
 @dataclass
 class _ElementContext:
     element_type: _ElementType
-    chapter_data: tuple[Path, XMLLikeNode, Placeholder] | None = None
+    chapter_data: tuple[Path, XMLLikeNode] | None = None
 
 
 def translate(
@@ -116,8 +115,7 @@ def translate(
 
             elif context.element_type == _ElementType.CHAPTER:
                 if context.chapter_data is not None:
-                    chapter_path, xml, placeholder = context.chapter_data
-                    placeholder.recover()
+                    chapter_path, xml = context.chapter_data
                     deduplicate_ids_in_element(xml.element)
                     with zip.replace(chapter_path) as target_file:
                         xml.save(target_file)
@@ -153,10 +151,9 @@ def _generate_elements_from_book(
             )
         body_element = find_first(xml.element, "body")
         if body_element is not None:
-            placeholder = Placeholder(body_element)
             elem_id = id(body_element)
             element_contexts[elem_id] = _ElementContext(
                 element_type=_ElementType.CHAPTER,
-                chapter_data=(chapter_path, xml, placeholder),
+                chapter_data=(chapter_path, xml),
             )
             yield body_element
