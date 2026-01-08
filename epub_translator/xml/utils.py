@@ -21,6 +21,13 @@ def append_text_in_element(origin_text: str | None, append_text: str) -> str:
         return origin_text + append_text
 
 
+def index_of_parent(parent: Element, checked_element: Element) -> int:
+    for i, child in enumerate(parent):
+        if child == checked_element:
+            return i
+    raise ValueError("Element not found in parent.")
+
+
 def expand_left_element_texts(element: Element) -> Generator[str, None, None]:
     yield "<"
     yield element.tag

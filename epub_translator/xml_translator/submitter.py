@@ -1,7 +1,7 @@
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..xml import iter_with_stack
+from ..xml import index_of_parent, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
@@ -42,7 +42,7 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
         if not grouped:
             continue
         parent = parents[-1]
-        index = _index_of_parent(parents[-1], child_element)
+        index = index_of_parent(parents[-1], child_element)
         combined = next(
             combine_text_segments(
                 segments=(t.strip_block_parents() for t in grouped),
@@ -54,10 +54,3 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
             parent.insert(index + 1, combined_element)
             combined_element.tail = child_element.tail
             child_element.tail = None
-
-
-def _index_of_parent(parent: Element, checked_element: Element) -> int:
-    for i, child in enumerate(parent):
-        if child == checked_element:
-            return i
-    raise ValueError("Element not found in parent.")
