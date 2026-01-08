@@ -5,10 +5,16 @@ from epub_translator.segment.inline_segment import (
     InlineSegment,
     InlineUnexpectedIDError,
     InlineWrongTagCountError,
-    _collect_next_inline_segment,
+    search_inline_segments,
 )
 from epub_translator.segment.text_segment import search_text_segments
 from epub_translator.xml import ID_KEY, iter_with_stack
+
+
+def _get_first_inline_segment(segments):
+    """辅助函数：从 segments 中获取第一个 InlineSegment"""
+    inline_segments = list(search_inline_segments(segments))
+    return inline_segments[0] if inline_segments else None
 
 
 class TestCollectInlineSegment(unittest.TestCase):
@@ -20,14 +26,10 @@ class TestCollectInlineSegment(unittest.TestCase):
         root = fromstring("<p>Hello <em>world</em></p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, next_segment = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         self.assertIsNotNone(inline_segment)
         assert inline_segment is not None  # for type checker
-        self.assertIsNone(next_segment)
         # 应该收集两个 text segment
         text_segments = list(inline_segment)
         self.assertEqual(len(text_segments), 2)
@@ -38,10 +40,7 @@ class TestCollectInlineSegment(unittest.TestCase):
         root = fromstring("<p>A<span>B<em>C</em>D</span>E</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         self.assertIsNotNone(inline_segment)
         assert inline_segment is not None  # for type checker
@@ -55,10 +54,7 @@ class TestCollectInlineSegment(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         self.assertIsNotNone(inline_segment)
         assert inline_segment is not None  # for type checker
@@ -75,10 +71,7 @@ class TestInlineSegmentIDAssignment(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         # 检查两个 em InlineSegment 的 ID
@@ -94,10 +87,7 @@ class TestInlineSegmentIDAssignment(unittest.TestCase):
         root = fromstring("<p><strong>A</strong><em>B</em></p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         inline_children = [c for c in inline_segment.children if isinstance(c, InlineSegment)]
@@ -114,10 +104,7 @@ class TestCreateElement(unittest.TestCase):
         root = fromstring("<p>Hello <em>world</em></p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -134,10 +121,7 @@ class TestCreateElement(unittest.TestCase):
         root = fromstring('<p class="text" id="p1">Hello</p>')
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -154,10 +138,7 @@ class TestCreateElement(unittest.TestCase):
         root = fromstring("<p>A<span>B<em>C</em>D</span>E</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -184,10 +165,7 @@ class TestValidate(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         # 创建相同结构的验证元素
@@ -201,10 +179,7 @@ class TestValidate(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         # 缺少一个 em
@@ -220,10 +195,7 @@ class TestValidate(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         # 添加不应该存在的 ID_KEY
@@ -243,10 +215,7 @@ class TestAssignAttributes(unittest.TestCase):
         root = fromstring('<p class="original">Hello <em>world</em></p>')
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         # 模板元素有不同的属性
@@ -267,10 +236,7 @@ class TestMatchChildren(unittest.TestCase):
         root = fromstring("<p>X<em>A</em>Y<em>B</em>Z</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         # 没有 ID，按顺序匹配
         template = fromstring("<p>译X<em>译A</em>译Y<em>译B</em>译Z</p>")
@@ -297,10 +263,7 @@ class TestEdgeCases(unittest.TestCase):
         root = fromstring("<p>Hello</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         self.assertIsNotNone(inline_segment)
         assert inline_segment is not None  # for type checker
@@ -312,10 +275,7 @@ class TestEdgeCases(unittest.TestCase):
         root = fromstring("<p><span><em><strong>Deep</strong></em></span></p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -331,10 +291,7 @@ class TestEdgeCases(unittest.TestCase):
         root = fromstring("<p>这是<em>中文</em>文本</p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -349,10 +306,7 @@ class TestEdgeCases(unittest.TestCase):
         root = fromstring("<p><em>A</em><strong>B</strong><span>C</span></p>")
         segments = list(search_text_segments(root))
 
-        inline_segment, _ = _collect_next_inline_segment(
-            first_text_segment=segments[0],
-            text_segments_iter=iter(segments[1:]),
-        )
+        inline_segment = _get_first_inline_segment(segments)
 
         assert inline_segment is not None  # for type checker
         element = inline_segment.create_element()
@@ -376,65 +330,32 @@ class TestEdgeCases(unittest.TestCase):
         self.assertEqual(segments[1].block_parent.tag, "p")
         self.assertEqual(segments[2].block_parent.tag, "div")
 
-        # 测试第一个 inline segment (body 的文本)
-        segments_iter = iter(segments)
-        first_segment = next(segments_iter)
+        # 获取所有 inline segments
+        inline_segments = list(search_inline_segments(segments))
 
-        inline1, remaining = _collect_next_inline_segment(
-            first_text_segment=first_segment,
-            text_segments_iter=segments_iter,
-        )
+        # 应该有 3 个独立的 inline segments
+        self.assertEqual(len(inline_segments), 3)
 
-        # body 的 inline segment 应该只包含 "The main text begins:"
-        self.assertIsNotNone(inline1)
-        assert inline1 is not None
+        # 验证第一个 inline segment (body 的文本)
+        inline1 = inline_segments[0]
         body_texts = list(inline1)
         self.assertEqual(len(body_texts), 1)
         self.assertEqual(body_texts[0].text, "The main text begins:")
         self.assertEqual(inline1.parent.tag, "body")
 
-        # 应该还有剩余的 segment (p 的文本)
-        self.assertIsNotNone(remaining)
-        assert remaining is not None
-        self.assertEqual(remaining.text, "Paragraph text")
-        self.assertEqual(remaining.block_parent.tag, "p")
-
-        # 测试第二个 inline segment (p 的文本)
-        inline2, remaining = _collect_next_inline_segment(
-            first_text_segment=remaining,
-            text_segments_iter=segments_iter,
-        )
-
-        # p 的 inline segment 应该只包含 "Paragraph text"
-        self.assertIsNotNone(inline2)
-        assert inline2 is not None
+        # 验证第二个 inline segment (p 的文本)
+        inline2 = inline_segments[1]
         p_texts = list(inline2)
         self.assertEqual(len(p_texts), 1)
         self.assertEqual(p_texts[0].text, "Paragraph text")
         self.assertEqual(inline2.parent.tag, "p")
 
-        # 应该还有剩余的 segment (div 的文本)
-        self.assertIsNotNone(remaining)
-        assert remaining is not None
-        self.assertEqual(remaining.text, "Division text")
-        self.assertEqual(remaining.block_parent.tag, "div")
-
-        # 测试第三个 inline segment (div 的文本)
-        inline3, remaining = _collect_next_inline_segment(
-            first_text_segment=remaining,
-            text_segments_iter=segments_iter,
-        )
-
-        # div 的 inline segment 应该只包含 "Division text"
-        self.assertIsNotNone(inline3)
-        assert inline3 is not None
+        # 验证第三个 inline segment (div 的文本)
+        inline3 = inline_segments[2]
         div_texts = list(inline3)
         self.assertEqual(len(div_texts), 1)
         self.assertEqual(div_texts[0].text, "Division text")
         self.assertEqual(inline3.parent.tag, "div")
-
-        # 应该没有剩余的 segment
-        self.assertIsNone(remaining)
 
 
 if __name__ == "__main__":
