@@ -15,6 +15,7 @@ from .epub import (
 from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, encode_toc_list
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
+from .xml_interrupter import XMLInterrupter
 from .xml_translator import XMLTranslator
 
 
@@ -76,7 +77,9 @@ def translate(
         if total_items == 0:
             return
 
+        interrupter = XMLInterrupter()
         element_contexts: dict[int, _ElementContext] = {}
+
         toc_weight = 0.05 if toc_has_items else 0
         metadata_weight = 0.05 if metadata_has_items else 0
         chapters_weight = 1.0 - toc_weight - metadata_weight
@@ -84,6 +87,8 @@ def translate(
         current_progress = 0.0
 
         for translated_elem in translator.translate_elements(
+            interrupt_source_text_segments=interrupter.interrupt_source_text_segments,
+            interrupt_translated_text_segments=interrupter.interrupt_translated_text_segments,
             elements=_generate_elements_from_book(
                 zip=zip,
                 toc_list=toc_list,

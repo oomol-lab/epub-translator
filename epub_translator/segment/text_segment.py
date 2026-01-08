@@ -79,7 +79,6 @@ class TextPosition(Enum):
 @dataclass
 class TextSegment:
     text: str
-    index: int  # *.text is 0, the first *.tail is 1, and so on
     parent_stack: list[Element]
     left_common_depth: int
     right_common_depth: int
@@ -110,7 +109,6 @@ class TextSegment:
     def clone(self) -> "TextSegment":
         return TextSegment(
             text=self.text,
-            index=self.index,
             parent_stack=list(self.parent_stack),
             left_common_depth=self.left_common_depth,
             right_common_depth=self.right_common_depth,
@@ -175,20 +173,18 @@ def _search_text_segments(stack: list[Element], element: Element) -> Generator[T
     if text is not None:
         yield TextSegment(
             text=text,
-            index=0,
             parent_stack=next_stack,
             left_common_depth=0,
             right_common_depth=0,
             block_depth=next_block_depth,
             position=TextPosition.TEXT,
         )
-    for i, child_element in enumerate(element):
+    for child_element in element:
         yield from _search_text_segments(next_stack, child_element)
         child_tail = normalize_text_in_element(child_element.tail)
         if child_tail is not None:
             yield TextSegment(
                 text=child_tail,
-                index=i + 1,
                 parent_stack=next_stack,
                 left_common_depth=0,
                 right_common_depth=0,
