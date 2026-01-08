@@ -1,18 +1,19 @@
-import unittest
+import sys
+
+import pytest
 
 try:
-    loader = unittest.TestLoader()
-    suite = loader.discover(
-        # pattern="test_serial.py",
-        start_dir="tests",
+    # 使用 pytest 来运行测试，支持 unittest 和 pytest 风格
+    exit_code = pytest.main(
+        [
+            "tests/",
+            "-v",
+            "--tb=short",
+        ]
     )
-    runner = unittest.TextTestRunner()
-    result = runner.run(suite)
-    if not result.wasSuccessful():
-        # pylint: disable=consider-using-sys-exit
-        exit(1)
+    sys.exit(exit_code)
 
 # pylint: disable=broad-exception-caught
 except Exception as e:
     print(e)
-    exit(1)
+    sys.exit(1)

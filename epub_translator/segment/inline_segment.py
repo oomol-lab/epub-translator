@@ -37,65 +37,68 @@ InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDsErr
 
 
 def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
-    text_segments_iter = iter(text_segments)
-    text_segment = next(text_segments_iter, None)
-    while text_segment is not None:
-        inline_segment, text_segment = _collect_next_inline_segment(
-            first_text_segment=text_segment,
-            text_segments_iter=text_segments_iter,
-        )
-        if inline_segment is not None:
+    stack_data: tuple[list[list[TextSegment | InlineSegment]], Element, int] | None = None
+    inline_segment: InlineSegment | None = None
+
+    for text_segment in text_segments:
+        if stack_data is not None:
+            stack, stack_block, stack_base_depth = stack_data
+            if stack_block is not text_segment.block_parent:
+                inline_segment = _pop_stack_data(stack_data)
+                stack_data = None
+                if inline_segment:
+                    yield inline_segment
+
+        if stack_data is None:
+            stack_data = (
+                [],
+                text_segment.block_parent,
+                text_segment.block_depth,
+            )
+
+        stack, stack_block, stack_base_depth = stack_data
+
+        while len(stack) < text_segment.depth + 1:
+            stack.append([])
+
+        while len(stack) > text_segment.depth + 1:
+            _pop_stack(
+                stack=stack,
+                stack_base_depth=stack_base_depth,
+            )
+
+        # text_segment.depth 可视为它在 stack 中的 index，必须令 len(stack) == text_segment.depth + 1
+        stack[-1].append(text_segment)
+
+    if stack_data is not None:
+        inline_segment = _pop_stack_data(stack_data)
+        if inline_segment:
             yield inline_segment
 
 
-# @return collected InlineSegment and the next TextSegment that is not included
-def _collect_next_inline_segment(
-    first_text_segment: TextSegment,
-    text_segments_iter: Iterator[TextSegment],
-    depth: int | None = None,
-) -> tuple["InlineSegment | None", TextSegment | None]:
-    if depth is None:
-        depth = first_text_segment.block_depth
+def _pop_stack_data(stack_data: tuple[list[list["TextSegment | InlineSegment"]], Element, int]):
+    stack, _, stack_base_depth = stack_data
+    inline_segment: InlineSegment | None = None
+    while stack:
+        inline_segment = _pop_stack(
+            stack=stack,
+            stack_base_depth=stack_base_depth,
+        )
+    return inline_segment
 
-    current_text_segment: TextSegment | None = first_text_segment
-    children: list[TextSegment | InlineSegment] = []
-    last_block_parent: Element | None = None
 
-    while current_text_segment is not None:
-        text_segment_depth = len(current_text_segment.parent_stack)
-        if text_segment_depth < depth:
-            break
-        elif text_segment_depth == depth:
-            if last_block_parent is not None and last_block_parent is not current_text_segment.block_parent:
-                break
-            children.append(current_text_segment)
-            last_block_parent = current_text_segment.block_parent
-            current_text_segment = next(text_segments_iter, None)
-        else:
-            if current_text_segment.block_depth > depth:
-                break
-            inline_text, current_text_segment = _collect_next_inline_segment(
-                first_text_segment=current_text_segment,
-                text_segments_iter=text_segments_iter,
-                depth=depth + 1,
-            )
-            if inline_text is not None:
-                children.append(inline_text)
-            if current_text_segment is not None:
-                reference_block_parent = (
-                    last_block_parent if last_block_parent is not None else first_text_segment.block_parent
-                )
-                if reference_block_parent is not current_text_segment.block_parent:
-                    break
-
-    if not children:
-        return None, current_text_segment
-
-    inline_text = InlineSegment(
-        depth=depth,
-        children=children,
-    )
-    return inline_text, current_text_segment
+def _pop_stack(
+    stack: list[list["TextSegment | InlineSegment"]],
+    stack_base_depth: int,
+) -> "InlineSegment | None":
+    inline_segment: InlineSegment | None = None
+    depth = len(stack) + stack_base_depth - 1
+    popped = stack.pop()
+    if popped:
+        inline_segment = InlineSegment(depth, popped)
+    if stack and inline_segment is not None:
+        stack[-1].append(inline_segment)
+    return inline_segment
 
 
 class InlineSegment:

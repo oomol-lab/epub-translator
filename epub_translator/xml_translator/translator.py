@@ -102,6 +102,7 @@ class XMLTranslator:
         return mappings
 
     def _render_text_segments(self, segments: Iterable[TextSegment]):
+        # TODO: 没必要，直接按照新的 inline segment 组织就行了
         iterator = iter(segments)
         segment = next(iterator, None)
         if segment is None:
