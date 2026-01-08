@@ -16,7 +16,7 @@ from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, e
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_interrupter import XMLInterrupter
-from .xml_translator import XMLTranslator
+from .xml_translator import FillFailedEvent, XMLTranslator
 
 
 class _ElementType(Enum):
@@ -42,6 +42,7 @@ def translate(
     translation_llm: LLM | None = None,
     fill_llm: LLM | None = None,
     on_progress: Callable[[float], None] | None = None,
+    on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
 ) -> None:
     translation_llm = translation_llm or llm
     fill_llm = fill_llm or llm
@@ -90,6 +91,7 @@ def translate(
             interrupt_source_text_segments=interrupter.interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupter.interrupt_translated_text_segments,
             interrupt_block_element=interrupter.interrupt_block_element,
+            on_fill_failed=on_fill_failed,
             elements=_generate_elements_from_book(
                 zip=zip,
                 toc_list=toc_list,

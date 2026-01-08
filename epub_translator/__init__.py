@@ -1,5 +1,5 @@
 from . import language
 from .llm import LLM
-from .translator import translate
+from .translator import FillFailedEvent, translate
 
-__all__ = ["LLM", "translate", "language"]
+__all__ = ["LLM", "translate", "language", "FillFailedEvent"]

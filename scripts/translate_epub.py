@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from epub_translator import translate
+from epub_translator import FillFailedEvent, translate
 from epub_translator.language import ENGLISH
 from scripts.utils import load_llm, read_and_clean_temp
 
@@ -28,6 +28,13 @@ def main() -> None:
             pbar.update(increment)
             last_progress = progress
 
+        def on_fill_failed(event: FillFailedEvent):
+            print(f"Retry {event.retried_count} Validation failed:")
+            print(f"{event.error_message}")
+            print("---\n")
+            if event.over_maximum_retries:
+                print("Warning: Maximum retries reached without successful XML filling. Will ignore remaining errors.")
+
         translate(
             translation_llm=translation_llm,
             fill_llm=fill_llm,
@@ -35,6 +42,7 @@ def main() -> None:
             source_path=assets_path / "治疗精神病.epub",
             target_path=temp_path / "translated.epub",
             on_progress=on_progress,
+            on_fill_failed=on_fill_failed,
         )
 
 
