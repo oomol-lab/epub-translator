@@ -58,10 +58,10 @@ llm = LLM(
 
 # Translate EPUB file using language constants
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.ENGLISH,
+    llm=llm,
 )
 ```
 
@@ -80,10 +80,10 @@ with tqdm(total=100, desc="Translating", unit="%") as pbar:
         last_progress = progress
 
     translate(
-        llm=llm,
         source_path=Path("source.epub"),
         target_path=Path("translated.epub"),
         target_language="English",
+        llm=llm,
         on_progress=on_progress,
     )
 ```
@@ -116,16 +116,21 @@ Translate an EPUB file:
 
 ```python
 translate(
-    llm: LLM,                          # LLM instance
-    source_path: Path,                 # Source EPUB file path
-    target_path: Path,                 # Output EPUB file path
+    source_path: PathLike | str,       # Source EPUB file path
+    target_path: PathLike | str,       # Output EPUB file path
     target_language: str,              # Target language (e.g., "English", "Chinese")
     user_prompt: str | None = None,    # Custom translation instructions
     max_retries: int = 5,              # Maximum retries for failed translations
     max_group_tokens: int = 1200,      # Maximum tokens per translation group
+    llm: LLM | None = None,            # Single LLM instance for both translation and filling
+    translation_llm: LLM | None = None,  # LLM instance for translation (overrides llm)
+    fill_llm: LLM | None = None,       # LLM instance for XML filling (overrides llm)
     on_progress: Callable[[float], None] | None = None,  # Progress callback (0.0-1.0)
+    on_fill_failed: Callable[[FillFailedEvent], None] | None = None,  # Error callback
 )
 ```
+
+**Note**: Either `llm` or both `translation_llm` and `fill_llm` must be provided. Using separate LLMs allows for task-specific optimization.
 
 #### Language Constants
 
@@ -136,18 +141,76 @@ from epub_translator import language
 
 # Usage example:
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.ENGLISH,
+    llm=llm,
 )
 
 # You can also use custom language strings:
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="Icelandic",  # For languages not in the constants
+    llm=llm,
+)
+```
+
+### Error Handling with `on_fill_failed`
+
+Monitor and handle translation errors using the `on_fill_failed` callback:
+
+```python
+from epub_translator import FillFailedEvent
+
+def handle_fill_error(event: FillFailedEvent):
+    print(f"Translation error (attempt {event.retried_count}):")
+    print(f"  {event.error_message}")
+    if event.over_maximum_retries:
+        print("  Maximum retries exceeded!")
+
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.ENGLISH,
+    llm=llm,
+    on_fill_failed=handle_fill_error,
+)
+```
+
+The `FillFailedEvent` contains:
+- `error_message: str` - Description of the error
+- `retried_count: int` - Current retry attempt number
+- `over_maximum_retries: bool` - Whether max retries has been exceeded
+
+### Dual-LLM Architecture
+
+Use separate LLM instances for translation and XML structure filling with different optimization parameters:
+
+```python
+# Create two LLM instances with different temperatures
+translation_llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+    temperature=0.8,  # Higher temperature for creative translation
+)
+
+fill_llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+    temperature=0.3,  # Lower temperature for structure preservation
+)
+
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.ENGLISH,
+    translation_llm=translation_llm,
+    fill_llm=fill_llm,
 )
 ```
 
@@ -203,10 +266,10 @@ Provide specific translation instructions:
 
 ```python
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="English",
+    llm=llm,
     user_prompt="Use formal language and preserve technical terminology",
 )
 ```
