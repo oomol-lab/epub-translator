@@ -58,10 +58,10 @@ llm = LLM(
 
 # 使用语言常量翻译 EPUB 文件
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    llm=llm,
 )
 ```
 
@@ -80,10 +80,10 @@ with tqdm(total=100, desc="翻译中", unit="%") as pbar:
         last_progress = progress
 
     translate(
-        llm=llm,
         source_path=Path("source.epub"),
         target_path=Path("translated.epub"),
         target_language="Chinese",
+        llm=llm,
         on_progress=on_progress,
     )
 ```
@@ -116,16 +116,21 @@ LLM(
 
 ```python
 translate(
-    llm: LLM,                          # LLM 实例
-    source_path: Path,                 # 源 EPUB 文件路径
-    target_path: Path,                 # 输出 EPUB 文件路径
+    source_path: PathLike | str,       # 源 EPUB 文件路径
+    target_path: PathLike | str,       # 输出 EPUB 文件路径
     target_language: str,              # 目标语言 (例如 "Chinese", "English")
     user_prompt: str | None = None,    # 自定义翻译指令
     max_retries: int = 5,              # 翻译失败的最大重试次数
     max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
+    llm: LLM | None = None,            # 用于翻译和填充的单个 LLM 实例
+    translation_llm: LLM | None = None,  # 翻译专用 LLM 实例（优先于 llm）
+    fill_llm: LLM | None = None,       # XML 填充专用 LLM 实例（优先于 llm）
     on_progress: Callable[[float], None] | None = None,  # 进度回调函数 (0.0-1.0)
+    on_fill_failed: Callable[[FillFailedEvent], None] | None = None,  # 错误回调函数
 )
 ```
+
+**注意**: 必须提供 `llm` 或同时提供 `translation_llm` 和 `fill_llm`。使用独立的 LLM 可以针对不同任务进行优化。
 
 #### 语言常量
 
@@ -136,18 +141,76 @@ from epub_translator import language
 
 # 使用示例：
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    llm=llm,
 )
 
 # 您也可以使用自定义的语言字符串：
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="Icelandic",  # 对于不在常量列表中的语言
+    llm=llm,
+)
+```
+
+### 使用 `on_fill_failed` 处理错误
+
+使用 `on_fill_failed` 回调监控和处理翻译错误：
+
+```python
+from epub_translator import FillFailedEvent
+
+def handle_fill_error(event: FillFailedEvent):
+    print(f"翻译错误（第 {event.retried_count} 次尝试）：")
+    print(f"  {event.error_message}")
+    if event.over_maximum_retries:
+        print("  已超过最大重试次数！")
+
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+    llm=llm,
+    on_fill_failed=handle_fill_error,
+)
+```
+
+`FillFailedEvent` 包含：
+- `error_message: str` - 错误描述
+- `retried_count: int` - 当前重试次数
+- `over_maximum_retries: bool` - 是否超过最大重试次数
+
+### 双 LLM 架构
+
+使用不同优化参数的独立 LLM 实例分别处理翻译和 XML 结构填充：
+
+```python
+# 创建两个具有不同温度参数的 LLM 实例
+translation_llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+    temperature=0.8,  # 较高温度用于创造性翻译
+)
+
+fill_llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+    temperature=0.3,  # 较低温度用于结构保持
+)
+
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+    translation_llm=translation_llm,
+    fill_llm=fill_llm,
 )
 ```
 
@@ -203,10 +266,10 @@ llm = LLM(
 
 ```python
 translate(
-    llm=llm,
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="Chinese",
+    llm=llm,
     user_prompt="使用正式语言并保留专业术语",
 )
 ```
