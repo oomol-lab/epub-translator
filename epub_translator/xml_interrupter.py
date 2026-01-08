@@ -3,7 +3,7 @@ from typing import cast
 from xml.etree.ElementTree import Element
 
 from .segment import TextSegment
-from .utils import ensure_list
+from .utils import ensure_list, normalize_whitespace
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -73,7 +73,7 @@ class XMLInterrupter:
         text_segments = self._raw_text_segments.get(interrupted_id, None)
         if text_segments:
             text_segment = text_segments[0]
-            interrupted_index = self._interrupted_index(text_segment)
+            interrupted_index = cast(int, self._interrupted_index(text_segment))
             interrupted_element = text_segment.parent_stack[cast(int, interrupted_index)]
             placeholder_element = Element(
                 _EXPRESSION_TAG,
@@ -92,11 +92,24 @@ class XMLInterrupter:
                 position=text_segments[0].position,
             )
             self._placeholder2interrupted[id(placeholder_element)] = interrupted_element
+            parent_element: Element | None = None
+            if interrupted_index > 0:
+                parent_element = text_segment.parent_stack[interrupted_index - 1]
 
-            for text_segment in text_segments:
-                # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
-                text_segment.block_depth = 1
-                text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
+            if (
+                not self._is_inline_math(interrupted_element)
+                or parent_element is None
+                or self._has_no_math_texts(parent_element)
+            ):
+                # 区块级公式不必重复出现，出现时突兀。但行内公式穿插在译文中更有利于读者阅读顺畅。
+                self._raw_text_segments.pop(interrupted_id, None)
+            else:
+                for text_segment in text_segments:
+                    # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
+                    text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
+                    text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
+                    text_segment.block_depth = 1
+                    text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
 
         return merged_text_segment
 
@@ -120,12 +133,23 @@ class XMLInterrupter:
 
         raw_block = raw_text_segments[0].parent_stack[0]
         if not self._is_inline_math(raw_block):
-            # 区块级公式不必重复出现，出现时突兀。但行内公式穿插在译文中更有利于读者阅读顺畅。
             return
 
         for raw_text_segment in raw_text_segments:
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
             yield raw_text_segment
+
+    def _has_no_math_texts(self, element: Element):
+        if element.tag == _MATH_TAG:
+            return True
+        if element.text and normalize_whitespace(element.text).strip():
+            return False
+        for child_element in element:
+            if not self._has_no_math_texts(child_element):
+                return False
+            if child_element.tail and normalize_whitespace(child_element.tail).strip():
+                return False
+        return True
 
     def _is_inline_math(self, element: Element) -> bool:
         if element.tag != _MATH_TAG:
