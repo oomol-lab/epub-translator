@@ -37,18 +37,6 @@ InlineError = InlineLostIDError | InlineUnexpectedIDError | InlineExpectedIDsErr
 
 
 def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
-    text_segments_iter = iter(text_segments)
-    text_segment = next(text_segments_iter, None)
-    while text_segment is not None:
-        inline_segment, text_segment = _collect_next_inline_segment(
-            first_text_segment=text_segment,
-            text_segments_iter=text_segments_iter,
-        )
-        if inline_segment is not None:
-            yield inline_segment
-
-
-def search_inline_segments2(text_segments: Iterable[TextSegment]) -> Generator["InlineSegment", None, None]:
     stack_data: tuple[list[list[TextSegment | InlineSegment]], Element, int] | None = None
     inline_segment: InlineSegment | None = None
 
@@ -111,56 +99,6 @@ def _pop_stack(
     if stack and inline_segment is not None:
         stack[-1].append(inline_segment)
     return inline_segment
-
-
-# @return collected InlineSegment and the next TextSegment that is not included
-def _collect_next_inline_segment(
-    first_text_segment: TextSegment,
-    text_segments_iter: Iterator[TextSegment],
-    depth: int | None = None,
-) -> tuple["InlineSegment | None", TextSegment | None]:
-    if depth is None:
-        depth = first_text_segment.block_depth
-
-    current_text_segment: TextSegment | None = first_text_segment
-    children: list[TextSegment | InlineSegment] = []
-    last_block_parent: Element | None = None
-
-    while current_text_segment is not None:
-        text_segment_depth = len(current_text_segment.parent_stack)
-        if text_segment_depth < depth:
-            break
-        elif text_segment_depth == depth:
-            if last_block_parent is not None and last_block_parent is not current_text_segment.block_parent:
-                break
-            children.append(current_text_segment)
-            last_block_parent = current_text_segment.block_parent
-            current_text_segment = next(text_segments_iter, None)
-        else:
-            if current_text_segment.block_depth > depth:
-                break
-            inline_text, current_text_segment = _collect_next_inline_segment(
-                first_text_segment=current_text_segment,
-                text_segments_iter=text_segments_iter,
-                depth=depth + 1,
-            )
-            if inline_text is not None:
-                children.append(inline_text)
-            if current_text_segment is not None:
-                reference_block_parent = (
-                    last_block_parent if last_block_parent is not None else first_text_segment.block_parent
-                )
-                if reference_block_parent is not current_text_segment.block_parent:
-                    break
-
-    if not children:
-        return None, current_text_segment
-
-    inline_text = InlineSegment(
-        depth=depth,
-        children=children,
-    )
-    return inline_text, current_text_segment
 
 
 class InlineSegment:
@@ -239,15 +177,6 @@ class InlineSegment:
                 self._child_tag2count[child_tag] = self._child_tag2count.get(child_tag, 0) + 1
 
     def create_element(self) -> Element:
-        if len(self._children) >= 2:
-            sb = self._children[1]
-            if isinstance(sb, TextSegment) and sb.text.strip().startswith(
-                "我不会在本书中，如我在其他地方（Fink,1997，第七章)"
-            ):
-                print(">>>>>>>>")
-                for text_segment in self:
-                    print("Found:", [(e.tag, id(e)) for e in text_segment.parent_stack])
-
         element = Element(self.parent.tag)
         previous_element: Element | None = None
         for child in self._children:
