@@ -50,6 +50,7 @@ class XMLStreamMapper:
 
                 if target:
                     block_element, text_segments = target
+                    block_element = callbacks.interrupt_block_element(block_element)
                     text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
                     if text_segments:
                         mapping_buffer.append((block_element, text_segments))

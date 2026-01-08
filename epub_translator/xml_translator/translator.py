@@ -42,12 +42,14 @@ class XMLTranslator:
         element: Element,
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_block_element: Callable[[Element], Element] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Element:
         for translated in self.translate_elements(
             elements=((element),),
             interrupt_source_text_segments=interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupt_translated_text_segments,
+            interrupt_block_element=interrupt_block_element,
             on_fill_failed=on_fill_failed,
         ):
             return translated
@@ -59,11 +61,13 @@ class XMLTranslator:
         elements: Iterable[Element],
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_block_element: Callable[[Element], Element] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Generator[Element, None, None]:
         callbacks = warp_callbacks(
             interrupt_source_text_segments=interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupt_translated_text_segments,
+            interrupt_block_element=interrupt_block_element,
             on_fill_failed=on_fill_failed,
         )
         for element, mappings in self._stream_mapper.map_stream(

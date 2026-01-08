@@ -14,6 +14,7 @@ class XMLInterrupter:
     def __init__(self) -> None:
         self._next_id: int = 1
         self._last_interrupted_id: str | None = None
+        self._placeholder2interrupted: dict[int, Element] = {}
         self._raw_text_segments: dict[str, list[TextSegment]] = {}
 
     def interrupt_source_text_segments(
@@ -32,6 +33,13 @@ class XMLInterrupter:
     ) -> Generator[TextSegment, None, None]:
         for text_segment in text_segments:
             yield from self._expand_translated_text_segment(text_segment)
+
+    def interrupt_block_element(self, element: Element) -> Element:
+        interrupted_element = self._placeholder2interrupted.pop(id(element), None)
+        if interrupted_element is None:
+            return element
+        else:
+            return interrupted_element
 
     def _expand_source_text_segment(self, text_segment: TextSegment):
         interrupted_index = self._interrupted_index(text_segment)
@@ -67,9 +75,14 @@ class XMLInterrupter:
             text_segment = text_segments[0]
             interrupted_index = self._interrupted_index(text_segment)
             interrupted_element = text_segment.parent_stack[cast(int, interrupted_index)]
+            placeholder_element = Element(
+                _EXPRESSION_TAG,
+                {
+                    _ID_KEY: cast(str, interrupted_element.get(_ID_KEY)),
+                },
+            )
             raw_parent_stack = text_segment.parent_stack[:interrupted_index]
-            element_id = cast(str, interrupted_element.get(_ID_KEY))
-            parent_stack = raw_parent_stack + [Element(_EXPRESSION_TAG, {_ID_KEY: element_id})]
+            parent_stack = raw_parent_stack + [placeholder_element]
             merged_text_segment = TextSegment(
                 text="".join(t.text for t in text_segments),
                 parent_stack=parent_stack,
@@ -78,6 +91,8 @@ class XMLInterrupter:
                 block_depth=len(parent_stack),
                 position=text_segments[0].position,
             )
+            self._placeholder2interrupted[id(placeholder_element)] = interrupted_element
+
             for text_segment in text_segments:
                 # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
                 text_segment.block_depth = 1

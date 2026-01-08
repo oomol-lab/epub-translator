@@ -89,6 +89,7 @@ def translate(
         for translated_elem in translator.translate_elements(
             interrupt_source_text_segments=interrupter.interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupter.interrupt_translated_text_segments,
+            interrupt_block_element=interrupter.interrupt_block_element,
             elements=_generate_elements_from_book(
                 zip=zip,
                 toc_list=toc_list,
