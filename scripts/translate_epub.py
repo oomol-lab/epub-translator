@@ -33,7 +33,9 @@ def main() -> None:
             print(f"{event.error_message}")
             print("---\n")
             if event.over_maximum_retries:
-                print("Warning: Maximum retries reached without successful XML filling. Will ignore remaining errors.")
+                print(
+                    "Warning: Maximum retries reached without successful XML filling. Will ignore remaining errors.\n"
+                )
 
         translate(
             translation_llm=translation_llm,
