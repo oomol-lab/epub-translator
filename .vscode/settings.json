@@ -52,6 +52,7 @@
     "pbar",
     "Peekable",
     "pixmap",
+    "pylint",
     "rects",
     "rootfile",
     "rootfiles",
@@ -63,6 +64,7 @@
     "Truncatable",
     "updation",
     "venv",
+    "virtualenvs",
     "Zeyu",
     "zinfo"
   ],

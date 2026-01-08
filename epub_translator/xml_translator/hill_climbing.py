@@ -50,7 +50,7 @@ class HillClimbing:
             else:
                 submitted_element = status.submitter.submitted_element
                 text_segments = list(search_text_segments(submitted_element))
-                yield inline_segment, text_segments
+                yield inline_segment.parent, text_segments
 
     def submit(self, element: Element) -> str | None:
         error_message, block_weights = self._validate_block_weights_and_error_message(element)

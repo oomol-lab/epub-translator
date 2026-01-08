@@ -5,6 +5,7 @@ from xml.etree.ElementTree import Element
 from ..llm import LLM, Message, MessageRole
 from ..segment import BlockSegment, InlineSegment, TextSegment
 from ..xml import decode_friendly, encode_friendly
+from .callbacks import FillFailedEvent, warp_callbacks
 from .hill_climbing import HillClimbing
 from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
 from .submitter import submit_text_segments
@@ -39,11 +40,17 @@ class XMLTranslator:
     def translate_element(
         self,
         element: Element,
-        filter_text_segments: Callable[[TextSegment], bool] | None = None,
+        interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_block_element: Callable[[Element], Element] | None = None,
+        on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Element:
         for translated in self.translate_elements(
             elements=((element),),
-            filter_text_segments=filter_text_segments,
+            interrupt_source_text_segments=interrupt_source_text_segments,
+            interrupt_translated_text_segments=interrupt_translated_text_segments,
+            interrupt_block_element=interrupt_block_element,
+            on_fill_failed=on_fill_failed,
         ):
             return translated
 
@@ -52,25 +59,28 @@ class XMLTranslator:
     def translate_elements(
         self,
         elements: Iterable[Element],
-        filter_text_segments: Callable[[TextSegment], bool] | None = None,
+        interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
+        interrupt_block_element: Callable[[Element], Element] | None = None,
+        on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
     ) -> Generator[Element, None, None]:
+        callbacks = warp_callbacks(
+            interrupt_source_text_segments=interrupt_source_text_segments,
+            interrupt_translated_text_segments=interrupt_translated_text_segments,
+            interrupt_block_element=interrupt_block_element,
+            on_fill_failed=on_fill_failed,
+        )
         for element, mappings in self._stream_mapper.map_stream(
             elements=iter(elements),
-            map=lambda inline_segments: self._translate_inline_segments(
-                inline_segments=inline_segments,
-                filter_text_segments=filter_text_segments,
-            ),
+            callbacks=callbacks,
+            map=self._translate_inline_segments,
         ):
             yield submit_text_segments(
                 element=element,
                 mappings=mappings,
             )
 
-    def _translate_inline_segments(
-        self,
-        inline_segments: list[InlineSegment],
-        filter_text_segments: Callable[[TextSegment], bool] | None,
-    ) -> list[InlineSegmentMapping | None]:
+    def _translate_inline_segments(self, inline_segments: list[InlineSegment]) -> list[InlineSegmentMapping | None]:
         hill_climbing = HillClimbing(
             encoding=self._fill_llm.encoding,
             max_fill_displaying_errors=self._max_fill_displaying_errors,
@@ -90,12 +100,9 @@ class XMLTranslator:
         )
         mappings: list[InlineSegmentMapping | None] = []
         for mapping in hill_climbing.gen_mappings():
-            if mapping and filter_text_segments is not None:
-                inline_segment, text_segments = mapping
-                text_segments = [t for t in text_segments if filter_text_segments(t)]
-                if text_segments:
-                    mapping = (inline_segment, text_segments)
-                else:
+            if mapping:
+                _, text_segments = mapping
+                if not text_segments:
                     mapping = None
             mappings.append(mapping)
 

@@ -1,7 +1,7 @@
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..xml import iter_with_stack
+from ..xml import index_of_parent, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
@@ -13,8 +13,8 @@ def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping])
 
 def _group_text_segments(mappings: list[InlineSegmentMapping]):
     grouped_map: dict[int, list[TextSegment]] = {}
-    for inline_segment, text_segments in mappings:
-        parent_id = id(inline_segment.parent)
+    for block_element, text_segments in mappings:
+        parent_id = id(block_element)
         grouped_map[parent_id] = text_segments
 
     # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
@@ -42,7 +42,7 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
         if not grouped:
             continue
         parent = parents[-1]
-        index = _index_of_parent(parents[-1], child_element)
+        index = index_of_parent(parents[-1], child_element)
         combined = next(
             combine_text_segments(
                 segments=(t.strip_block_parents() for t in grouped),
@@ -54,10 +54,3 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
             parent.insert(index + 1, combined_element)
             combined_element.tail = child_element.tail
             child_element.tail = None
-
-
-def _index_of_parent(parent: Element, checked_element: Element) -> int:
-    for i, child in enumerate(parent):
-        if child == checked_element:
-            return i
-    raise ValueError("Element not found in parent.")

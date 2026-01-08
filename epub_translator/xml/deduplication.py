@@ -1,8 +1,8 @@
 from xml.etree.ElementTree import Element
 
+from .const import ID_KEY
 from .xml import iter_with_stack
 
-_ID_KEY = "id"
 _SUFFIX = "__translated"
 
 
@@ -11,9 +11,9 @@ def deduplicate_ids_in_element(element: Element) -> Element:
     original_id_count: dict[str, int] = {}
 
     for _, sub_element in iter_with_stack(element):
-        if _ID_KEY not in sub_element.attrib:
+        if ID_KEY not in sub_element.attrib:
             continue
-        original_id = sub_element.attrib[_ID_KEY]
+        original_id = sub_element.attrib[ID_KEY]
 
         if original_id not in seen_ids:
             seen_ids.add(original_id)
