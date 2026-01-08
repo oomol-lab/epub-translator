@@ -36,8 +36,9 @@ class LLMExecutor:
         self,
         messages: list[Message],
         max_tokens: int | None,
-        temperature: float | None = None,
-        top_p: float | None = None,
+        temperature: float | None,
+        top_p: float | None,
+        cache_key: str | None,
     ) -> str:
         response: str = ""
         last_error: Exception | None = None
@@ -45,7 +46,15 @@ class LLMExecutor:
         logger = self._create_logger()
 
         if logger is not None:
-            logger.debug(f"[[Parameters]]:\n\ttemperature={temperature}\n\ttop_p={top_p}\n\tmax_tokens={max_tokens}\n")
+            parameters: list[str] = [
+                f"\t\ntemperature={temperature}",
+                f"\t\ntop_p={top_p}",
+                f"\t\nmax_tokens={max_tokens}",
+            ]
+            if cache_key is not None:
+                parameters.append(f"\t\ncache_key={cache_key}")
+
+            logger.debug(f"[[Parameters]]:{''.join(parameters)}\n")
             logger.debug(f"[[Request]]:\n{self._input2str(messages)}\n")
 
         try:

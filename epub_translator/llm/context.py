@@ -73,8 +73,8 @@ class LLMContext:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
+                cache_key=cache_key,
             )
-
             # Save to temporary cache if cache_path is set
             if self._cache_path is not None and cache_key is not None:
                 temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
