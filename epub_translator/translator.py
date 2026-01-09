@@ -66,6 +66,9 @@ def translate(
         source_path=Path(source_path).resolve(),
         target_path=Path(target_path).resolve(),
     ) as zip:
+        # mimetype should be the first file in the EPUB ZIP
+        zip.migrate(Path("mimetype"))
+
         total_chapters = sum(1 for _, _ in search_spine_paths(zip))
         toc_list = read_toc(zip)
         metadata_fields = read_metadata(zip)
