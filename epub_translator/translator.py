@@ -66,7 +66,7 @@ def translate(
         source_path=Path(source_path).resolve(),
         target_path=Path(target_path).resolve(),
     ) as zip:
-        total_chapters = sum(1 for _ in search_spine_paths(zip))
+        total_chapters = sum(1 for _, _ in search_spine_paths(zip))
         toc_list = read_toc(zip)
         metadata_fields = read_metadata(zip)
 
@@ -151,11 +151,11 @@ def _generate_elements_from_book(
         element_contexts[elem_id] = _ElementContext(element_type=_ElementType.METADATA)
         yield metadata_elem
 
-    for chapter_path in search_spine_paths(zip):
+    for chapter_path, media_type in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
             xml = XMLLikeNode(
                 file=chapter_file,
-                is_html_like=chapter_path.suffix.lower() in (".html", ".htm"),
+                is_html_like=(media_type == "text/html"),
             )
         body_element = find_first(xml.element, "body")
         if body_element is not None:
