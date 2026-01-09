@@ -31,29 +31,28 @@ class XMLStreamMapper:
         current_element: Element | None = None
         mapping_buffer: list[InlineSegmentMapping] = []
 
-        for head, body, tail in self._split_into_groups(
-            resources=self._expand_to_resources(
-                elements=elements,
-                callbacks=callbacks,
-            ),
-        ):
-            target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-            for origin, target in zip(body, target_body):
-                origin_element = origin.head.root
-                if current_element is None:
-                    current_element = origin_element
+        for element in elements:
+            # TODO: 使用 peak 将片段进一步融合
+            for head, body, tail in self._split_into_groups(
+                resources=self._expand_to_resources(element, callbacks),
+            ):
+                target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
+                for origin, target in zip(body, target_body):
+                    origin_element = origin.head.root
+                    if current_element is None:
+                        current_element = origin_element
 
-                if id(current_element) != id(origin_element):
-                    yield current_element, mapping_buffer
-                    current_element = origin_element
-                    mapping_buffer = []
+                    if id(current_element) != id(origin_element):
+                        yield current_element, mapping_buffer
+                        current_element = origin_element
+                        mapping_buffer = []
 
-                if target:
-                    block_element, text_segments = target
-                    block_element = callbacks.interrupt_block_element(block_element)
-                    text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
-                    if text_segments:
-                        mapping_buffer.append((block_element, text_segments))
+                    if target:
+                        block_element, text_segments = target
+                        block_element = callbacks.interrupt_block_element(block_element)
+                        text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
+                        if text_segments:
+                            mapping_buffer.append((block_element, text_segments))
 
         if current_element is not None:
             yield current_element, mapping_buffer
@@ -81,18 +80,13 @@ class XMLStreamMapper:
             )
             yield head, body, tail
 
-    def _expand_to_resources(
-        self,
-        elements: Iterator[Element],
-        callbacks: Callbacks,
-    ) -> Generator[Resource[InlineSegment], None, None]:
-        def expand(elements: Iterator[Element]):
-            for element in elements:
-                text_segments = search_text_segments(element)
-                text_segments = callbacks.interrupt_source_text_segments(text_segments)
-                yield from search_inline_segments(text_segments)
+    def _expand_to_resources(self, element: Element, callbacks: Callbacks):
+        def expand(element: Element):
+            text_segments = search_text_segments(element)
+            text_segments = callbacks.interrupt_source_text_segments(text_segments)
+            yield from search_inline_segments(text_segments)
 
-        inline_segment_generator = expand(elements)
+        inline_segment_generator = expand(element)
         start_incision = _PAGE_INCISION
         inline_segment = next(inline_segment_generator, None)
         if inline_segment is None:
