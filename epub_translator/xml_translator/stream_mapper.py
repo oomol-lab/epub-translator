@@ -34,7 +34,7 @@ class XMLStreamMapper:
         for group in self._split_into_serial_groups(elements, callbacks):
             head, body, tail = self._truncate_and_transform_group(group)
             target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-            for origin, target in zip(body, target_body):
+            for origin, target in zip(body, target_body, strict=False):
                 origin_element = origin.head.root
                 if current_element is None:
                     current_element = origin_element
