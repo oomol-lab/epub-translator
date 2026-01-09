@@ -53,10 +53,11 @@ class LLM:
     def encoding(self) -> Encoding:
         return self._encoding
 
-    def context(self) -> LLMContext:
+    def context(self, cache_seed_content: str | None = None) -> LLMContext:
         return LLMContext(
             executor=self._executor,
             cache_path=self._cache_path,
+            cache_seed_content=cache_seed_content,
             top_p=self._top_p,
             temperature=self._temperature,
         )

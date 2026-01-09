@@ -14,11 +14,13 @@ class LLMContext:
         self,
         executor: LLMExecutor,
         cache_path: Path | None,
+        cache_seed_content: str | None,
         top_p: Increasable,
         temperature: Increasable,
     ) -> None:
         self._executor = executor
         self._cache_path = cache_path
+        self._cache_seed_content = cache_seed_content
         self._top_p: Increaser = top_p.context()
         self._temperature: Increaser = temperature.context()
         self._context_id = uuid.uuid4().hex[:12]
@@ -86,8 +88,12 @@ class LLMContext:
 
     def _compute_messages_hash(self, messages: list[Message]) -> str:
         messages_dict = [{"role": msg.role.value, "message": msg.message} for msg in messages]
-        messages_json = json.dumps(messages_dict, ensure_ascii=False, sort_keys=True)
-        return hashlib.sha512(messages_json.encode("utf-8")).hexdigest()
+        hash_data = {
+            "messages": messages_dict,
+            "cache_seed": self._cache_seed_content,
+        }
+        hash_json = json.dumps(hash_data, ensure_ascii=False, sort_keys=True)
+        return hashlib.sha512(hash_json.encode("utf-8")).hexdigest()
 
     def _commit(self) -> None:
         for temp_file in sorted(self._temp_files):
