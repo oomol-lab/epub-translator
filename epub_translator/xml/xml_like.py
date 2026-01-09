@@ -4,6 +4,7 @@ import warnings
 from typing import IO
 from xml.etree.ElementTree import Element, fromstring, tostring
 
+from .self_closing import self_close_void_elements, unclose_void_elements
 from .xml import iter_with_stack
 
 _XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
@@ -31,24 +32,6 @@ _ENCODING_PATTERN = re.compile(r'encoding\s*=\s*["\']([^"\']+)["\']', re.IGNOREC
 _FIRST_ELEMENT_PATTERN = re.compile(r"<(?![?!])[a-zA-Z]")
 _NAMESPACE_IN_TAG = re.compile(r"\{([^}]+)\}")
 
-# Some non-standard EPUB generators use HTML-style tags without self-closing syntax
-# We need to convert them to XML-compatible format before parsing
-_EMPTY_TAGS = (
-    "br",
-    "hr",
-    "input",
-    "col",
-    "base",
-    "meta",
-    "area",
-)
-
-# For reading: match tags like <br> or <br class="x"> (but not <br/> or <body>)
-_EMPTY_TAG_OPEN_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^/>]*)>")
-
-# For saving: match self-closing tags like <br />
-_EMPTY_TAG_CLOSE_PATTERN = re.compile(r"<(" + "|".join(_EMPTY_TAGS) + r")(\s[^>]*?)\s*/>")
-
 
 class XMLLikeNode:
     def __init__(self, file: IO[bytes], is_html_like: bool = False) -> None:
@@ -60,14 +43,13 @@ class XMLLikeNode:
         self._tag_to_namespace: dict[str, str] = {}
         self._attr_to_namespace: dict[str, str] = {}
 
-        # For non-standard HTML files, convert <br> to <br/> before parsing
+        # Convert non-self-closed void elements to self-closed format before parsing
+        # This is necessary because:
+        # 1. XML parser requires all void elements to be self-closed
+        # 2. Input EPUB files may have non-standard HTML with unclosed void elements
+        # After parsing, we'll convert back for text/html files (see save() method)
         self._is_html_like = is_html_like
-        if is_html_like:
-            xml_content = re.sub(
-                pattern=_EMPTY_TAG_OPEN_PATTERN,
-                repl=lambda m: f"<{m.group(1)}{m.group(2)} />",
-                string=xml_content,
-            )
+        xml_content = self_close_void_elements(xml_content)
 
         try:
             self.element = self._extract_and_clean_namespaces(
@@ -92,13 +74,11 @@ class XMLLikeNode:
 
             content = self._serialize_with_namespaces(self.element)
 
-            # For non-standard HTML files, convert back from <br/> to <br>
+            # For non-standard HTML files (text/html), convert back from <br/> to <br>
+            # to maintain compatibility with HTML parsers that don't support XHTML
+            # For XHTML files (application/xhtml+xml), keep self-closing format
             if self._is_html_like:
-                content = re.sub(
-                    pattern=_EMPTY_TAG_CLOSE_PATTERN,
-                    repl=lambda m: f"<{m.group(1)}{m.group(2)}>",
-                    string=content,
-                )
+                content = unclose_void_elements(content)
 
             writer.write(content)
 
