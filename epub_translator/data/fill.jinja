@@ -70,121 +70,67 @@ Translation: "于1990年出版的《书名》" (flows naturally, but loses struc
 ✓ CORRECT: 于1990年出版的<span id="5">《书名》</span>
   (Break fluency to preserve structure - this is REQUIRED)
 
-Error Type 7: Adjacent elements with different semantic types
-CRITICAL: When template has adjacent elements of DIFFERENT semantic types (book title + year, person name + date, place + number, etc.),
-you MUST match by SEMANTIC TYPE, NOT by position in translated text.
+Error Type 7: Wrong semantic matching when word order changes
+When translation changes word order, match elements by SEMANTIC TYPE, not position.
 
-Example 1: Book title and year adjacent
+Example: Book title and year
 Template: "<span id="3">Book Title</span> in <span id="4"><a>1990</a></span>"
 Translation: "《书名》于1990年出版"
 
-❌ WRONG: 《书名》于<span id="3">1990</span>年出版<span id="4">...</span>
+❌ WRONG: 《书名》于<span id="3">1990</span>年出版...
   (Matching by position: "1990" appears after "于", so wrapping it with id="3")
-  (This is WRONG because you matched a YEAR to a template that expects a BOOK TITLE)
+  (WRONG because you matched a YEAR to a slot expecting BOOK TITLE)
 
 ✓ CORRECT: <span id="3">《书名》</span>于<span id="4"><a>1990</a></span>年出版
-  (Matching by SEMANTIC TYPE: book title → book title, year → year)
-  (Even though word order changed, semantic types match correctly)
-
-Example 2: Multiple elements of same semantic type require position tracking
-Template: "<span id="3">Book A</span> in 1990... second edition of <span id="5">Book A</span>"
-Translation: "《书A》于1990年出版...《书A》第二版"
-
-✓ CORRECT: <span id="3">《书A》</span>于1990年出版...<span id="5">《书A》</span>第二版
-  (First occurrence of book title → id="3", second occurrence → id="5")
+  (Matching by semantic type: book title → book title, year → year)
 
 KEY PRINCIPLE: Semantic type matching beats position matching!
-- If template shows <book> <year>, find the book and year in translation, regardless of their positions
-- data-orig-len can help: book titles usually have longer token counts than years
-- Years are typically 4-digit numbers (1687, 1990, 2024, etc.) - easy to identify
+- Identify semantic types: book titles, journal names, years (4-digit numbers), person names, etc.
+- Match each to its corresponding slot, regardless of position in translation
+- data-orig-len hints at length: book/journal titles usually longer than years/numbers
 
 ---
 
-STEP-BY-STEP FILLING ALGORITHM:
+FILLING ALGORITHM:
 
-Step 1: Structure Analysis
-- Count elements at each level in template
-- Note which elements have id attributes (anchors)
-- Identify text distribution pattern
-
-Step 2: Text Segmentation
-- Source text shows content mapping to template
-- Elements act as natural separators
-- Example:
-  Template: <xml><p id="1">...</p><p id="2">...</p></xml>
-  Source: "Para 1 text.\n\nPara 2 text."
-  → Two paragraphs map to two <p> elements
-
-Step 3: Apply to Translation
-- Use same segmentation from Step 2
-- Fill translated text into corresponding positions
-- Preserve all whitespace and structure
-- For inline elements WITH id attributes:
-  * Locate the SEMANTIC equivalent in translated text
-  * Wrap it with the SAME tag and id, even if position changed
-  * Example: <span id="5">Book</span> in "reviewer of Book in Journal"
-    becomes <span id="5">书</span> in "Journal 上对书的评论者" (position changed!)
-- For inline elements WITHOUT id attributes:
-  * Match by structural position (same order as template)
-
-Step 4: Verification
-- Count: Same number of elements at each level?
-- IDs: All id attributes preserved exactly?
-- Tags: All tag names match template?
-- Nesting: Hierarchy matches template?
+1. Analyze template structure: count elements at each level, note id attributes
+2. Segment source text by elements (elements are natural separators)
+3. Apply to translation:
+   - Preserve exact structure (count, nesting, ids)
+   - For elements WITH id: locate semantic equivalent, wrap with same tag+id
+   - For elements WITHOUT id: match by STRUCTURAL POSITION (same order as template)
+     * Count carefully: if template has 7 <span> without id, output must have exactly 7
+     * Do NOT add extra elements or skip any
+4. Verify: same element counts, all ids preserved, tag names match
 
 ---
 
 SPECIAL CASES:
 
-1. Elements with data-orig-len attribute
-Template: <span id="5" data-orig-len="42">text</span>
-→ The data-orig-len shows token count of ORIGINAL text
-→ Use as HINT for locating element, not strict constraint
-→ Translation length may differ significantly across languages
-→ Focus on semantic matching, not length matching
+1. data-orig-len attribute: Token count of original text. Use as hint for identifying elements.
 
-2. When Translation Simplifies or Omits Source Elements
-Sometimes the translation legitimately simplifies/merges/omits elements from the source.
-This is a valid translation decision, but creates a filling challenge.
+2. Tightly coupled text (journal names + numbers, etc.):
+   When template has "<span id="X">Journal Name42</span>" (name+number as one unit):
+   - In translation, find the journal name equivalent
+   - If the number appears adjacent (e.g., "《期刊名》第42期"), wrap the full semantic unit
+   - Example: <span id="19">《数学史》第21期</span> for "Historia Mathematica21"
 
-Example scenario:
-- Template: <span id="1">Latin Name</span>, or <span id="2">English Translation</span>
-- Translation: 中文名称 (merged both into one concept, no "or" connector)
-- Error message: Missing <span id="2">: "English Translation"
+3. Translation merges adjacent spans into inseparable compound:
+   Template: "<span id="1">Word1</span> & <span id="2">Word2</span>"
+   Translation: "复合词" (merged into single inseparable term)
+   Solution: Keep source for one span, wrap compound with the other
+   Example: <span id="16">《教条与实验化学基础》</span>与<span id="17">Experimentalis</span>
+   (Only use when breaking compound creates meaningless fragments)
 
-CORRECT approach (in priority order):
-1. FIRST: Exhaust semantic matching
-   - Check for synonyms, paraphrases, merged concepts
-   - Consider that translation may express the same meaning differently
+4. When translation simplifies/omits elements:
+   - First: Exhaust semantic matching (synonyms, paraphrases, merged concepts)
+   - If no match: Use source text as fallback in natural position
+   - Mixed language output is acceptable (better than broken structure)
 
-2. IF genuinely no match exists after thorough analysis:
-   - Use source text as fallback: <span id="2">Source Text</span>
-   - Place it in a natural position in the translated sentence
-
-   EXCEPTION for inseparable compound terms (RARE CASE):
-   If template splits adjacent words like "<span id="1">Word1</span> & <span id="2">Word2</span>"
-   but translation forms ONE inseparable compound (e.g., "Word1Word2" as a single term),
-   and breaking it would create meaningless fragments:
-   → Keep source text for one span, wrap the compound with the other
-   → Example: <span id="1">Experimental</span>与<span id="2">实验化学</span>
-
-   WARNING: This is RARE. Most cases should use semantic matching or source fallback.
-   Do NOT merge elements unless breaking truly creates meaningless fragments.
-
-3. Mixed language output is ACCEPTABLE
-   - Common in academic translation (technical terms, proper nouns, book titles)
-   - Better than leaving structure incomplete
-
-WRONG approaches:
-❌ Leaving element empty: <span id="2"></span>
-❌ Using placeholder text: <span id="2">内容</span> or <span id="2">译文</span>
-❌ Duplicating other elements: <span id="2">中文名称</span> (when id="1" already has this)
-❌ Failing to insert the element at all
-
-IMPORTANT: Using source text as fallback is a last resort, but it is VALID and REQUIRED
-when the alternative is broken structure. Readers can understand mixed language better
-than missing or malformed XML.
+WRONG fallback approaches:
+❌ Empty: <span id="2"></span>
+❌ Placeholder: <span id="2">内容</span>
+❌ Duplicate: <span id="2">中文名称</span> (when id="1" has this)
 
 ---
 
