@@ -22,7 +22,7 @@ class LLMContext:
         self._top_p: Increaser = top_p.context()
         self._temperature: Increaser = temperature.context()
         self._context_id = uuid.uuid4().hex[:12]
-        self._temp_files: list[Path] = []
+        self._temp_files: set[Path] = set()
 
     def __enter__(self) -> Self:
         return self
@@ -57,11 +57,6 @@ class LLMContext:
                     cached_content = permanent_cache_file.read_text(encoding="utf-8")
                     return cached_content
 
-                temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
-                if temp_cache_file.exists():
-                    cached_content = temp_cache_file.read_text(encoding="utf-8")
-                    return cached_content
-
             if temperature is None:
                 temperature = self._temperature.current
             if top_p is None:
@@ -78,8 +73,10 @@ class LLMContext:
             # Save to temporary cache if cache_path is set
             if self._cache_path is not None and cache_key is not None:
                 temp_cache_file = self._cache_path / f"{cache_key}.{self._context_id}.txt"
+                if temp_cache_file.exists():
+                    temp_cache_file.unlink()
                 temp_cache_file.write_text(response, encoding="utf-8")
-                self._temp_files.append(temp_cache_file)
+                self._temp_files.add(temp_cache_file)
 
             return response
 
@@ -93,7 +90,7 @@ class LLMContext:
         return hashlib.sha512(messages_json.encode("utf-8")).hexdigest()
 
     def _commit(self) -> None:
-        for temp_file in self._temp_files:
+        for temp_file in sorted(self._temp_files):
             if temp_file.exists():
                 # Remove the .[context-id].txt suffix to get permanent name
                 permanent_name = temp_file.name.rsplit(".", 2)[0] + ".txt"
