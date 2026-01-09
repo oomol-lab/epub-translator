@@ -15,7 +15,11 @@ def _group_text_segments(mappings: list[InlineSegmentMapping]):
     grouped_map: dict[int, list[TextSegment]] = {}
     for block_element, text_segments in mappings:
         parent_id = id(block_element)
-        grouped_map[parent_id] = text_segments
+        # 修复：当多个 mapping 共享同一个 block_element 时，
+        # 将它们的 text_segments 合并到同一个列表中，而不是覆盖
+        if parent_id not in grouped_map:
+            grouped_map[parent_id] = []
+        grouped_map[parent_id].extend(text_segments)
 
     # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
     #       这是书籍中可能出现的一种情况，虽然不多见。
@@ -43,14 +47,15 @@ def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegm
             continue
         parent = parents[-1]
         index = index_of_parent(parents[-1], child_element)
-        combined = next(
-            combine_text_segments(
-                segments=(t.strip_block_parents() for t in grouped),
-            ),
-            None,
-        )
-        if combined is not None:
+
+        # 修复：combine_text_segments 可能 yield 多个 element
+        # 当多个 mapping 共享同一个 parent 时，需要将所有 yield 的 elements 都插入
+        for combined in combine_text_segments(
+            segments=(t.strip_block_parents() for t in grouped),
+        ):
             combined_element, _ = combined
             parent.insert(index + 1, combined_element)
             combined_element.tail = child_element.tail
             child_element.tail = None
+            # 更新 index，确保下一个 element 插入到正确的位置
+            index += 1
