@@ -65,6 +65,17 @@ def _fix_void_element(content: str, tag_name: str) -> str:
             result.append(content[pos:])
             break
 
+        # Verify it's a complete tag match (not a prefix like <br matching <brain>)
+        # The character after tag_name must be >, /, or whitespace
+        check_pos = tag_start + len(f"<{tag_name}")
+        if check_pos < len(content):
+            next_char = content[check_pos]
+            if next_char not in (">", "/", " ", "\t", "\n", "\r"):
+                # Not a valid tag boundary, skip this match
+                result.append(content[pos:check_pos])
+                pos = check_pos
+                continue
+
         # Append content before this tag
         result.append(content[pos:tag_start])
 
@@ -152,8 +163,9 @@ def _find_tag_end(content: str, start_pos: int) -> int:
     return -1  # Not found
 
 
-# For saving: match self-closing tags like <br />
-_VOID_TAG_CLOSE_PATTERN = re.compile(r"<(" + "|".join(_VOID_TAGS) + r")(\s[^>]*?)\s*/>")
+# For saving: match self-closing tags like <br /> or <br/>
+# Capture tag name and everything between tag name and />
+_VOID_TAG_CLOSE_PATTERN = re.compile(r"<(" + "|".join(_VOID_TAGS) + r")([^>]*?)\s*/>")
 
 
 def unclose_void_elements(xml_content: str) -> str:
@@ -175,8 +187,13 @@ def unclose_void_elements(xml_content: str) -> str:
         <br /> → <br>
         <img src="test.png" /> → <img src="test.png">
     """
-    return re.sub(
-        pattern=_VOID_TAG_CLOSE_PATTERN,
-        repl=lambda m: f"<{m.group(1)}{m.group(2)}>",
-        string=xml_content,
-    )
+
+    def replacer(m):
+        tag_name = m.group(1)
+        attrs = m.group(2).rstrip()  # Remove trailing whitespace
+        if attrs:
+            return f"<{tag_name}{attrs}>"
+        else:
+            return f"<{tag_name}>"
+
+    return re.sub(pattern=_VOID_TAG_CLOSE_PATTERN, repl=replacer, string=xml_content)
