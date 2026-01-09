@@ -1,0 +1,211 @@
+Source text:
+Cohen, I. Bernard, Guide to Newton’s Principia (part of the new English translation of the Principia, listed above).
+
+Cohen, I. Bernard, Introduction to Newton’s “Principia” (Cambridge, MA: Harvard University Press; Cambridge: Cambridge University Press, 1971).
+
+de Gandt, François, Force and Geometry in Newton’s Principia, trans. Curtis Wilson (Princeton: Princeton University Press, 1995).
+
+Densmore, Dana, Newton’s Principia: The Central Argument, with translations and illustrations by William Donahue (Santa Fe, New Mexico: Green Lion Press, 1995).
+
+DiSalle, Robert, “Space-Time Theory as Physical Geometry,” Erkenntnis42 (1995), 317–37.
+
+Dobson, Geoffrey J., “Newton’s Problems with Rigid Body Dynamics in the Light of his Treatment of the Precession of the Equinoxes,” Archive for History of Exact Sciences53 (1998), 125–45.
+
+Earman, John, World Enough and Space-Time: Absolute versus Relational Theories of Space and Time (Cambridge, MA: MIT Press, 1989).
+
+Earman, John and Friedman, Michael, “The Meaning and Status of Newton’s Law of Inertia and the Nature of Gravitational Forces,” Philosophy of Science40 (1973), 329–59.
+
+Ehrlichson, Herman, “The Visualization of Quadratures in the Mystery of Corollary 3 to Proposition 41 of Newton’s Principia,” Historia Mathematica21 (1994), 145–51.
+
+Guicciardini, Niccolò, Reading the Principia: The Debate on Newton’s Mathematical Methods for Natural Philosophy from 1687 to 1736 (Cambridge: Cambridge University Press, 1999).
+
+Harper, William, “Isaac Newton on Empirical Success and Scientific Method,” in John Earman and John D. Norton (eds.), The Cosmos of Science: Essays of Exploration (Pittsburgh: University of Pittsburgh Press, 1997), pp. 55–86.
+
+Harper, William, “Measurement and Approximation: Newton’s Inferences from Phenomena versus Glymour’s Bootstrap Confirmation,” in P. Weingartner, G. Schurz, and G. Dorn (eds.), The Role of Pragmatics in Contemporary Philosophy (Vienna: Hölder-Pichler-Tempsky, 1998), pp. 65–87.
+
+Herivel, John, The Background to Newton’s Principia: A Study of Newton’s Dynamical Researches in the Years 1664–84 (Oxford: Clarendon Press, 1965).
+
+Kollerstrom, Nicholas, Newton’s Forgotten Lunar Theory: His Contribution to the Quest for Longitude (Santa Fe, New Mexico: Green Lion Press, 2000).
+
+Lakatos, Imre, “Newton’s Effect on Scientific Standards,” in The Methodology of Scientific Research Programmes, Philosophical Papers, vol. 1 (Cambridge: Cambridge University Press, 1978), pp. 193–222.
+
+Nauenberg, Michael, “Newton’s Early Computational Method for Dynamics,” Archive for History of Exact Sciences46 (1994), 221–52.
+
+Nauenberg, Michael, “Hooke, Orbital Motion and Newton’s Principia,” American Journal of Physics62 (1994), 331–50.
+
+Nauenberg, Michael “Newton’s Portsmouth Perturbation Method and its Application to Lunar Motion,” in Dalitz and Nauenberg (eds.), The Foundations of Newtonian Scholarship, listed above, pp. 167–94.
+
+XML template:
+```XML
+<xml>
+  <div data-orig-len="28" id="1">
+    Cohen, I. Bernard,
+    <span>Guide to Newton’s</span>
+    Principia (part of the new English translation of the
+    <span>Principia</span>
+    , listed above).
+  </div>
+  <div data-orig-len="35" id="2">
+    Cohen, I. Bernard,
+    <span>
+      Introduction to Newton’s “Principia”
+    </span>
+    (Cambridge, MA: Harvard University Press; Cambridge: Cambridge University Press, 1971).
+  </div>
+  <div data-orig-len="31" id="3">
+    de Gandt, François,
+    <span>Force and Geometry in Newton’s</span>
+    Principia, trans. Curtis Wilson (Princeton: Princeton University Press, 1995).
+  </div>
+  <div data-orig-len="39" id="4">
+    Densmore, Dana,
+    <span>Newton’s</span>
+    Principia:
+    <span>The Central Argument</span>
+    , with translations and illustrations by William Donahue (Santa Fe, New Mexico: Green Lion Press, 1995).
+  </div>
+  <div data-orig-len="25" id="5">
+    <span id="6">DiSalle</span>
+    , Robert, “Space-Time Theory as Physical Geometry,”
+    <span id="7">Erkenntnis42</span>
+    (1995), 317–37.
+  </div>
+  <div data-orig-len="47" id="8">
+    <span id="9">Dobson</span>
+    , Geoffrey J., “Newton’s Problems with Rigid Body Dynamics in the Light of his Treatment of the Precession of the Equinoxes,”
+    <span id="10">
+      Archive for History of Exact Sciences53
+    </span>
+    (1998), 125–45.
+  </div>
+  <div data-orig-len="34" id="11">
+    Earman, John,
+    <span>
+      World Enough and Space-Time: Absolute versus Relational Theories of Space and Time
+    </span>
+    (Cambridge, MA: MIT Press, 1989).
+  </div>
+  <div data-orig-len="43" id="12">
+    <span id="13">Earman</span>
+    , John and
+    <span id="14">Friedman</span>
+    , Michael, “The Meaning and Status of Newton’s Law of Inertia and the Nature of Gravitational Forces,”
+    <span id="15">Philosophy of Science40</span>
+    (1973), 329–59.
+  </div>
+  <div data-orig-len="45" id="16">
+    <span id="17">Ehrlichson</span>
+    , Herman, “The Visualization of Quadratures in the Mystery of Corollary 3 to Proposition 41 of Newton’s
+    <span id="18">Principia</span>
+    ,”
+    <span id="19">Historia Mathematica21</span>
+    (1994), 145–51.
+  </div>
+  <div data-orig-len="45" id="20">
+    Guicciardini, Niccolò,
+    <span>Reading the</span>
+    Principia:
+    <span>
+      The Debate on Newton’s Mathematical Methods for Natural Philosophy from 1687 to 1736
+    </span>
+    (Cambridge: Cambridge University Press, 1999).
+  </div>
+  <div data-orig-len="58" id="21">
+    Harper, William, “Isaac Newton on Empirical Success and Scientific Method,” in John Earman and John D. Norton (eds.),
+    <span>
+      The Cosmos of Science: Essays of Exploration
+    </span>
+    (Pittsburgh: University of Pittsburgh Press, 1997), pp. 55–86.
+  </div>
+  <div data-orig-len="76" id="22">
+    Harper, William, “Measurement and Approximation: Newton’s Inferences from Phenomena versus Glymour’s Bootstrap Confirmation,” in P. Weingartner, G. Schurz, and G. Dorn (eds.),
+    <span>
+      The Role of Pragmatics in Contemporary Philosophy
+    </span>
+    (Vienna: Hölder-Pichler-Tempsky, 1998), pp. 65–87.
+  </div>
+  <div data-orig-len="41" id="23">
+    Herivel, John,
+    <span>The Background to Newton’s</span>
+    Principia:
+    <span>
+      A Study of Newton’s Dynamical Researches in the Years 1664–84
+    </span>
+    (Oxford: Clarendon Press, 1965).
+  </div>
+  <div data-orig-len="35" id="24">
+    Kollerstrom, Nicholas,
+    <span>
+      Newton’s Forgotten Lunar Theory: His Contribution to the Quest for Longitude
+    </span>
+    (Santa Fe, New Mexico: Green Lion Press, 2000).
+  </div>
+  <div data-orig-len="51" id="25">
+    Lakatos, Imre, “Newton’s Effect on Scientific Standards,” in
+    <span>
+      The Methodology of Scientific Research Programmes, Philosophical Papers
+    </span>
+    , vol. 1 (Cambridge: Cambridge University Press, 1978), pp. 193–222.
+  </div>
+  <div data-orig-len="31" id="26">
+    <span id="27">Nauenberg</span>
+    , Michael, “Newton’s Early Computational Method for Dynamics,”
+    <span id="28">
+      Archive for History of Exact Sciences46
+    </span>
+    (1994), 221–52.
+  </div>
+  <div data-orig-len="33" id="29">
+    <span id="30">Nauenberg</span>
+    , Michael, “Hooke, Orbital Motion and Newton’s
+    <span id="31">Principia</span>
+    ,”
+    <span id="32">American Journal of Physics62</span>
+    (1994), 331–50.
+  </div>
+  <div data-orig-len="47" id="33">
+    Nauenberg, Michael “Newton’s Portsmouth Perturbation Method and its Application to Lunar Motion,” in Dalitz and Nauenberg (eds.),
+    <span>
+      The Foundations of Newtonian Scholarship
+    </span>
+    , listed above, pp. 167–94.
+  </div>
+</xml>
+```
+
+Translated text:
+科恩，I. 伯纳德，《牛顿〈原理〉指南》（新版《原理》英译本的一部分，见上文所列）。
+
+科恩，I. 伯纳德，《牛顿〈原理〉导论》（马萨诸塞州剑桥：哈佛大学出版社；剑桥：剑桥大学出版社，1971年）。
+
+德甘特，弗朗索瓦，《牛顿〈原理〉中的力与几何学》，柯蒂斯·威尔逊译（普林斯顿：普林斯顿大学出版社，1995年）。
+
+登斯莫尔，达纳，《牛顿〈原理〉：核心论证》，威廉·多纳休翻译并插图（新墨西哥州圣达菲：绿狮出版社，1995年）。
+
+迪萨勒，罗伯特，“作为物理几何的时空理论”，《认识》第42期（1995年），第317–337页。
+
+多布森，杰弗里·J.，“从牛顿对岁差处理的视角看其刚体动力学问题”，《精密科学史档案》第53期（1998年），第125–145页。
+
+厄尔曼，约翰，《世界与时空：绝对与相对的时空理论》（马萨诸塞州剑桥：麻省理工学院出版社，1989年）。
+
+厄尔曼，约翰与弗里德曼，迈克尔，“牛顿惯性定律的意义与地位及引力的本质”，《科学哲学》第40期（1973年），第329–359页。
+
+埃利克森，赫尔曼，“牛顿《原理》命题41推论3中求积法的可视化”，《数学史》第21期（1994年），第145–151页。
+
+圭恰迪尼，尼科洛，《阅读〈原理〉：关于牛顿自然哲学数学方法的争论（1687–1736）》（剑桥：剑桥大学出版社，1999年）。
+
+哈珀，威廉，“艾萨克·牛顿论经验成功与科学方法”，载于约翰·厄尔曼与约翰·D. 诺顿编，《科学的宇宙：探索文集》（匹兹堡：匹兹堡大学出版社，1997年），第55–86页。
+
+哈珀，威廉，“测量与近似：牛顿从现象中的推论与格莱莫尔的引导确认”，载于P. 魏因加特纳、G. 舒尔茨与G. 多恩编，《语用学在当代哲学中的作用》（维也纳：赫尔德-皮希勒-滕普斯基出版社，1998年），第65–87页。
+
+赫里维尔，约翰，《牛顿〈原理〉的背景：牛顿1664–84年间动力学研究之考察》（牛津：克拉伦登出版社，1965年）。
+
+科勒斯特罗姆，尼古拉斯，《牛顿被遗忘的月球理论：他对经度探索的贡献》（新墨西哥州圣达菲：绿狮出版社，2000年）。
+
+拉卡托斯，伊姆雷，“牛顿对科学标准的影响”，载于《科学研究纲领方法论》，《哲学论文》第1卷（剑桥：剑桥大学出版社，1978年），第193–222页。
+
+瑙恩伯格，迈克尔，“牛顿早期的动力学计算方法”，《精密科学史档案》第46期（1994年），第221–252页。
+
+瑙恩伯格，迈克尔，“胡克、轨道运动与牛顿的《原理》”，《美国物理学杂志》第62期（1994年），第331–350页。
+
+瑙恩伯格，迈克尔，“牛顿的朴茨茅斯摄动方法及其在月球运动中的应用”，载于达利茨与瑙恩伯格编，《牛顿学术的基础》，见上文所列，第167–194页。

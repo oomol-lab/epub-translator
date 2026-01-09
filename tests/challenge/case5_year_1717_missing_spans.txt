@@ -1,0 +1,96 @@
+Source text:
+...  print so quickly.
+
+Leibniz clearly believed that Newton directed Clarke’s pen. It may have been so; but there is no firm evidence that Newton did not isolate himself as completely from Clarke as he had previously from Cotes and would later attempt to do from Des Maizeaux. For the death of Leibniz, while it ended the philosophical discussions, by no means brought a cessation of mathematical irritation. Exchanges between the antagonists continued until at least 1720; some of them were published in the literary journals. In the final years of his life Leibniz began a documentary statement of his own mathematical evolution, Historia et Origo Calculi Differentialis, unfinished and unpublished till the nineteenth century. Newton wrote a last important letter on the issues to the Abbé Conti, in February 1716; the original is lost.52 In this Newton, besides rehearsing many familiar points in dispute, drew attention to Leibniz’s admission in the Acta (1700) that no one before Newton and himself had original knowledge of the calculus, and that Newton was the first to prove his knowledge by example, in the Principia. Challenge problems continued to be directed against the English: Leibniz’s “orthogonals” problem of November 171553 was followed by Keill’s challenge (1717) to Johann Bernoulli to solve the general problem of ballistics: what is the trajectory in a resisting medium such as air?54 This was an unfair problem in that Keill had not solved it, and never did; Bernoulli published appropriate differential equations in the Acta Eruditorum of May 1719. The equations do not admit of an exact integration. After this humiliation of the English, whose honor was partly redeemed by Brook Taylor, it remains only to note the penultimate major publication bearing on the quarrel between Newton and Leibniz, Pierre Des Maizeaux’s Recueil de diverses pièces sur la philosophie, la religion naturelle, l’histoire, les mathématiques etc. (Amsterdam, 1720).55 The editor was a Huguenot refugee, in England from 1699, who (like Newton) won the patronage of Charles Montagu, earl of Halifax. His plans for the book were never fully realized: he published only the second edition of the Leibniz–Clarke correspondence (in French) and Newton only gave him small help (and some hindrance) in printing the selection of correspondence in the second volume. Newton was pleased subsequently to declare (not quite truthfully!) that he had had no hand in the book.
+
+While Newton’s star rose slowly on the Continent from about 1706 with the publication of the Latin Opticks, Leibniz’s chief shieldbearer, Johann I Bernoulli, never yielded his position. To the end he supported Leibniz’s invention of calculus and his planetary vortices. Yet, with the eager encouragement of Pierre Varignon, Bernoulli made an effort to effect a personal reconciliation with Newton by clearing himself of false accusations. If only flattery were all! He addressed Newton as “a man of divine genius of whom our age has no equal”; Newton’s optical discovery was “more enduring than any bronze, and one to be more greatly prized by posterity than it is now.”56 But Newton was never more than formally correct in return. He could never forgive the “eminent mathematician” who had so strongly buttressed Leibniz’s false claims (as he saw them). Perhaps in this volume Newton may be given the last word, from a draft written for Des Maizeaux in 1718: 
+
+If Mr Leibnitz could have made a good objection against the Commercium Epistolicum, he might have done it in a short letter without writing another book as big. But this book being matter of fact & unanswerable he treated it with opprobrious language & avoided answering it by several excuses, & then laying it aside by appealing to the judgment of his friend Mr Bernoulli & by writing to his friends at Court, & by running the dispute into a squabble about a Vacuum, & Atoms, & universal gravity, & occult qualities, & Miracles, & the Sensorium of God, & the perfection of the world, & the nature of time & space, & the solving of Problemes, & the Question whether he did not find the Differential Method proprio marte: all of which are nothing to the purpose . . . The proper question is: Who was the first Inventor?57
+
+To that question at least there is now a clear answer.
+
+XML template:
+```XML
+<xml>
+  <p data-orig-len="6" id="1">...  print so quickly.</p>
+  <p data-orig-len="524" id="2">
+    Leibniz clearly believed that Newton directed Clarke’s pen. It may have been so; but there is no firm evidence that Newton did not isolate himself as completely from Clarke as he had previously from Cotes and would later attempt to do from Des Maizeaux. For the death of Leibniz, while it ended the philosophical discussions, by no means brought a cessation of mathematical irritation. Exchanges between the antagonists continued until at least 1720; some of them were published in the literary journals. In the final years of his life Leibniz began a documentary statement of his own mathematical evolution,
+    <span id="3">
+      Historia et Origo Calculi Differentialis
+    </span>
+    , unfinished and unpublished till the nineteenth century. Newton wrote a last important letter on the issues to the Abbé Conti, in February 1716; the original is lost.
+    <span id="4">
+      <a>
+        <sup>52</sup>
+      </a>
+    </span>
+    In this Newton, besides rehearsing many familiar points in dispute, drew attention to Leibniz’s admission in the
+    <span id="5">Acta</span>
+    (1700) that no one before Newton and himself had original knowledge of the calculus, and that Newton was the first to prove his knowledge by example, in the
+    <span id="6">Principia</span>
+    . Challenge problems continued to be directed against the English: Leibniz’s “orthogonals” problem of November 1715
+    <span id="7">
+      <a>
+        <sup>53</sup>
+      </a>
+    </span>
+    was followed by Keill’s challenge (1717) to Johann Bernoulli to solve the general problem of ballistics: what is the trajectory in a resisting medium such as air?
+    <span id="8">
+      <a>
+        <sup>54</sup>
+      </a>
+    </span>
+    This was an unfair problem in that Keill had not solved it, and never did; Bernoulli published appropriate differential equations in the
+    <span id="9">Acta Eruditorum</span>
+    of May 1719. The equations do not admit of an exact integration. After this humiliation of the English, whose honor was partly redeemed by Brook Taylor, it remains only to note the penultimate major publication bearing on the quarrel between Newton and Leibniz, Pierre Des Maizeaux’s
+    <span id="10">
+      Recueil de diverses pièces sur la philosophie, la religion naturelle, l’histoire, les mathématiques etc
+    </span>
+    . (Amsterdam, 1720).
+    <span id="11">
+      <a>
+        <sup>55</sup>
+      </a>
+    </span>
+    The editor was a Huguenot refugee, in England from 1699, who (like Newton) won the patronage of Charles Montagu, earl of Halifax. His plans for the book were never fully realized: he published only the
+    <span id="12">second</span>
+    edition of the Leibniz–Clarke correspondence (in French) and Newton only gave him small help (and some hindrance) in printing the selection of correspondence in the second volume. Newton was pleased subsequently to declare (not quite truthfully!) that he had had no hand in the book.
+  </p>
+  <p data-orig-len="213" id="13">
+    While Newton’s star rose slowly on the Continent from about 1706 with the publication of the Latin
+    <span id="14">Opticks</span>
+    , Leibniz’s chief shieldbearer, Johann I Bernoulli, never yielded his position. To the end he supported Leibniz’s invention of calculus and his planetary vortices. Yet, with the eager encouragement of Pierre Varignon, Bernoulli made an effort to effect a personal reconciliation with Newton by clearing himself of false accusations. If only flattery were all! He addressed Newton as “a man of divine genius of whom our age has no equal”; Newton’s optical discovery was “more enduring than any bronze, and one to be more greatly prized by posterity than it is now.”
+    <span id="15">
+      <a>
+        <sup>56</sup>
+      </a>
+    </span>
+    But Newton was never more than formally correct in return. He could never forgive the “eminent mathematician” who had so strongly buttressed Leibniz’s false claims (as he saw them). Perhaps in this volume Newton may be given the last word, from a draft written for Des Maizeaux in 1718:
+  </p>
+  <p data-orig-len="186" id="16">
+    If Mr Leibnitz could have made a good objection against the Commercium Epistolicum, he might have done it in a short letter without writing another book as big. But this book being matter of fact & unanswerable he treated it with opprobrious language & avoided answering it by several excuses, & then laying it aside by appealing to the judgment of his friend Mr Bernoulli & by writing to his friends at Court, & by running the dispute into a squabble about a Vacuum, & Atoms, & universal gravity, & occult qualities, & Miracles, & the Sensorium of God, & the perfection of the world, & the nature of time & space, & the solving of Problemes, & the Question whether he did not find the Differential Method
+    <span id="17">proprio marte</span>
+    : all of which are nothing to the purpose . . . The proper question is: Who was the first Inventor?
+    <span id="18">
+      <a>
+        <sup>57</sup>
+      </a>
+    </span>
+  </p>
+  <p data-orig-len="12" id="19">
+    To that question at least there is now a clear answer.
+  </p>
+</xml>
+```
+
+Translated text:
+... 打印得如此之快。
+
+莱布尼茨显然相信牛顿指挥着克拉克的笔。情况可能确实如此；但没有确凿证据表明牛顿没有像之前与科茨那样、以及后来试图与德·梅佐那样，完全将自己与克拉克隔离开来。因为莱布尼茨的去世，虽然结束了哲学讨论，但绝没有终止数学上的激怒。对立双方之间的交流至少持续到1720年；其中一些发表在文学期刊上。在生命的最后几年，莱布尼茨开始撰写一份关于他自己数学发展的文献性陈述——《微分学的历史与起源》，该书未完成且直到十九世纪才出版。牛顿于1716年2月就这些问题给孔蒂神父写了最后一封重要的信；原件已遗失。52 在这封信中，除了重述许多熟悉的争议点外，牛顿还提请人们注意莱布尼茨在《学报》（1700年）中的承认：在牛顿和他本人之前，没有人对微积分有原创性的知识，并且牛顿是第一个通过《原理》中的例子证明其知识的人。挑战性问题继续针对英国人提出：莱布尼茨1715年11月的“正交线”问题53之后，是凯尔（1717年）向约翰·伯努利提出的挑战：解决弹道学的一般问题——在空气等阻力介质中的轨迹是什么？54 这是一个不公平的问题，因为凯尔没有解决它，也从未解决过；伯努利在1719年5月的《博学学报》上发表了相应的微分方程。这些方程不允许精确积分。在英国人遭受这番羞辱之后（其荣誉部分由布鲁克·泰勒挽回），只剩下关于牛顿与莱布尼茨之争的倒数第二个重要出版物需要提及，即皮埃尔·德·梅佐的《关于哲学、自然宗教、历史、数学等的各类文集》（阿姆斯特丹，1720年）。55 编辑是一位胡格诺派难民，自1699年起生活在英国，他（像牛顿一样）赢得了哈利法克斯伯爵查尔斯·蒙塔古的庇护。他对这本书的计划从未完全实现：他只出版了莱布尼茨-克拉克通信集的第二版（法语版），而牛顿在印刷第二卷的通信选集时只给了他很少的帮助（和一些阻碍）。牛顿后来高兴地宣称（不完全真实！）他与这本书毫无关系。
+
+虽然牛顿的声望从大约1706年拉丁文版《光学》出版后在大陆上缓慢上升，但莱布尼茨的主要支持者约翰一世·伯努利从未放弃他的立场。直到最后，他都支持莱布尼茨发明微积分和他的行星涡旋理论。然而，在皮埃尔·瓦里尼翁的热切鼓励下，伯努利努力通过澄清对自己的错误指控来实现与牛顿的个人和解。如果仅仅是奉承就好了！他称牛顿为“我们时代无与伦比的天才”；牛顿的光学发现“比任何青铜更持久，并将被后代比现在更珍视”。56 但牛顿的回应最多只是形式上得体。他永远无法原谅那位“杰出的数学家”，因为他（在牛顿看来）如此有力地支持了莱布尼茨的错误主张。也许在这卷书中，可以给牛顿最后发言权，这是他在1718年为德·梅佐起草的一段话：
+
+如果莱布尼茨先生能对《通信集》提出一个有力的反对意见，他本可以在一封短信中做到，而不必再写一本同样厚的书。但这本书基于事实且无法反驳，他便用辱骂性的语言对待它，并以各种借口避免回答，然后通过诉诸他的朋友伯努利先生的判断、写信给他在宫廷的朋友、将争论变成关于真空、原子、万有引力、隐秘性质、奇迹、上帝的感知中枢、世界的完美性、时间与空间的本质、问题的解决、以及他是否不是凭一己之力发现微分方法等问题的争吵来搁置它：所有这些都与主题无关……恰当的问题是：谁是第一个发明者？57
+
+至少对于那个问题，现在有了明确的答案。
+
