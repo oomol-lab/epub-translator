@@ -135,14 +135,20 @@ class XMLInterrupter:
             yield text_segment
             return
 
-        raw_text_segments = self._raw_text_segments.pop(interrupted_id, None)
+        # 修复：使用 .get() 而不是 .pop()，避免在双语输出时缓存被第一次访问就删除
+        raw_text_segments = self._raw_text_segments.get(interrupted_id, None)
         if not raw_text_segments:
+            # 修复：如果缓存为空，输出翻译的内容而不是丢弃
+            yield text_segment
             return
 
         raw_block = raw_text_segments[0].parent_stack[0]
         if not self._is_inline_math(raw_block):
+            # 修复：如果不是 inline math，输出翻译的内容而不是丢弃
+            yield text_segment
             return
 
+        # 对于 inline math，输出原始公式内容
         for raw_text_segment in raw_text_segments:
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
             yield raw_text_segment

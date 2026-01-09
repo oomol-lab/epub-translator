@@ -31,6 +31,7 @@ class XMLStreamMapper:
         current_element: Element | None = None
         mapping_buffer: list[InlineSegmentMapping] = []
 
+        # FIXME: 这样会将整个 EPUB 加载，而不是一章一章处理。_expand_to_resources 的嵌套结构翻了，它应该在外面，这里在里面
         for head, body, tail in self._split_into_groups(
             resources=self._expand_to_resources(
                 elements=elements,
