@@ -109,18 +109,24 @@ SPECIAL CASES:
 
 1. data-orig-len attribute: Token count of original text. Use as hint for identifying elements.
 
-2. Tightly coupled text (journal names + numbers, etc.):
-   When template has "<span id="X">Journal Name42</span>" (name+number as one unit):
-   - In translation, find the journal name equivalent
-   - If the number appears adjacent (e.g., "《期刊名》第42期"), wrap the full semantic unit
-   - Example: <span id="19">《数学史》第21期</span> for "Historia Mathematica21"
+2. Text with tightly attached numbers (NO space between name and number):
+   Template: "<span id="X">JournalName42</span>" (name and number as ONE continuous string)
+
+   Challenge: AI may want to separate "JournalName" and "42", but template treats them as one unit.
+
+   Solution: When you find the translated journal/book name, check if a number appears immediately after:
+   - If YES: wrap BOTH together in same span
+   - Example: "Journal Title" has "42" right after → <span id="X">《期刊名》42</span>
+   - Example: Translation adds text between → <span id="X">《期刊名》</span>第42期 (WRONG - breaks continuity)
+
+   Key: The number is PART OF the same semantic unit, not a separate element.
 
 3. Translation merges adjacent spans into inseparable compound:
-   Template: "<span id="1">Word1</span> & <span id="2">Word2</span>"
-   Translation: "复合词" (merged into single inseparable term)
-   Solution: Keep source for one span, wrap compound with the other
-   Example: <span id="16">《教条与实验化学基础》</span>与<span id="17">Experimentalis</span>
-   (Only use when breaking compound creates meaningless fragments)
+   Template: "<span id="A">Part1</span> & <span id="B">Part2</span>"
+   Translation: "组合词" (merged into single inseparable term where breaking creates fragments)
+   Solution: Keep source text for one span, wrap compound with the other
+   Example: <span id="A">《组合词》</span>与<span id="B">Part2</span>
+   (Only use when semantic matching exhausted and breaking truly creates meaningless fragments)
 
 4. When translation simplifies/omits elements:
    - First: Exhaust semantic matching (synonyms, paraphrases, merged concepts)
