@@ -1,7 +1,7 @@
 from collections.abc import Callable, Generator, Iterable, Iterator
 from xml.etree.ElementTree import Element
 
-from resource_segmentation import Resource, Segment, split
+from resource_segmentation import Group, Resource, Segment, split
 from tiktoken import Encoding
 
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
@@ -31,54 +31,83 @@ class XMLStreamMapper:
         current_element: Element | None = None
         mapping_buffer: list[InlineSegmentMapping] = []
 
-        for element in elements:
-            # TODO: 使用 peak 将片段进一步融合
-            for head, body, tail in self._split_into_groups(
-                resources=self._expand_to_resources(element, callbacks),
-            ):
-                target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-                for origin, target in zip(body, target_body):
-                    origin_element = origin.head.root
-                    if current_element is None:
-                        current_element = origin_element
+        for group in self._split_into_serial_groups(elements, callbacks):
+            head, body, tail = self._truncate_and_transform_group(group)
+            target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
+            for origin, target in zip(body, target_body, strict=False):
+                origin_element = origin.head.root
+                if current_element is None:
+                    current_element = origin_element
 
-                    if id(current_element) != id(origin_element):
-                        yield current_element, mapping_buffer
-                        current_element = origin_element
-                        mapping_buffer = []
+                if id(current_element) != id(origin_element):
+                    yield current_element, mapping_buffer
+                    current_element = origin_element
+                    mapping_buffer = []
 
-                    if target:
-                        block_element, text_segments = target
-                        block_element = callbacks.interrupt_block_element(block_element)
-                        text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
-                        if text_segments:
-                            mapping_buffer.append((block_element, text_segments))
+                if target:
+                    block_element, text_segments = target
+                    block_element = callbacks.interrupt_block_element(block_element)
+                    text_segments = list(callbacks.interrupt_translated_text_segments(text_segments))
+                    if text_segments:
+                        mapping_buffer.append((block_element, text_segments))
 
         if current_element is not None:
             yield current_element, mapping_buffer
 
-    def _split_into_groups(self, resources: Iterable[Resource[InlineSegment]]):
-        for group in split(
-            max_segment_count=self._max_group_tokens,
-            border_incision=_PAGE_INCISION,
-            resources=iter(resources),
-        ):
-            head = list(
-                self._truncate_inline_segments(
-                    inline_segments=self._expand_inline_segments(group.head),
-                    remain_head=False,
-                    remain_count=group.head_remain_count,
+    def _split_into_serial_groups(self, elements: Iterable[Element], callbacks: Callbacks):
+        def generate():
+            for element in elements:
+                yield from split(
+                    max_segment_count=self._max_group_tokens,
+                    border_incision=_PAGE_INCISION,
+                    resources=self._expand_to_resources(element, callbacks),
                 )
+
+        generator = generate()
+        group = next(generator, None)
+        if group is None:
+            return
+
+        # head + body * N (without tail)
+        sum_count = group.head_remain_count + sum(x.count for x in self._expand_resource_segments(group.body))
+
+        while True:
+            next_group = next(generator, None)
+            if next_group is None:
+                break
+
+            next_sum_body_count = sum(x.count for x in self._expand_resource_segments(next_group.body))
+            next_sum_count = sum_count + next_sum_body_count
+
+            if next_sum_count + next_group.tail_remain_count > self._max_group_tokens:
+                yield group
+                group = next_group
+                sum_count = group.head_remain_count + next_sum_body_count
+            else:
+                group.body.extend(next_group.body)
+                group.tail = next_group.tail
+                group.tail_remain_count = next_group.tail_remain_count
+                sum_count = next_sum_count
+
+        yield group
+
+    def _truncate_and_transform_group(self, group: Group[InlineSegment]):
+        head = list(
+            self._truncate_inline_segments(
+                inline_segments=self._expand_inline_segments(group.head),
+                remain_head=False,
+                remain_count=group.head_remain_count,
             )
-            body = list(self._expand_inline_segments(group.body))
-            tail = list(
-                self._truncate_inline_segments(
-                    inline_segments=self._expand_inline_segments(group.tail),
-                    remain_head=True,
-                    remain_count=group.tail_remain_count,
-                )
+        )
+        body = list(self._expand_inline_segments(group.body))
+        tail = list(
+            self._truncate_inline_segments(
+                inline_segments=self._expand_inline_segments(group.tail),
+                remain_head=True,
+                remain_count=group.tail_remain_count,
             )
-            yield head, body, tail
+        )
+        return head, body, tail
 
     def _expand_to_resources(self, element: Element, callbacks: Callbacks):
         def expand(element: Element):
@@ -132,12 +161,15 @@ class XMLStreamMapper:
         yield from search_inline_segments(truncated_text_segments)
 
     def _expand_inline_segments(self, items: list[Resource[InlineSegment] | Segment[InlineSegment]]):
+        for resource in self._expand_resource_segments(items):
+            yield resource.payload
+
+    def _expand_resource_segments(self, items: list[Resource[InlineSegment] | Segment[InlineSegment]]):
         for item in items:
             if isinstance(item, Resource):
-                yield item.payload
+                yield item
             elif isinstance(item, Segment):
-                for resource in item.resources:
-                    yield resource.payload
+                yield from item.resources
 
     def _truncate_text_segments(self, text_segments: Iterable[TextSegment], remain_head: bool, remain_count: int):
         if remain_head:
