@@ -1,0 +1,154 @@
+Source text:
+...  or possibly Berkeley.
+
+14 To avoid a clutter of references and footnotes, I list here the range of pages in Book 1 of Maclaurin’s Account where the reader can find the material that follows: pp. 4–5, 14–15, 29–30, 65–6, 76–7, 78, 79, 82–4, 86, 89–90, 94–6.
+
+15 For the only comprehensive commentary on the Leibniz–Clarke correspondence, see Ezio Vailati, Leibniz and Clarke: A Study of Their Correspondence (Oxford: Oxford University Press, 1997).
+
+16 There is strong support for this claim, grounded on other considerations, in James E. Force, “The God of Abraham and Isaac (Newton),” in James E. Force and Richard H. Popkin (eds.), The Books of Nature and Scripture (Dordrecht: Kluwer, 1994), pp. 179–200, esp. p. 180.
+
+17 Steven Nadler, “Doctrines of Explanation in Late Scholasticism and in the Mechanical Philosophy,” in Daniel Garber and Michael Ayers (eds.), The Cambridge History of Seventeenth-Century Philosophy (Cambridge: Cambridge University Press, 1998), pp. 513–52.
+
+18 G. E. Stahl, Fundamenta Chymiae Dogmaticae & Experimentalis (Nuremberg, 1723), Preface, quoted in J. R. Partington, A History of Chemistry (London: Macmillan, 1961–70), vol. 2, p. 665. Georg Ernst Stahl (1660–1734) was the principal architect of the phlogiston theory.
+
+19 For more on this background and on the tricky problem of Newton’s conception of the discipline of “mechanics,” see my “Newton’s Mathematical Principles of Natural Philosophy: A Treatise on ‘Mechanics’?,” in P. M. Harman and Alan E. Shapiro (eds.), The Investigation of Difficult Things (Cambridge: Cambridge University Press, 1992), pp. 305–22.
+
+20 “Advices to his Son,” Petworth House MS, HMC 24/2, fols. 30–31. I am indebted to Stephen Clucas for this quotation and reference.
+
+21 Thomas Sprat, The History of the Royal Society (London, 1667), p. 329.
+
+22 Henry Power, Experimental Philosophy (London, 1664), “The Preface to the Ingenious Reader.” Newton too hoped for a time when improved microscopes would show all of the ultimate corpuscles on which the colors of bodies depend, “but those which produce blackness.” Opticks (1730), Book 2, Part 3, Proposition 7, p. 261. The passage first appeared in the “Discourse of Observations,” which Newton enclosed with “An Hypothesis explaining the Properties of Light discoursed of in my severall Papers” in his letter to Oldenburg of 7 December 1675: The Correspondence of Isaac Newton, vol. 1, ed. H. W. Turnbull (Cambridge: Cambridge University Press, 1959), p. 391.
+
+23 See for example The Origin of Forms and Qualities (1666): Robert Boyle, Selected Philosophical Papers (Manchester: Manchester University Press and New York: Barnes and Noble, 1979), pp. 74–9. Also my “Newton’s Mathematical Principles of Natural Philosophy,” pp. 313–15.
+
+XML template:
+```XML
+<xml>
+  <p data-orig-len="6" id="1">...  or possibly Berkeley.</p>
+  <p data-orig-len="89" id="2">
+    <span id="3">
+      <a>14</a>
+    </span>
+    To avoid a clutter of references and footnotes, I list here the range of pages in Book 1 of Maclaurin’s
+    <span id="4">Account</span>
+    where the reader can find the material that follows: pp. 4–5, 14–15, 29–30, 65–6, 76–7, 78, 79, 82–4, 86, 89–90, 94–6.
+  </p>
+  <p data-orig-len="46" id="5">
+    <span id="6">
+      <a>15</a>
+    </span>
+    For the only comprehensive commentary on the Leibniz–Clarke correspondence, see Ezio Vailati,
+    <span id="7">
+      Leibniz and Clarke: A Study of Their Correspondence
+    </span>
+    (Oxford: Oxford University Press, 1997).
+  </p>
+  <p data-orig-len="78" id="8">
+    <span id="9">
+      <a>16</a>
+    </span>
+    There is strong support for this claim, grounded on other considerations, in James E. Force, “The God of Abraham and Isaac (Newton),” in James E. Force and Richard H. Popkin (eds.),
+    <span id="10">The Books of Nature and Scripture</span>
+    (Dordrecht: Kluwer, 1994), pp. 179–200, esp. p. 180.
+  </p>
+  <p data-orig-len="63" id="11">
+    <span id="12">
+      <a>17</a>
+    </span>
+    Steven Nadler, “Doctrines of Explanation in Late Scholasticism and in the Mechanical Philosophy,” in Daniel Garber and Michael Ayers (eds.),
+    <span id="13">
+      The Cambridge History of Seventeenth-Century Philosophy
+    </span>
+    (Cambridge: Cambridge University Press, 1998), pp. 513–52.
+  </p>
+  <p data-orig-len="88" id="14">
+    <span id="15">
+      <a>18</a>
+    </span>
+    G. E. Stahl,
+    <span id="16">Fundamenta Chymiae Dogmaticae</span>
+    &
+    <span id="17">Experimentalis</span>
+    (Nuremberg, 1723), Preface, quoted in J. R. Partington,
+    <span id="18">A History of Chemistry</span>
+    (London: Macmillan, 1961–70), vol. 2, p. 665. Georg Ernst Stahl (1660–1734) was the principal architect of the phlogiston theory.
+  </p>
+  <p data-orig-len="83" id="19">
+    <span id="20">
+      <a>19</a>
+    </span>
+    For more on this background and on the tricky problem of Newton’s conception of the discipline of “mechanics,” see my “Newton’s
+    <span id="21">
+      Mathematical Principles of Natural Philosophy
+    </span>
+    : A Treatise on ‘Mechanics’?,” in P. M. Harman and Alan E. Shapiro (eds.),
+    <span id="22">
+      The Investigation of Difficult Things
+    </span>
+    (Cambridge: Cambridge University Press, 1992), pp. 305–22.
+  </p>
+  <p data-orig-len="42" id="23">
+    <span>
+      <a>20</a>
+    </span>
+    “Advices to his Son,” Petworth House MS, HMC 24/2, fols. 30–31. I am indebted to Stephen Clucas for this quotation and reference.
+  </p>
+  <p data-orig-len="23" id="24">
+    <span id="25">
+      <a>21</a>
+    </span>
+    Thomas Sprat,
+    <span id="26">The History of the Royal Society</span>
+    (London, 1667), p. 329.
+  </p>
+  <p data-orig-len="166" id="27">
+    <span id="28">
+      <a>22</a>
+    </span>
+    Henry Power,
+    <span id="29">Experimental Philosophy</span>
+    (London, 1664), “The Preface to the Ingenious Reader.” Newton too hoped for a time when improved microscopes would show all of the ultimate corpuscles on which the colors of bodies depend, “but those which produce blackness.”
+    <span id="30">Opticks</span>
+    (1730), Book 2, Part 3, Proposition 7, p. 261. The passage first appeared in the “Discourse of Observations,” which Newton enclosed with “An Hypothesis explaining the Properties of Light discoursed of in my severall Papers” in his letter to Oldenburg of 7 December 1675:
+    <span id="31">The Correspondence of Isaac Newton</span>
+    , vol. 1, ed. H. W. Turnbull (Cambridge: Cambridge University Press, 1959), p. 391.
+  </p>
+  <p data-orig-len="65" id="32">
+    <span id="33">
+      <a>23</a>
+    </span>
+    See for example
+    <span id="34">The Origin of Forms and Qualities</span>
+    (1666): Robert Boyle,
+    <span id="35">Selected Philosophical Papers</span>
+    (Manchester: Manchester University Press and New York: Barnes and Noble, 1979), pp. 74–9. Also my “Newton’s
+    <span id="36">
+      Mathematical Principles of Natural Philosophy
+    </span>
+    ,” pp. 313–15.
+  </p>
+</xml>
+```
+
+Translated text:
+... 或者可能是伯克利。
+
+14 为了避免参考文献和脚注的杂乱，我在此列出麦克劳林《记述》第一卷中的页码范围，读者可以在这些页面中找到后续内容：第4–5页、14–15页、29–30页、65–6页、76–7页、78页、79页、82–4页、86页、89–90页、94–6页。
+
+15 关于莱布尼茨-克拉克通信的唯一全面评论，参见埃齐奥·瓦拉蒂，《莱布尼茨与克拉克：他们的通信研究》（牛津：牛津大学出版社，1997年）。
+
+16 这一主张在其他考虑的基础上得到了强有力的支持，见詹姆斯·E·福斯，“亚伯拉罕和以撒的上帝（牛顿）”，载于詹姆斯·E·福斯和理查德·H·波普金编，《自然与圣经之书》（多德雷赫特：克鲁维尔，1994年），第179–200页，尤其是第180页。
+
+17 史蒂文·纳德勒，“晚期经院哲学和机械哲学中的解释学说”，载于丹尼尔·加伯和迈克尔·艾尔斯编，《剑桥十七世纪哲学史》（剑桥：剑桥大学出版社，1998年），第513–52页。
+
+18 G. E. 斯塔尔，《教条与实验化学基础》（纽伦堡，1723年），前言，引自J. R. 帕廷顿，《化学史》（伦敦：麦克米伦，1961–70年），第2卷，第665页。格奥尔格·恩斯特·斯塔尔（1660–1734）是燃素理论的主要构建者。
+
+19 关于这一背景以及牛顿对“力学”学科概念的棘手问题，更多内容参见我的“牛顿的自然哲学的数学原理：一篇关于‘力学’的论文？”，载于P. M. 哈曼和艾伦·E·夏皮罗编，《困难事物的探究》（剑桥：剑桥大学出版社，1992年），第305–22页。
+
+20 “给儿子的建议”，佩特沃思宫手稿，HMC 24/2，第30–31页。我感谢斯蒂芬·克卢卡斯提供这一引文和参考文献。
+
+21 托马斯·斯普拉特，《皇家学会史》（伦敦，1667年），第329页。
+
+22 亨利·鲍尔，《实验哲学》（伦敦，1664年），“致聪慧读者的前言”。牛顿也曾希望有一天改进的显微镜能够显示所有决定物体颜色的终极微粒，“除了那些产生黑色的微粒”。《光学》（1730年），第二卷，第三部分，命题7，第261页。这段话首次出现在“观察论述”中，牛顿在1675年12月7日给奥尔登堡的信中附上了“解释我几篇论文中讨论的光的性质的假说”和该论述：《艾萨克·牛顿通信集》，第1卷，H. W. 特恩布尔编（剑桥：剑桥大学出版社，1959年），第391页。
+
+23 例如参见《形式与性质的起源》（1666年）：罗伯特·波义耳，《哲学论文选集》（曼彻斯特：曼彻斯特大学出版社和纽约：巴恩斯与诺布尔，1979年），第74–9页。另见我的“牛顿的自然哲学的数学原理”，第313–15页。

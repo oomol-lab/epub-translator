@@ -1,0 +1,164 @@
+Source text:
+... . 36–40, 62–8, 98–102, 155–228, 260–367; cf. Yah. MMS 17.2, fols. 20v–21; 41, fol. 26.
+
+67 Yah. MS 1.1, fols. 1–3r.
+
+68 KMS 3, fols. 1–3; Yah. MS 15.4; Bodmer MS, fols. 36–40; Clark MS, fol. 2r; cf. Bryan W. Ball, The Seventh-Day Men (Oxford: Clarendon Press, 1994); J. C. Davis, "Against Formality: One Aspect of the English Revolution," Transactions of the Royal Historical Society, 6th series, 3 (1993), 265–88.
+
+69 Yah. MS 1.1, fols. 12–18r.
+
+70 Yah. MMS 14, fols. 25, 173; 15.5, fol. 90r; cf. Isaac Newton, The Principia, Mathematical Principles of Natural Philosophy: A New Translation, trans. I. Bernard Cohen and Anne Whitman (Berkeley: University of California Press, 1999), pp. 940–1.
+
+71 KMS 146, fols. 1–4; Yah. MMS 15.5; 15.7; 16; 17; 41; Bodmer MS, chapter 1, fols. 5–30.
+
+72 Isaac Newton, Opticks: or, A Treatise of the Reflections, Refractions, Inflections and Colours of Light, 4th edn (London, 1730; reprinted New York: Dover, 1979), pp. 405–6; Manuel, Isaac Newton, plate facing p. 117.
+
+73 Yah. MS 1.1, fols. 1–10r; cf. Snobelen, "Isaac Newton, heretic," pp. 383–91, 406–7; Martin Mulsow, "Orientalistik im Kontext der sozinianischen und deistischen Debatten um 1700," Scientia Poetica 2 (1998), 27–57; Richard A. Muller, Post-Reformation Reformed Dogmatics, 2 vols. (Grand Rapids, MI: Baker Book House, 1985–93), vol. 2, pp. 465–543.
+
+74 KMS 3.
+
+75 See James Fawket, An Account of the late Reverend and Worthy Dr. George Seignior (London, 1681), pp. 4–13; Charles E. Raven, John Ray: Naturalist, 2nd edn (Cambridge: Cambridge University Press, 1950), pp. 57–61; East Sussex Record Office, Lewes, MMS Dan. 346–59.
+
+76 Cf. Yah. MS 10.2, especially fol. 14v.
+
+77 Jean Le Clerc, Epistolario, ed. Maria Grazia and Mario Sina, 4 vols. (Florence: Olschki, 1987–97), vol. 2, pp. 50–2.
+
+78 BL, MS Add. 32, 415, fol. 388, Hopton Haynes to Rev. C[aspar] Wetstein, 17 August 1736; Leicestershire Record Office, Conant MSS, Barker correspondence, vol. 2, letter 123A (Samuel Crell to William Whiston, ...
+
+XML template:
+```XML
+<xml>
+  <p data-orig-len="54" id="1">
+    ... . 36–40, 62–8, 98–102, 155–228, 260–367; cf. Yah. MMS 17.2, fols. 20v–21; 41, fol. 26.
+  </p>
+  <p data-orig-len="18" id="2">
+    <span>
+      <a>67</a>
+    </span>
+    Yah. MS 1.1, fols. 1–3r.
+  </p>
+  <p data-orig-len="106" id="3">
+    <span id="4">
+      <a>68</a>
+    </span>
+    KMS 3, fols. 1–3; Yah. MS 15.4; Bodmer MS, fols. 36–40; Clark MS, fol. 2r; cf. Bryan W. Ball,
+    <span id="5">The Seventh-Day Men</span>
+    (Oxford: Clarendon Press, 1994); J. C. Davis, "Against Formality: One Aspect of the English Revolution,"
+    <span id="6">
+      Transactions of the Royal Historical Society
+    </span>
+    , 6th series, 3 (1993), 265–88.
+  </p>
+  <p data-orig-len="18" id="7">
+    <span>
+      <a>69</a>
+    </span>
+    Yah. MS 1.1, fols. 12–18r.
+  </p>
+  <p data-orig-len="76" id="8">
+    <span id="9">
+      <a>70</a>
+    </span>
+    Yah. MMS 14, fols. 25, 173; 15.5, fol. 90r; cf. Isaac Newton,
+    <span id="10">
+      The Principia, Mathematical Principles of Natural Philosophy: A New Translation
+    </span>
+    , trans. I. Bernard Cohen and Anne Whitman (Berkeley: University of California Press, 1999), pp. 940–1.
+  </p>
+  <p data-orig-len="52" id="11">
+    <span>
+      <a>71</a>
+    </span>
+    KMS 146, fols. 1–4; Yah. MMS 15.5; 15.7; 16; 17; 41; Bodmer MS, chapter 1, fols. 5–30.
+  </p>
+  <p data-orig-len="69" id="12">
+    <span id="13">
+      <a>72</a>
+    </span>
+    Isaac Newton,
+    <span id="14">
+      Opticks: or, A Treatise of the Reflections, Refractions, Inflections and Colours of Light
+    </span>
+    , 4th edn (London, 1730; reprinted New York: Dover, 1979), pp. 405–6; Manuel,
+    <span id="15">Isaac Newton</span>
+    , plate facing p. 117.
+  </p>
+  <p data-orig-len="130" id="16">
+    <span id="17">
+      <a>73</a>
+    </span>
+    Yah. MS 1.1, fols. 1–10r; cf. Snobelen, "Isaac Newton, heretic," pp. 383–91, 406–7; Martin Mulsow, "Orientalistik im Kontext der sozinianischen und deistischen Debatten um 1700,"
+    <span id="18">Scientia Poetica</span>
+    2 (1998), 27–57; Richard A. Muller,
+    <span id="19">Post-Reformation Reformed Dogmatics</span>
+    , 2 vols. (Grand Rapids, MI: Baker Book House, 1985–93), vol. 2, pp. 465–543.
+  </p>
+  <p data-orig-len="6" id="20">
+    <span>
+      <a>74</a>
+    </span>
+    KMS 3.
+  </p>
+  <p data-orig-len="87" id="21">
+    <span id="22">
+      <a>75</a>
+    </span>
+    See James Fawket,
+    <span id="23">
+      An Account of the late Reverend and Worthy Dr. George Seignior
+    </span>
+    (London, 1681), pp. 4–13; Charles E. Raven,
+    <span id="24">John Ray: Naturalist</span>
+    , 2nd edn (Cambridge: Cambridge University Press, 1950), pp. 57–61; East Sussex Record Office, Lewes, MMS Dan. 346–59.
+  </p>
+  <p data-orig-len="18" id="25">
+    <span>
+      <a>76</a>
+    </span>
+    Cf. Yah. MS 10.2, especially fol. 14v.
+  </p>
+  <p data-orig-len="49" id="26">
+    <span id="27">
+      <a>77</a>
+    </span>
+    Jean Le Clerc,
+    <span id="28">Epistolario</span>
+    , ed. Maria Grazia and Mario Sina, 4 vols. (Florence: Olschki, 1987–97), vol. 2, pp. 50–2.
+  </p>
+  <p data-orig-len="71" id="29">
+    <span>
+      <a>78</a>
+    </span>
+    BL, MS Add. 32, 415, fol. 388, Hopton Haynes to Rev. C[aspar] Wetstein, 17 August 1736; Leicestershire Record Office, Conant MSS, Barker correspondence, vol. 2, letter 123
+    <small>A</small>
+    (Samuel Crell to William Whiston, ...
+  </p>
+</xml>
+```
+
+Translated text:
+... . 第36–40页、62–8页、98–102页、155–228页、260–367页；参见Yah. MMS 17.2，第20v–21对开；41，第26对开。
+
+67 Yah. MS 1.1，第1–3r对开。
+
+68 KMS 3，第1–3对开；Yah. MS 15.4；Bodmer MS，第36–40对开；Clark MS，第2r对开；参见布莱恩·W·鲍尔，《第七日派信徒》（牛津：克拉伦登出版社，1994年）；J. C. 戴维斯，"反对形式主义：英国革命的一个方面"，《皇家历史学会会刊》，第6辑，第3期（1993年），第265–88页。
+
+69 Yah. MS 1.1，第12–18r对开。
+
+70 Yah. MMS 14，第25、173对开；15.5，第90r对开；参见艾萨克·牛顿，《自然哲学的数学原理：新译本》，I. 伯纳德·科恩与安妮·惠特曼译（伯克利：加利福尼亚大学出版社，1999年），第940–1页。
+
+71 KMS 146，第1–4对开；Yah. MMS 15.5；15.7；16；17；41；Bodmer MS，第一章，第5–30对开。
+
+72 艾萨克·牛顿，《光学：或关于光的反射、折射、弯曲和颜色的论述》，第4版（伦敦，1730年；纽约再版：多佛出版社，1979年），第405–6页；曼努埃尔，《艾萨克·牛顿》，第117页对页插图。
+
+73 Yah. MS 1.1，第1–10r对开；参见斯诺贝伦，"艾萨克·牛顿，异端者"，第383–91页、406–7页；马丁·穆尔索，"1700年前后索齐尼派与自然神论争论背景下的东方学研究"，《诗学科学》第2期（1998年），第27–57页；理查德·A·穆勒，《宗教改革后的改革宗教义学》，2卷本（密歇根州大急流城：贝克图书出版社，1985–93年），第2卷，第465–543页。
+
+74 KMS 3。
+
+75 参见詹姆斯·福基特，《已故尊敬且可敬的乔治·塞尼奥尔博士传略》（伦敦，1681年），第4–13页；查尔斯·E·雷文，《约翰·雷：自然学家》，第2版（剑桥：剑桥大学出版社，1950年），第57–61页；东萨塞克斯郡档案馆，刘易斯，MMS Dan. 346–59。
+
+76 参见Yah. MS 10.2，尤其是第14v对开。
+
+77 让·勒克莱尔，《书信集》，玛丽亚·格拉齐亚与马里奥·西纳编，4卷本（佛罗伦萨：奥尔希基出版社，1987–97年），第2卷，第50–2页。
+
+78 BL, MS Add. 32, 415，第388对开，霍普顿·海恩斯致C[阿斯帕]·韦特斯坦牧师，1736年8月17日；莱斯特郡档案馆，科南特手稿，巴克通信集，第2卷，第123A号信件（塞缪尔·克雷尔致威廉·惠斯顿，...

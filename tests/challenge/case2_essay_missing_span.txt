@@ -1,0 +1,222 @@
+Source text:
+...  Bodies and Fits of Easy Reflection (Cambridge: Cambridge University Press, 1993).
+
+Shapiro, Alan E., "The Gradual Acceptance of Newton's Theory of Light and Color," Perspectives on Science4 (1996), 59–104.
+
+Steffens, Henry John, The Development of Newtonian Optics in England (New York: Science History Publications, 1977).
+
+Alchemy, chemistry, and theory of matter
+
+Dobbs, Betty Jo Teeter, The Foundations of Newton's Alchemy, or "The Hunting of the Greene Lyon" (Cambridge: Cambridge University Press, 1975).
+
+Dobbs, Betty Jo Teeter, The Janus Faces of Genius: The Role of Alchemy in Newton's Thought (Cambridge: Cambridge University Press, 1991).
+
+Figala, Karin, "Newton as Alchemist," History of Science15 (1977), 102–37.
+
+Figala, Karin, "Die exakte Alchemie von Isaac Newton," Verhandlungen der Naturforschenden Gesellschaft Basel94 (1984), 155–228.
+
+Figala, Karin, "Newton's Alchemical Studies and His Idea of the Atomic Structure of Matter," Appendix A (pp. 381–6) of A. R. Hall's Isaac Newton, Adventurer in Thought, listed above.
+
+Golanski, Jan, "The Secret Life of an Alchemist," pp. 146–67 of John Fauvel et al. (eds.), Let Newton Be!, listed above.
+
+McGuire, J. E., "The Origin of Newton's Doctrine of Essential Qualities," Centauris12 (1968), 233–60.
+
+McGuire, J. E., "Atoms and the 'Analogy of Nature': Newton's Third Rule of Philosophizing," Studies in the History and Philosophy of Science1 (1970), 3–58.
+
+Newman, William R., Gehennical Fire: The Lives of George Starkey, an American Alchemist in the Scientific Revolution (Cambridge, MA: Harvard University Press, 1994).
+
+Priesner, Claus and Figala, Karin (eds.), Alchemie: Lexicon einer hermetischen Wissenschaft (Munich: Verlag C. H. Beck München, 1998).
+
+Thackray, Arnold, Atoms and Powers: An Essay on Newtonian Matter-Theory and the Development of Chemistry (Cambridge, MA: Harvard University Press, 1970).
+
+Westfall, Robert S., "Newton and the Hermetic Tradition," in Allen G. Dubus (ed.), Science, Medicine and Society in the Renaissance: A Festschrift in Honor of Walter Pagel, vol. 2 (New York: Neale Watson Academic Publications, 1972), pp. 183–92.
+
+Westfall, Robert S., "The Role of Alchemy in Newton's Career," in Maria Luisa Righini Bonelli and William R. Shea (eds.), Reason, Experiment and Mysticism in the Scientific Revolution (New York: Science History Publications, 1975), pp. 189–232.
+
+Westfall, Robert S., "The Influence of Alchemy on Newton," in Marsha P. Hanen, Margaret J. Osler, and Robert G. Weyant (eds.), Science, Pseudo-Science and Society (Waterloo, Ontario: Wilfrid Laurier University Press, 1980), pp. 145–69.
+
+Westman, Robert and McGuire, J. E., Hermeticism and the Scientific Revolution (Los Angeles: William Andrews Clark Memorial Library, University of California, 1977), esp. J. E. McGuire's "Neoplatonism, Active Principles and the Corpus Hermeticum," pp. 93–142.
+
+Religion and chronology
+
+Force, James E. and Popkin, Richard H. (eds.),
+
+XML template:
+```XML
+<xml>
+  <div data-orig-len="20" id="1">
+    <span>
+      ...  Bodies and Fits of Easy Reflection
+    </span>
+    (Cambridge: Cambridge University Press, 1993).
+  </div>
+  <div data-orig-len="33" id="2">
+    <span id="3">Shapiro</span>
+    , Alan E., "The Gradual Acceptance of Newton's Theory of Light and Color,"
+    <span id="4">Perspectives on Science4</span>
+    (1996), 59–104.
+  </div>
+  <div data-orig-len="28" id="5">
+    Steffens, Henry John,
+    <span>
+      The Development of Newtonian Optics in England
+    </span>
+    (New York: Science History Publications, 1977).
+  </div>
+  <h4 data-orig-len="8" id="6">
+    <span>
+      Alchemy, chemistry, and theory of matter
+    </span>
+  </h4>
+  <div data-orig-len="37" id="7">
+    Dobbs, Betty Jo Teeter,
+    <span>
+      The Foundations of Newton's Alchemy, or "The Hunting of the Greene Lyon"
+    </span>
+    (Cambridge: Cambridge University Press, 1975).
+  </div>
+  <div data-orig-len="36" id="8">
+    Dobbs, Betty Jo Teeter,
+    <span>
+      The Janus Faces of Genius: The Role of Alchemy in Newton's Thought
+    </span>
+    (Cambridge: Cambridge University Press, 1991).
+  </div>
+  <div data-orig-len="24" id="9">
+    <span id="10">Figala</span>
+    , Karin, "Newton as Alchemist,"
+    <span id="11">History of Science15</span>
+    (1977), 102–37.
+  </div>
+  <div data-orig-len="35" id="12">
+    <span id="13">Figala</span>
+    , Karin, "Die exakte Alchemie von Isaac Newton,"
+    <span id="14">
+      Verhandlungen der Naturforschenden Gesellschaft Basel94
+    </span>
+    (1984), 155–228.
+  </div>
+  <div data-orig-len="49" id="15">
+    Figala, Karin, "Newton's Alchemical Studies and His Idea of the Atomic Structure of Matter," Appendix A (pp. 381–6) of A. R. Hall's
+    <span>Isaac Newton, Adventurer in Thought</span>
+    , listed above.
+  </div>
+  <div data-orig-len="37" id="16">
+    Golanski, Jan, "The Secret Life of an Alchemist," pp. 146–67 of John Fauvel
+    <span>et al</span>
+    . (eds.),
+    <span>Let Newton Be!</span>
+    , listed above.
+  </div>
+  <div data-orig-len="33" id="17">
+    <span id="18">McGuire</span>
+    , J. E., "The Origin of Newton's Doctrine of Essential Qualities,"
+    <span id="19">Centauris12</span>
+    (1968), 233–60.
+  </div>
+  <div data-orig-len="44" id="20">
+    <span id="21">McGuire</span>
+    , J. E., "Atoms and the 'Analogy of Nature': Newton's Third Rule of Philosophizing,"
+    <span id="22">
+      Studies in the History and Philosophy of Science1
+    </span>
+    (1970), 3–58.
+  </div>
+  <div data-orig-len="40" id="23">
+    Newman, William R.,
+    <span>
+      Gehennical Fire: The Lives of George Starkey, an American Alchemist in the Scientific Revolution
+    </span>
+    (Cambridge, MA: Harvard University Press, 1994).
+  </div>
+  <div data-orig-len="40" id="24">
+    Priesner, Claus and Figala, Karin (eds.),
+    <span>
+      Alchemie: Lexicon einer hermetischen Wissenschaft
+    </span>
+    (Munich: Verlag C. H. Beck München, 1998).
+  </div>
+  <div data-orig-len="38" id="25">
+    Thackray, Arnold,
+    <span>
+      Atoms and Powers: An Essay on Newtonian Matter-Theory and the Development of Chemistry
+    </span>
+    (Cambridge, MA: Harvard University Press, 1970).
+  </div>
+  <div data-orig-len="67" id="26">
+    Westfall, Robert S., "Newton and the Hermetic Tradition," in Allen G. Dubus (ed.),
+    <span>
+      Science, Medicine and Society in the Renaissance: A Festschrift in Honor of Walter Pagel
+    </span>
+    , vol. 2 (New York: Neale Watson Academic Publications, 1972), pp. 183–92.
+  </div>
+  <div data-orig-len="63" id="27">
+    Westfall, Robert S., "The Role of Alchemy in Newton's Career," in Maria Luisa Righini Bonelli and William R. Shea (eds.),
+    <span>
+      Reason, Experiment and Mysticism in the Scientific Revolution
+    </span>
+    (New York: Science History Publications, 1975), pp. 189–232.
+  </div>
+  <div data-orig-len="71" id="28">
+    Westfall, Robert S., "The Influence of Alchemy on Newton," in Marsha P. Hanen, Margaret J. Osler, and Robert G. Weyant (eds.),
+    <span>Science, Pseudo-Science and Society</span>
+    (Waterloo, Ontario: Wilfrid Laurier University Press, 1980), pp. 145–69.
+  </div>
+  <div data-orig-len="71" id="29">
+    Westman, Robert and McGuire, J. E.,
+    <span>
+      Hermeticism and the Scientific Revolution
+    </span>
+    (Los Angeles: William Andrews Clark Memorial Library, University of California, 1977), esp. J. E. McGuire's "Neoplatonism, Active Principles and the Corpus Hermeticum," pp. 93–142.
+  </div>
+  <h4 data-orig-len="3" id="30">
+    <span>Religion and chronology</span>
+  </h4>
+  <div data-orig-len="16" id="31">
+    Force, James E. and Popkin, Richard H. (eds.),
+  </div>
+</xml>
+```
+
+Translated text:
+... 《物体与易反射适态》（剑桥：剑桥大学出版社，1993年）。
+
+夏皮罗，艾伦·E.，"牛顿光与色理论的逐步接受"，《科学视角》第4期（1996年），第59–104页。
+
+斯特芬斯，亨利·约翰，《英国牛顿光学的发展》（纽约：科学史出版社，1977年）。
+
+炼金术、化学与物质理论
+
+多布斯，贝蒂·乔·蒂特，《牛顿炼金术的基础，或"绿狮的狩猎"》（剑桥：剑桥大学出版社，1975年）。
+
+多布斯，贝蒂·乔·蒂特，《天才的两面性：炼金术在牛顿思想中的作用》（剑桥：剑桥大学出版社，1991年）。
+
+菲加拉，卡林，"作为炼金术士的牛顿"，《科学史》第15期（1977年），第102–37页。
+
+菲加拉，卡林，"艾萨克·牛顿的精确炼金术"，《巴塞尔自然研究学会会刊》第94期（1984年），第155–228页。
+
+菲加拉，卡林，"牛顿的炼金术研究及其关于物质原子结构的思想"，A. R. 霍尔的《艾萨克·牛顿，思想探险家》附录A（第381–6页），见上文所列。
+
+戈兰斯基，扬，"一位炼金术士的秘密生活"，载于约翰·福维尔等编《让牛顿归来！》，见上文所列，第146–67页。
+
+麦圭尔，J. E.，"牛顿本质性质学说的起源"，《半人马座》第12期（1968年），第233–60页。
+
+麦圭尔，J. E.，"原子与'自然类比'：牛顿的第三条哲学推理规则"，《科学史与科学哲学研究》第1期（1970年），第3–58页。
+
+纽曼，威廉·R.，《地狱之火：乔治·斯塔基的生平——科学革命中的一位美国炼金术士》（马萨诸塞州剑桥：哈佛大学出版社，1994年）。
+
+普里斯纳，克劳斯与菲加拉，卡林编，《炼金术：一部赫尔墨斯科学词典》（慕尼黑：C. H. 贝克慕尼黑出版社，1998年）。
+
+萨克雷，阿诺德，《原子与力：牛顿物质理论与化学发展论》（马萨诸塞州剑桥：哈佛大学出版社，1970年）。
+
+韦斯特福尔，罗伯特·S.，"牛顿与赫尔墨斯传统"，载于艾伦·G·杜布斯编，《文艺复兴时期的科学、医学与社会：纪念沃尔特·佩吉尔文集》，第2卷（纽约：尼尔·沃森学术出版社，1972年），第183–92页。
+
+韦斯特福尔，罗伯特·S.，"炼金术在牛顿生涯中的作用"，载于玛丽亚·路易莎·里吉尼·博内利与威廉·R·谢伊编，《科学革命中的理性、实验与神秘主义》（纽约：科学史出版社，1975年），第189–232页。
+
+韦斯特福尔，罗伯特·S.，"炼金术对牛顿的影响"，载于玛莎·P·哈嫩、玛格丽特·J·奥斯勒与罗伯特·G·韦扬特编，《科学、伪科学与社会》（安大略省滑铁卢：威尔弗里德·劳里埃大学出版社，1980年），第145–69页。
+
+韦斯特曼，罗伯特与麦圭尔，J. E.，《赫尔墨斯主义与科学革命》（洛杉矶：加利福尼亚大学威廉·安德鲁斯·克拉克纪念图书馆，1977年），尤见J. E. 麦圭尔的"新柏拉图主义、能动原理与《赫尔墨斯文集》"，第93–142页。
+
+宗教与年代学
+
+福斯，詹姆斯·E. 与波普金，理查德·H. 编，
