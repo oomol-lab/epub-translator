@@ -94,44 +94,59 @@ KEY PRINCIPLE: Semantic type matching beats position matching!
 FILLING ALGORITHM:
 
 1. Analyze template structure: count elements at each level, note id attributes
+
 2. Segment source text by elements (elements are natural separators)
-3. Apply to translation:
-   - Preserve exact structure (count, nesting, ids)
-   - For elements WITH id: locate semantic equivalent, wrap with same tag+id
-   - For elements WITHOUT id: match by STRUCTURAL POSITION (same order as template)
-     * Count carefully: if template has 7 <span> without id, output must have exactly 7
-     * Do NOT add extra elements or skip any
+
+3. Apply to translation - STRICT STRUCTURAL MATCHING:
+
+   A. For elements WITH id:
+      - Locate semantic equivalent in translation
+      - Wrap with same tag+id
+      - If translation merged multiple spans: You MUST still output all original spans separately
+        Example: Template has id="1" and id="2", translation merged both
+        → Output BOTH spans, use source text fallback for missing one
+
+   B. For elements WITHOUT id:
+      - Match by STRUCTURAL POSITION only (template order)
+      - Count MUST be exact: 7 spans in template = 7 spans in output
+      - Even if content repeats (e.g., 3 instances of "x"), each gets its own span
+      - Process sequentially: wrap 1st occurrence with 1st span, 2nd with 2nd span, etc.
+      - DO NOT merge, skip, or add extra elements
+
+      CRITICAL for repeated content:
+      If template has: "...<span>Word</span>...more text...<span>Word</span>"
+      And translation has: "...词...更多文字...词"
+      → Wrap 1st occurrence of "词" with 1st span, 2nd occurrence with 2nd span
+      → Even if the words are identical, treat each span position independently
+
 4. Verify: same element counts, all ids preserved, tag names match
+
+CRITICAL: Template structure is LAW. Translation fluency is secondary.
 
 ---
 
 SPECIAL CASES:
 
-1. data-orig-len attribute: Token count of original text. Use as hint for identifying elements.
+1. data-orig-len attribute: Token count hint. Longer counts usually = titles/names, shorter = numbers/symbols.
 
-2. Text with tightly attached numbers (NO space between name and number):
-   Template: "<span id="X">JournalName42</span>" (name and number as ONE continuous string)
+2. Name+Number as single unit (e.g., "JournalName42" with NO space):
+   - In translation, find the name's equivalent and any adjacent number
+   - Wrap them together: <span id="X">《期刊名》42</span> or <span id="X">《期刊名》第42期</span>
+   - Key: If template treats them as one span, keep them in one span in translation
 
-   Challenge: AI may want to separate "JournalName" and "42", but template treats them as one unit.
+3. Translation merges adjacent spans:
+   Template: "<span id="A">Word1</span> & <span id="B">Word2</span>"
+   Translation: "复合词" (one inseparable term)
 
-   Solution: When you find the translated journal/book name, check if a number appears immediately after:
-   - If YES: wrap BOTH together in same span
-   - Example: "Journal Title" has "42" right after → <span id="X">《期刊名》42</span>
-   - Example: Translation adds text between → <span id="X">《期刊名》</span>第42期 (WRONG - breaks continuity)
+   Solution: You MUST output BOTH spans even if translation merged them
+   - Try to split translation if possible
+   - If truly inseparable: Keep translation for one span, use source text for the other
+   - Example: <span id="A">复合词</span>与<span id="B">Word2</span>
 
-   Key: The number is PART OF the same semantic unit, not a separate element.
-
-3. Translation merges adjacent spans into inseparable compound:
-   Template: "<span id="A">Part1</span> & <span id="B">Part2</span>"
-   Translation: "组合词" (merged into single inseparable term where breaking creates fragments)
-   Solution: Keep source text for one span, wrap compound with the other
-   Example: <span id="A">《组合词》</span>与<span id="B">Part2</span>
-   (Only use when semantic matching exhausted and breaking truly creates meaningless fragments)
-
-4. When translation simplifies/omits elements:
-   - First: Exhaust semantic matching (synonyms, paraphrases, merged concepts)
-   - If no match: Use source text as fallback in natural position
-   - Mixed language output is acceptable (better than broken structure)
+4. Missing semantic match:
+   - Exhaust all possibilities first (synonyms, paraphrases, context)
+   - Last resort: Use source text as fallback
+   - Mixed language is acceptable to preserve structure
 
 WRONG fallback approaches:
 ❌ Empty: <span id="2"></span>
