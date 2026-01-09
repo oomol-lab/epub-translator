@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
+from importlib.metadata import version as get_package_version
 from os import PathLike
 from pathlib import Path
 
@@ -60,8 +61,8 @@ def translate(
         max_retries=max_retries,
         max_fill_displaying_errors=10,
         max_group_tokens=max_group_tokens,
+        cache_seed_content=f"{_get_version()}:{target_language}",
     )
-
     with Zip(
         source_path=Path(source_path).resolve(),
         target_path=Path(target_path).resolve(),
@@ -168,3 +169,10 @@ def _generate_elements_from_book(
                 chapter_data=(chapter_path, xml),
             )
             yield body_element
+
+
+def _get_version() -> str:
+    try:
+        return get_package_version("epub-translator")
+    except Exception:
+        return "development"

@@ -24,6 +24,7 @@ class XMLTranslator:
         max_retries: int,
         max_fill_displaying_errors: int,
         max_group_tokens: int,
+        cache_seed_content: str | None = None,
     ) -> None:
         self._translation_llm: LLM = translation_llm
         self._fill_llm: LLM = fill_llm
@@ -32,6 +33,7 @@ class XMLTranslator:
         self._ignore_translated_error: bool = ignore_translated_error
         self._max_retries: int = max_retries
         self._max_fill_displaying_errors: int = max_fill_displaying_errors
+        self._cache_seed_content: str | None = cache_seed_content
         self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
             encoding=translation_llm.encoding,
             max_group_tokens=max_group_tokens,
@@ -133,18 +135,19 @@ class XMLTranslator:
         yield segment.text
 
     def _translate_text(self, text: str) -> str:
-        return self._translation_llm.request(
-            input=[
-                Message(
-                    role=MessageRole.SYSTEM,
-                    message=self._translation_llm.template("translate").render(
-                        target_language=self._target_language,
-                        user_prompt=self._user_prompt,
+        with self._translation_llm.context(cache_seed_content=self._cache_seed_content) as ctx:
+            return ctx.request(
+                input=[
+                    Message(
+                        role=MessageRole.SYSTEM,
+                        message=self._translation_llm.template("translate").render(
+                            target_language=self._target_language,
+                            user_prompt=self._user_prompt,
+                        ),
                     ),
-                ),
-                Message(role=MessageRole.USER, message=text),
-            ]
-        )
+                    Message(role=MessageRole.USER, message=text),
+                ]
+            )
 
     def _request_and_submit(
         self,
@@ -170,7 +173,7 @@ class XMLTranslator:
         ]
         conversation_history: list[Message] = []
 
-        with self._fill_llm.context() as llm_context:
+        with self._fill_llm.context(cache_seed_content=self._cache_seed_content) as llm_context:
             error_message: str | None = None
 
             for retry_count in range(self._max_retries):
