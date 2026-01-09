@@ -6,7 +6,8 @@ from .common import find_opf_path, strip_namespace
 from .zip import Zip
 
 
-def search_spine_paths(zip: Zip) -> Generator[Path, None, None]:
+# yield file_path, media_type
+def search_spine_paths(zip: Zip) -> Generator[tuple[Path, str], None, None]:
     opf_path = find_opf_path(zip)
     opf_dir = opf_path.parent
 
@@ -39,4 +40,4 @@ def search_spine_paths(zip: Zip) -> Generator[Path, None, None]:
             if idref in manifest_items:
                 href, media_type = manifest_items[idref]
                 if media_type in ("application/xhtml+xml", "text/html"):
-                    yield opf_dir / href
+                    yield opf_dir / href, media_type
