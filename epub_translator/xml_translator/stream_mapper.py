@@ -4,7 +4,6 @@ from xml.etree.ElementTree import Element
 from resource_segmentation import Group, Resource, Segment, split
 from tiktoken import Encoding
 
-from ..peakable import Peakable
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
 from .callbacks import Callbacks
 
@@ -64,7 +63,7 @@ class XMLStreamMapper:
                     resources=self._expand_to_resources(element, callbacks),
                 )
 
-        generator = Peakable(generate())
+        generator = generate()
         group = next(generator, None)
         if group is None:
             return
@@ -72,20 +71,22 @@ class XMLStreamMapper:
         # head + body * N (without tail)
         sum_count = group.head_remain_count + sum(x.count for x in self._expand_resource_segments(group.body))
 
-        while generator.has_next:
-            next_group = generator.peak
+        while True:
+            next_group = next(generator, None)
+            if next_group is None:
+                break
+
             next_sum_body_count = sum(x.count for x in self._expand_resource_segments(next_group.body))
             next_sum_count = sum_count + next_sum_body_count
 
             if next_sum_count + next_group.tail_remain_count > self._max_group_tokens:
                 yield group
-                group = next(generator)
+                group = next_group
                 sum_count = group.head_remain_count + next_sum_body_count
             else:
                 group.body.extend(next_group.body)
                 group.tail = next_group.tail
                 group.tail_remain_count = next_group.tail_remain_count
-                next(generator)
                 sum_count = next_sum_count
 
         yield group
