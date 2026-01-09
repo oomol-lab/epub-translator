@@ -21,6 +21,7 @@ class Peakable(Generic[T], Iterator[T]):
         except StopIteration:
             return False
 
+    @property
     def peak(self) -> T:
         if not self._has_buffer:
             self._buffer = next(self._iterator)
