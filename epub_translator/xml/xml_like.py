@@ -36,6 +36,7 @@ _NAMESPACE_IN_TAG = re.compile(r"\{([^}]+)\}")
 class XMLLikeNode:
     def __init__(self, file: IO[bytes], is_html_like: bool = False) -> None:
         raw_content = file.read()
+        self._is_html_like = is_html_like
         self._encoding: str = self._detect_encoding(raw_content)
         content = raw_content.decode(self._encoding)
         self._header, xml_content = self._extract_header(content)
@@ -43,15 +44,9 @@ class XMLLikeNode:
         self._tag_to_namespace: dict[str, str] = {}
         self._attr_to_namespace: dict[str, str] = {}
 
-        # Convert non-self-closed void elements to self-closed format before parsing
-        # This is necessary because:
-        # 1. XML parser requires all void elements to be self-closed
-        # 2. Input EPUB files may have non-standard HTML with unclosed void elements
-        # After parsing, we'll convert back for text/html files (see save() method)
-        self._is_html_like = is_html_like
-        xml_content = self_close_void_elements(xml_content)
-
         try:
+            # 不必判断类型，这是一个防御性极强的函数，可做到 shit >> XML
+            xml_content = self_close_void_elements(xml_content)
             self.element = self._extract_and_clean_namespaces(
                 element=fromstring(xml_content),
             )

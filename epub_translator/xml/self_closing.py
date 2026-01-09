@@ -58,10 +58,8 @@ def _fix_void_element(content: str, tag_name: str) -> str:
     pos = 0
 
     while pos < len(content):
-        # Find next occurrence of opening tag
         tag_start = content.find(f"<{tag_name}", pos)
         if tag_start == -1:
-            # No more tags, append rest of content
             result.append(content[pos:])
             break
 
@@ -71,45 +69,32 @@ def _fix_void_element(content: str, tag_name: str) -> str:
         if check_pos < len(content):
             next_char = content[check_pos]
             if next_char not in (">", "/", " ", "\t", "\n", "\r"):
-                # Not a valid tag boundary, skip this match
                 result.append(content[pos:check_pos])
                 pos = check_pos
                 continue
 
-        # Append content before this tag
         result.append(content[pos:tag_start])
-
-        # Find the end of the opening tag (first > after tag start)
-        # Need to handle quotes: ignore > inside quoted strings
         tag_end = _find_tag_end(content, tag_start)
         if tag_end == -1:
-            # Malformed, just append rest and break
             result.append(content[tag_start:])
             break
 
         opening_tag = content[tag_start : tag_end + 1]
 
-        # Check if already self-closed
         if opening_tag.rstrip().endswith("/>"):
-            # Already self-closed, keep as is
             result.append(opening_tag)
             pos = tag_end + 1
             continue
 
-        # Check if it ends with >
         if not opening_tag.endswith(">"):
-            # Malformed, keep as is
             result.append(opening_tag)
             pos = tag_end + 1
             continue
 
-        # Look for closing tag
         closing_tag = f"</{tag_name}>"
         closing_pos = content.find(closing_tag, tag_end + 1)
 
         if closing_pos != -1:
-            # Found closing tag, remove content between and make self-closing
-            # Convert: <tag attrs>content</tag> → <tag attrs />
             attrs_part = opening_tag[len(f"<{tag_name}") : -1].rstrip()
             if attrs_part:
                 result.append(f"<{tag_name}{attrs_part} />")
@@ -117,7 +102,6 @@ def _fix_void_element(content: str, tag_name: str) -> str:
                 result.append(f"<{tag_name} />")
             pos = closing_pos + len(closing_tag)
         else:
-            # No closing tag, just make opening tag self-closing
             attrs_part = opening_tag[len(f"<{tag_name}") : -1].rstrip()
             if attrs_part:
                 result.append(f"<{tag_name}{attrs_part} />")
@@ -141,18 +125,13 @@ def _find_tag_end(content: str, start_pos: int) -> int:
         char = content[pos]
 
         if in_quote:
-            # Inside a quote, look for closing quote
             if char == in_quote:
-                # Check if escaped
                 if pos > 0 and content[pos - 1] == "\\":
-                    # Escaped quote, continue
                     pos += 1
                     continue
                 else:
-                    # Closing quote
                     in_quote = None
         else:
-            # Not in quote
             if char in ('"', "'"):
                 in_quote = char
             elif char == ">":
@@ -188,7 +167,7 @@ def unclose_void_elements(xml_content: str) -> str:
         <img src="test.png" /> → <img src="test.png">
     """
 
-    def replacer(m):
+    def replacer(m: re.Match):
         tag_name = m.group(1)
         attrs = m.group(2).rstrip()  # Remove trailing whitespace
         if attrs:
@@ -196,4 +175,8 @@ def unclose_void_elements(xml_content: str) -> str:
         else:
             return f"<{tag_name}>"
 
-    return re.sub(pattern=_VOID_TAG_CLOSE_PATTERN, repl=replacer, string=xml_content)
+    return re.sub(
+        pattern=_VOID_TAG_CLOSE_PATTERN,
+        repl=replacer,
+        string=xml_content,
+    )
