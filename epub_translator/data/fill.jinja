@@ -159,8 +159,18 @@ CORRECT approach (in priority order):
    - Consider that translation may express the same meaning differently
 
 2. IF genuinely no match exists after thorough analysis:
-   - Use source text as fallback: <span id="2">English Translation</span>
+   - Use source text as fallback: <span id="2">Source Text</span>
    - Place it in a natural position in the translated sentence
+
+   EXCEPTION for inseparable compound terms (RARE CASE):
+   If template splits adjacent words like "<span id="1">Word1</span> & <span id="2">Word2</span>"
+   but translation forms ONE inseparable compound (e.g., "Word1Word2" as a single term),
+   and breaking it would create meaningless fragments:
+   → Keep source text for one span, wrap the compound with the other
+   → Example: <span id="1">Experimental</span>与<span id="2">实验化学</span>
+
+   WARNING: This is RARE. Most cases should use semantic matching or source fallback.
+   Do NOT merge elements unless breaking truly creates meaningless fragments.
 
 3. Mixed language output is ACCEPTABLE
    - Common in academic translation (technical terms, proper nouns, book titles)
