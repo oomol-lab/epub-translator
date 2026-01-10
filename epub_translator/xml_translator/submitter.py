@@ -54,7 +54,6 @@ class _Submitter:
         return parents_dict
 
     def do(self):
-        # TODO: 尚未支持 SubmitAction.REPLACE，现在默认全是 APPEND
         replaced_root: Element | None = None
 
         for node in self._nodes:
@@ -82,6 +81,9 @@ class _Submitter:
             parent.insert(index + 1, combined)
             combined.tail = node.raw_element.tail
             node.raw_element.tail = None
+            if self._action == SubmitAction.REPLACE:
+                parent.remove(node.raw_element)
+
         return None
 
     def _submit_node_by_append_text(self, node: _Node) -> Element | None:
@@ -97,12 +99,19 @@ class _Submitter:
                     tail_elements[id(child_element)] = last_tail_element
                 last_tail_element = child_element
 
-            elif is_inline_tag(child_element.tag):
-                # 与原文之间不许加载 block 元素，不好看
-                last_tail_element = child_element
-
         for text_segments, child_node in node.items:
             tail_element = tail_elements.get(id(child_node.raw_element), None)
+
+            # REPLACE 模式：删除从 tail_element（或开头）到 child_element 之间的所有内容
+            preserved_elements: list[Element] = []
+            if self._action == SubmitAction.REPLACE:
+                end_index = index_of_parent(node.raw_element, child_node.raw_element)
+                preserved_elements = self._remove_elements_after_tail(
+                    node_element=node.raw_element,
+                    tail_element=tail_element,
+                    end_index=end_index,
+                )
+
             self._append_combined_after_tail(
                 node_element=node.raw_element,
                 text_segments=text_segments,
@@ -110,10 +119,25 @@ class _Submitter:
                 append_to_end=False,
             )
 
+            # 插入保留的非 inline 元素
+            if preserved_elements:
+                insert_position = index_of_parent(node.raw_element, child_node.raw_element)
+                for i, elem in enumerate(preserved_elements):
+                    node.raw_element.insert(insert_position + i, elem)
+
         for _, child_node in node.items:
             submitted = self._submit_node(child_node)
             if replaced_root is None:
                 replaced_root = submitted
+
+        # REPLACE 模式：删除从 last_tail_element（或开头）到末尾的所有内容
+        preserved_elements: list[Element] = []
+        if self._action == SubmitAction.REPLACE:
+            preserved_elements = self._remove_elements_after_tail(
+                node_element=node.raw_element,
+                tail_element=last_tail_element,
+                end_index=None,  # None 表示删除到末尾
+            )
 
         self._append_combined_after_tail(
             node_element=node.raw_element,
@@ -121,7 +145,56 @@ class _Submitter:
             tail_element=last_tail_element,
             append_to_end=True,
         )
+
+        # 插入保留的非 inline 元素到末尾
+        if preserved_elements:
+            for elem in preserved_elements:
+                node.raw_element.append(elem)
+
         return replaced_root
+
+    def _remove_elements_after_tail(
+        self,
+        node_element: Element,
+        tail_element: Element | None,
+        end_index: int | None = None,
+    ) -> list[Element]:
+        """删除从 tail_element（或开头）到 end_index（或末尾）之间的所有元素。
+
+        在 REPLACE 模式下，非 inline 标签会被保留并返回，以便插入到译文之后。
+
+        参数：
+        - node_element: 父元素
+        - tail_element: 起始参考元素，删除它之后的内容（不包含它本身）
+        - end_index: 结束索引（不包含），None 表示删除到末尾
+
+        返回：
+        - 被保留的非 inline 元素列表（保持原始顺序）
+        """
+        if tail_element is None:
+            start_index = 0
+            node_element.text = None
+        else:
+            start_index = index_of_parent(node_element, tail_element) + 1
+            tail_element.tail = None
+
+        if end_index is None:
+            end_index = len(node_element)
+
+        # 收集非 inline 标签
+        preserved_elements: list[Element] = []
+        for i in range(start_index, end_index):
+            elem = node_element[i]
+            if not is_inline_tag(elem.tag):
+                # 保留非 inline 标签，但清空其 tail
+                elem.tail = None
+                preserved_elements.append(elem)
+
+        # 倒序删除区间内的所有元素
+        for i in range(end_index - 1, start_index - 1, -1):
+            node_element.remove(node_element[i])
+
+        return preserved_elements
 
     def _append_combined_after_tail(
         self,
