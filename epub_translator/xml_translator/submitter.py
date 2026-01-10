@@ -14,7 +14,7 @@ class SubmitAction(Enum):
     APPEND_BLOCK = auto()
 
 
-def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
+def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]) -> Element:
     submitter = _Submitter(
         element=element,
         action=action,
@@ -47,7 +47,6 @@ class _Submitter:
 
     def _collect_parents(self, element: Element, mappings: list[InlineSegmentMapping]):
         ids: set[int] = set(id(e) for e, _ in mappings)
-        assert id(element) not in ids
         parents_dict: dict[int, Element] = {}
         for parents, child in iter_with_stack(element):
             if parents and id(child) in ids:

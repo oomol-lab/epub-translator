@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from enum import Enum, auto
 from importlib.metadata import version as get_package_version
@@ -17,7 +17,7 @@ from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, e
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_interrupter import XMLInterrupter
-from .xml_translator import FillFailedEvent, XMLTranslator
+from .xml_translator import FillFailedEvent, SubmitAction, TranslationTask, XMLTranslator
 
 
 class _ElementType(Enum):
@@ -83,32 +83,23 @@ def translate(
             return
 
         interrupter = XMLInterrupter()
-        element_contexts: dict[int, _ElementContext] = {}
-
         toc_weight = 0.05 if toc_has_items else 0
         metadata_weight = 0.05 if metadata_has_items else 0
         chapters_weight = 1.0 - toc_weight - metadata_weight
         progress_per_chapter = chapters_weight / total_chapters if total_chapters > 0 else 0
         current_progress = 0.0
 
-        for translated_elem in translator.translate_elements(
+        for translated_elem, context in translator.translate_elements(
             interrupt_source_text_segments=interrupter.interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupter.interrupt_translated_text_segments,
             interrupt_block_element=interrupter.interrupt_block_element,
             on_fill_failed=on_fill_failed,
-            elements=_generate_elements_from_book(
+            tasks=_generate_tasks_from_book(
                 zip=zip,
                 toc_list=toc_list,
                 metadata_fields=metadata_fields,
-                element_contexts=element_contexts,
             ),
         ):
-            elem_id = id(translated_elem)
-            context = element_contexts.pop(elem_id, None)
-
-            if context is None:
-                continue
-
             if context.element_type == _ElementType.TOC:
                 decoded_toc = decode_toc_list(translated_elem)
                 write_toc(zip, decoded_toc)
@@ -137,23 +128,24 @@ def translate(
                     on_progress(current_progress)
 
 
-def _generate_elements_from_book(
+def _generate_tasks_from_book(
     zip: Zip,
     toc_list: list,
     metadata_fields: list,
-    element_contexts: dict[int, _ElementContext],
-):
+) -> Generator[TranslationTask[_ElementContext], None, None]:
     if toc_list:
-        toc_elem = encode_toc_list(toc_list)
-        elem_id = id(toc_elem)
-        element_contexts[elem_id] = _ElementContext(element_type=_ElementType.TOC)
-        yield toc_elem
+        yield TranslationTask(
+            element=encode_toc_list(toc_list),
+            action=SubmitAction.APPEND_TEXT,
+            payload=_ElementContext(element_type=_ElementType.TOC),
+        )
 
     if metadata_fields:
-        metadata_elem = encode_metadata(metadata_fields)
-        elem_id = id(metadata_elem)
-        element_contexts[elem_id] = _ElementContext(element_type=_ElementType.METADATA)
-        yield metadata_elem
+        yield TranslationTask(
+            element=encode_metadata(metadata_fields),
+            action=SubmitAction.APPEND_TEXT,
+            payload=_ElementContext(element_type=_ElementType.METADATA),
+        )
 
     for chapter_path, media_type in search_spine_paths(zip):
         with zip.read(chapter_path) as chapter_file:
@@ -163,12 +155,14 @@ def _generate_elements_from_book(
             )
         body_element = find_first(xml.element, "body")
         if body_element is not None:
-            elem_id = id(body_element)
-            element_contexts[elem_id] = _ElementContext(
-                element_type=_ElementType.CHAPTER,
-                chapter_data=(chapter_path, xml),
+            yield TranslationTask(
+                element=body_element,
+                action=SubmitAction.APPEND_BLOCK,
+                payload=_ElementContext(
+                    element_type=_ElementType.CHAPTER,
+                    chapter_data=(chapter_path, xml),
+                ),
             )
-            yield body_element
 
 
 def _get_version() -> str:

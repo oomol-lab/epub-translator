@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
+from epub_translator import SubmitAction, TranslationTask
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
 from epub_translator.xml_translator import XMLTranslator
@@ -44,7 +45,13 @@ def main() -> None:
     # Fill the translated text into XML structure
     print("→ Calling Filler.fill()...")
     try:
-        translated_element = translator.translate_element(source_ele)
+        translated_element, _ = translator.translate_element(
+            task=TranslationTask(
+                element=source_ele,
+                action=SubmitAction.APPEND_BLOCK,
+                payload=None,
+            )
+        )
         print("\n✓ Successfully filled translated text into XML structure!")
         print("\nResult XML:")
         print(f"\n{encode_friendly(translated_element)}\n")
