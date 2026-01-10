@@ -45,7 +45,6 @@ pip install epub-translator
 ### 使用 Python API
 
 ```python
-from pathlib import Path
 from epub_translator import LLM, translate, language, SubmitKind
 
 # 使用 API 凭证初始化 LLM
@@ -58,8 +57,8 @@ llm = LLM(
 
 # 使用语言常量翻译 EPUB 文件
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -81,8 +80,8 @@ with tqdm(total=100, desc="翻译中", unit="%") as pbar:
         last_progress = progress
 
     translate(
-        source_path=Path("source.epub"),
-        target_path=Path("translated.epub"),
+        source_path="source.epub",
+        target_path="translated.epub",
         target_language="Chinese",
         submit=SubmitKind.APPEND_BLOCK,
         llm=llm,
@@ -161,8 +160,8 @@ from epub_translator import SubmitKind
 ```python
 # 创建双语书籍（推荐）
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -170,8 +169,8 @@ translate(
 
 # 创建单语翻译
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.REPLACE,
     llm=llm,
@@ -187,8 +186,8 @@ from epub_translator import language
 
 # 使用示例：
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -196,8 +195,8 @@ translate(
 
 # 您也可以使用自定义的语言字符串：
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language="Icelandic",  # 对于不在常量列表中的语言
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -218,8 +217,8 @@ def handle_fill_error(event: FillFailedEvent):
         print("  已超过最大重试次数！")
 
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -255,8 +254,8 @@ fill_llm = LLM(
 )
 
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.CHINESE,
     submit=SubmitKind.APPEND_BLOCK,
     translation_llm=translation_llm,
@@ -316,8 +315,8 @@ llm = LLM(
 
 ```python
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language="Chinese",
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,

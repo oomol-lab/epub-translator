@@ -45,7 +45,6 @@ The easiest way to use EPUB Translator is through OOMOL Studio with a visual int
 ### Using Python API
 
 ```python
-from pathlib import Path
 from epub_translator import LLM, translate, language, SubmitKind
 
 # Initialize LLM with your API credentials
@@ -58,8 +57,8 @@ llm = LLM(
 
 # Translate EPUB file using language constants
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -81,8 +80,8 @@ with tqdm(total=100, desc="Translating", unit="%") as pbar:
         last_progress = progress
 
     translate(
-        source_path=Path("source.epub"),
-        target_path=Path("translated.epub"),
+        source_path="source.epub",
+        target_path="translated.epub",
         target_language="English",
         submit=SubmitKind.APPEND_BLOCK,
         llm=llm,
@@ -161,8 +160,8 @@ from epub_translator import SubmitKind
 ```python
 # For bilingual books (recommended)
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -170,8 +169,8 @@ translate(
 
 # For single-language translation
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.REPLACE,
     llm=llm,
@@ -187,8 +186,8 @@ from epub_translator import language
 
 # Usage example:
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -196,8 +195,8 @@ translate(
 
 # You can also use custom language strings:
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language="Icelandic",  # For languages not in the constants
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -218,8 +217,8 @@ def handle_fill_error(event: FillFailedEvent):
         print("  Maximum retries exceeded!")
 
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
@@ -255,8 +254,8 @@ fill_llm = LLM(
 )
 
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language=language.ENGLISH,
     submit=SubmitKind.APPEND_BLOCK,
     translation_llm=translation_llm,
@@ -316,8 +315,8 @@ Provide specific translation instructions:
 
 ```python
 translate(
-    source_path=Path("source.epub"),
-    target_path=Path("translated.epub"),
+    source_path="source.epub",
+    target_path="translated.epub",
     target_language="English",
     submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
