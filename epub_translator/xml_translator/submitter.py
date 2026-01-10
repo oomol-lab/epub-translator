@@ -166,6 +166,7 @@ class _Submitter:
             node_element=node.raw_element,
             text_segments=node.tail_text_segments,
             tail_element=last_tail_element,
+            ref_element=None,
             append_to_end=True,
         )
         if tail_preserved_elements:
@@ -207,8 +208,8 @@ class _Submitter:
         node_element: Element,
         text_segments: list[TextSegment],
         tail_element: Element | None,
-        append_to_end: bool = False,
-        ref_element: Element | None = None,  # 参考元素，用于在 tail_element=None 时定位
+        ref_element: Element | None,
+        append_to_end: bool,
     ) -> None:
         combined = self._combine_text_segments(text_segments)
         if combined is None:
@@ -216,38 +217,36 @@ class _Submitter:
 
         if combined.text:
             will_inject_space = self._action != SubmitAction.REPLACE and is_inline_tag(combined.tag)
-            if tail_element is None:
-                # 当没有 tail_element 时，需要根据 ref_element 来决定文本添加位置
-                if ref_element is not None:
-                    # 找到 ref_element 前面的元素
-                    ref_index = index_of_parent(node_element, ref_element)
-                    if ref_index > 0:
-                        # 添加到前一个元素的 tail
-                        prev_element = node_element[ref_index - 1]
-                        prev_element.tail = self._append_text_in_element(
-                            origin_text=prev_element.tail,
-                            append_text=combined.text,
-                            will_inject_space=will_inject_space,
-                        )
-                    else:
-                        # ref_element 是第一个元素，添加到 node_element.text
-                        node_element.text = self._append_text_in_element(
-                            origin_text=node_element.text,
-                            append_text=combined.text,
-                            will_inject_space=will_inject_space,
-                        )
-                else:
-                    node_element.text = self._append_text_in_element(
-                        origin_text=node_element.text,
-                        append_text=combined.text,
-                        will_inject_space=will_inject_space,
-                    )
-            else:
+            if tail_element is not None:
                 tail_element.tail = self._append_text_in_element(
                     origin_text=tail_element.tail,
                     append_text=combined.text,
                     will_inject_space=will_inject_space,
                 )
+            elif ref_element is None:
+                node_element.text = self._append_text_in_element(
+                    origin_text=node_element.text,
+                    append_text=combined.text,
+                    will_inject_space=will_inject_space,
+                )
+            else:
+                ref_index = index_of_parent(node_element, ref_element)
+                if ref_index > 0:
+                    # 添加到前一个元素的 tail
+                    prev_element = node_element[ref_index - 1]
+                    prev_element.tail = self._append_text_in_element(
+                        origin_text=prev_element.tail,
+                        append_text=combined.text,
+                        will_inject_space=will_inject_space,
+                    )
+                else:
+                    # ref_element 是第一个元素，添加到 node_element.text
+                    node_element.text = self._append_text_in_element(
+                        origin_text=node_element.text,
+                        append_text=combined.text,
+                        will_inject_space=will_inject_space,
+                    )
+
         if tail_element is not None:
             insert_position = index_of_parent(node_element, tail_element) + 1
         elif append_to_end:
