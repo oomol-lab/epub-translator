@@ -265,6 +265,52 @@ class TestSubmitEdgeCases(unittest.TestCase):
         """
         self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
+    def test_tail_text_position_in_append_block(self):
+        """测试 APPEND_BLOCK 模式下 tail text 的正确位置"""
+        # 简化的测试：验证 tail text 的译文不会出现在父元素的开头
+        xml_str = """
+        <body>
+            <description id="desc">Description text</description>
+            Tail text after description.
+            <p id="p1">Paragraph text</p>
+        </body>
+        """
+        root = parse_xml(xml_str)
+        desc = find_element_by_id(root, "desc")
+        p1 = find_element_by_id(root, "p1")
+
+        # 构造译文
+        trans1_xml = parse_xml("<description>描述文本</description>")
+        trans1_segments = list(search_text_segments(trans1_xml))
+
+        # 简化：只翻译 paragraph
+        trans2_xml = parse_xml("<p>段落文本</p>")
+        trans2_segments = list(search_text_segments(trans2_xml))
+
+        mappings: list[InlineSegmentMapping] = [
+            (desc, trans1_segments),
+            (p1, trans2_segments),
+        ]
+
+        result = submit(root, SubmitAction.APPEND_BLOCK, mappings)
+        result_str = element_to_string(result)
+
+        # 核心验证：确保译文结构正确，tail text 仍在原位置
+        # 译文应该按顺序出现：<description> 原文、<description> 译文、tail text、<p> 原文、<p> 译文
+        self.assertIn('<description id="desc">Description text</description>', result_str)
+        self.assertIn("<description>描述文本</description>", result_str)
+        self.assertIn("Tail text after description.", result_str)
+        self.assertIn('<p id="p1">Paragraph text</p>', result_str)
+        self.assertIn("<p>段落文本</p>", result_str)
+
+        # 验证顺序：description 译文在 tail text 之前
+        desc_trans_pos = result_str.find("<description>描述文本</description>")
+        tail_text_pos = result_str.find("Tail text after description.")
+        p_orig_pos = result_str.find('<p id="p1">Paragraph text</p>')
+
+        self.assertLess(desc_trans_pos, tail_text_pos, "描述译文应在 tail text 之前")
+        self.assertLess(tail_text_pos, p_orig_pos, "tail text 应在段落原文之前")
+
 
 if __name__ == "__main__":
     unittest.main()
