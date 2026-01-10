@@ -46,7 +46,7 @@ pip install epub-translator
 
 ```python
 from pathlib import Path
-from epub_translator import LLM, translate, language
+from epub_translator import LLM, translate, language, SubmitKind
 
 # 使用 API 凭证初始化 LLM
 llm = LLM(
@@ -61,6 +61,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
 )
 ```
@@ -83,6 +84,7 @@ with tqdm(total=100, desc="翻译中", unit="%") as pbar:
         source_path=Path("source.epub"),
         target_path=Path("translated.epub"),
         target_language="Chinese",
+        submit=SubmitKind.APPEND_BLOCK,
         llm=llm,
         on_progress=on_progress,
     )
@@ -119,6 +121,7 @@ translate(
     source_path: PathLike | str,       # 源 EPUB 文件路径
     target_path: PathLike | str,       # 输出 EPUB 文件路径
     target_language: str,              # 目标语言 (例如 "Chinese", "English")
+    submit: SubmitKind,                # 如何插入译文 (REPLACE, APPEND_TEXT, 或 APPEND_BLOCK)
     user_prompt: str | None = None,    # 自定义翻译指令
     max_retries: int = 5,              # 翻译失败的最大重试次数
     max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
@@ -132,6 +135,49 @@ translate(
 
 **注意**: 必须提供 `llm` 或同时提供 `translation_llm` 和 `fill_llm`。使用独立的 LLM 可以针对不同任务进行优化。
 
+#### 提交模式
+
+`submit` 参数控制译文如何插入到文档中。使用 `SubmitKind` 枚举类型指定插入模式：
+
+```python
+from epub_translator import SubmitKind
+
+# 三种可用模式：
+# - SubmitKind.REPLACE: 用译文替换原文（单语输出）
+# - SubmitKind.APPEND_TEXT: 将译文作为内联文本附加（双语输出）
+# - SubmitKind.APPEND_BLOCK: 将译文作为块级元素附加（双语输出，推荐）
+```
+
+**模式对比：**
+
+- **`SubmitKind.REPLACE`**: 用译文替换原文，创建单语翻译版本。适用于只需要目标语言版本的场景。
+
+- **`SubmitKind.APPEND_TEXT`**: 将译文作为内联文本紧接在原文后附加。两种语言出现在同一段落中，形成连续的阅读流。
+
+- **`SubmitKind.APPEND_BLOCK`** (推荐): 将译文作为独立的块级元素（段落）附加在原文后。这在两种语言之间创建清晰的视觉分隔，最适合双语对照阅读。
+
+**示例：**
+
+```python
+# 创建双语书籍（推荐）
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
+    llm=llm,
+)
+
+# 创建单语翻译
+translate(
+    source_path=Path("source.epub"),
+    target_path=Path("translated.epub"),
+    target_language=language.CHINESE,
+    submit=SubmitKind.REPLACE,
+    llm=llm,
+)
+```
+
 #### 语言常量
 
 EPUB Translator 提供了预定义的语言常量供用户使用，您可以使用这些常量而不是直接编写语言名称字符串：
@@ -144,6 +190,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
 )
 
@@ -152,6 +199,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="Icelandic",  # 对于不在常量列表中的语言
+    submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
 )
 ```
@@ -173,6 +221,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
     on_fill_failed=handle_fill_error,
 )
@@ -209,6 +258,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
     translation_llm=translation_llm,
     fill_llm=fill_llm,
 )
@@ -269,6 +319,7 @@ translate(
     source_path=Path("source.epub"),
     target_path=Path("translated.epub"),
     target_language="Chinese",
+    submit=SubmitKind.APPEND_BLOCK,
     llm=llm,
     user_prompt="使用正式语言并保留专业术语",
 )
