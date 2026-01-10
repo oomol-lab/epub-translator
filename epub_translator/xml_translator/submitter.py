@@ -10,7 +10,8 @@ from .stream_mapper import InlineSegmentMapping
 
 class SubmitAction(Enum):
     REPLACE = auto()
-    APPEND = auto()
+    APPEND_TEXT = auto()
+    APPEND_BLOCK = auto()
 
 
 def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
@@ -65,12 +66,12 @@ class _Submitter:
 
     # @return replaced root element, or None if appended to parent
     def _submit_node(self, node: _Node) -> Element | None:
-        if not node.items:
-            return self._submit_node_by_replace(node)
+        if node.items or self._action == SubmitAction.APPEND_TEXT:
+            return self._submit_by_text(node)
         else:
-            return self._submit_node_by_append_text(node)
+            return self._submit_by_block(node)
 
-    def _submit_node_by_replace(self, node: _Node) -> Element | None:
+    def _submit_by_block(self, node: _Node) -> Element | None:
         parent = self._parents.get(id(node.raw_element), None)
         if parent is None:
             return node.raw_element
@@ -86,7 +87,7 @@ class _Submitter:
 
         return None
 
-    def _submit_node_by_append_text(self, node: _Node) -> Element | None:
+    def _submit_by_text(self, node: _Node) -> Element | None:
         replaced_root: Element | None = None
         child_nodes = dict((id(node), node) for _, node in node.items)
         last_tail_element: Element | None = None
@@ -101,12 +102,11 @@ class _Submitter:
 
         for text_segments, child_node in node.items:
             tail_element = tail_elements.get(id(child_node.raw_element), None)
+            items_preserved_elements: list[Element] = []
 
-            # REPLACE 模式：删除从 tail_element（或开头）到 child_element 之间的所有内容
-            preserved_elements: list[Element] = []
             if self._action == SubmitAction.REPLACE:
                 end_index = index_of_parent(node.raw_element, child_node.raw_element)
-                preserved_elements = self._remove_elements_after_tail(
+                items_preserved_elements = self._remove_elements_after_tail(
                     node_element=node.raw_element,
                     tail_element=tail_element,
                     end_index=end_index,
@@ -118,11 +118,9 @@ class _Submitter:
                 tail_element=tail_element,
                 append_to_end=False,
             )
-
-            # 插入保留的非 inline 元素
-            if preserved_elements:
+            if items_preserved_elements:
                 insert_position = index_of_parent(node.raw_element, child_node.raw_element)
-                for i, elem in enumerate(preserved_elements):
+                for i, elem in enumerate(items_preserved_elements):
                     node.raw_element.insert(insert_position + i, elem)
 
         for _, child_node in node.items:
@@ -130,25 +128,21 @@ class _Submitter:
             if replaced_root is None:
                 replaced_root = submitted
 
-        # REPLACE 模式：删除从 last_tail_element（或开头）到末尾的所有内容
-        preserved_elements: list[Element] = []
+        tail_preserved_elements: list[Element] = []
         if self._action == SubmitAction.REPLACE:
-            preserved_elements = self._remove_elements_after_tail(
+            tail_preserved_elements = self._remove_elements_after_tail(
                 node_element=node.raw_element,
                 tail_element=last_tail_element,
                 end_index=None,  # None 表示删除到末尾
             )
-
         self._append_combined_after_tail(
             node_element=node.raw_element,
             text_segments=node.tail_text_segments,
             tail_element=last_tail_element,
             append_to_end=True,
         )
-
-        # 插入保留的非 inline 元素到末尾
-        if preserved_elements:
-            for elem in preserved_elements:
+        if tail_preserved_elements:
+            for elem in tail_preserved_elements:
                 node.raw_element.append(elem)
 
         return replaced_root
@@ -159,18 +153,6 @@ class _Submitter:
         tail_element: Element | None,
         end_index: int | None = None,
     ) -> list[Element]:
-        """删除从 tail_element（或开头）到 end_index（或末尾）之间的所有元素。
-
-        在 REPLACE 模式下，非 inline 标签会被保留并返回，以便插入到译文之后。
-
-        参数：
-        - node_element: 父元素
-        - tail_element: 起始参考元素，删除它之后的内容（不包含它本身）
-        - end_index: 结束索引（不包含），None 表示删除到末尾
-
-        返回：
-        - 被保留的非 inline 元素列表（保持原始顺序）
-        """
         if tail_element is None:
             start_index = 0
             node_element.text = None
@@ -181,16 +163,13 @@ class _Submitter:
         if end_index is None:
             end_index = len(node_element)
 
-        # 收集非 inline 标签
         preserved_elements: list[Element] = []
         for i in range(start_index, end_index):
             elem = node_element[i]
             if not is_inline_tag(elem.tag):
-                # 保留非 inline 标签，但清空其 tail
                 elem.tail = None
                 preserved_elements.append(elem)
 
-        # 倒序删除区间内的所有元素
         for i in range(end_index - 1, start_index - 1, -1):
             node_element.remove(node_element[i])
 
@@ -239,7 +218,8 @@ class _Submitter:
 
 def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:
     # 需要翻译的文字会被嵌套到两种不同的结构中。
-    # 最常见的的是 peak 结构，例如如下结构，没有任何子结构。可直接文本替换或追加。
+    # 最常见的的是 peak 结构，例如如下结构，没有任何子结构（inline 标签不是视为子结构）。
+    # 可直接文本替换或追加。
     # <div>Some text <b>bold text</b> more text.</div>
     #
     # 但是还有一种少见的 platform 结构，它内部被其他 peak/platform 切割。
