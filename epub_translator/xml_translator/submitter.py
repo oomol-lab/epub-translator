@@ -4,7 +4,7 @@ from enum import Enum, auto
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..xml import append_text_in_element, index_of_parent, is_inline_tag, iter_with_stack
+from ..xml import index_of_parent, is_inline_tag, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
@@ -214,19 +214,18 @@ class _Submitter:
             return
 
         if combined.text:
-            text_to_append = combined.text
-            if self._action != SubmitAction.REPLACE and is_inline_tag(combined.tag):
-                text_to_append = " " + text_to_append
-
+            will_inject_space = self._action != SubmitAction.REPLACE and is_inline_tag(combined.tag)
             if tail_element is None:
-                node_element.text = append_text_in_element(
+                node_element.text = self._append_text_in_element(
                     origin_text=node_element.text,
-                    append_text=text_to_append,
+                    append_text=combined.text,
+                    will_inject_space=will_inject_space,
                 )
             else:
-                tail_element.tail = append_text_in_element(
+                tail_element.tail = self._append_text_in_element(
                     origin_text=tail_element.tail,
-                    append_text=text_to_append,
+                    append_text=combined.text,
+                    will_inject_space=will_inject_space,
                 )
         if tail_element is not None:
             insert_position = index_of_parent(node_element, tail_element) + 1
@@ -245,6 +244,19 @@ class _Submitter:
             return None
         else:
             return combined[0]
+
+    def _append_text_in_element(
+        self,
+        origin_text: str | None,
+        append_text: str,
+        will_inject_space: bool,
+    ) -> str:
+        if origin_text is None:
+            return append_text
+        elif will_inject_space:
+            return origin_text.rstrip() + " " + append_text.lstrip()
+        else:
+            return origin_text + append_text
 
 
 def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:

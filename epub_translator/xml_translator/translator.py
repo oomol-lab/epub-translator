@@ -82,7 +82,7 @@ class XMLTranslator:
         ):
             yield submit(
                 element=element,
-                action=SubmitAction.APPEND,
+                action=SubmitAction.APPEND_BLOCK,
                 mappings=mappings,
             )
 
