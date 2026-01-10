@@ -1,9 +1,9 @@
+from collections.abc import Generator
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import cast
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..utils import nest
 from ..xml import index_of_parent, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
@@ -13,82 +13,119 @@ class SubmitAction(Enum):
     Append = auto()
 
 
-class _PeakNode:
-    def __init__(self, raw_element: Element, text_segments: list[TextSegment]) -> None:
-        pass
+@dataclass
+class _Node:
+    raw_element: Element
+    items: list[tuple[list[TextSegment], "_Node"]]  # empty for peak, non-empty for platform
+    tail_text_segments: list[TextSegment]
 
 
-class _PlatformNode:
-    def __init__(
-        self,
-        raw_element: Element,
-        items: list[tuple[list[TextSegment], "_PeakNode | _PlatformNode"]],
-        tail_text_segments: list[TextSegment],
-    ) -> None:
-        pass
+def submit(element: Element, mappings: list[InlineSegmentMapping]):
+    parents = _collect_parents(element, mappings)
+    for node in _nest_nodes(mappings):
+        _submit_node(node, parents)
 
 
-def _nest_nodes(mappings: list[InlineSegmentMapping]):
+def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
+    ids: set[int] = set(id(e) for e, _ in mappings)
+    parents_dict: dict[int, Element] = {}
+    for parents, child in iter_with_stack(element):
+        if parents and id(child) in ids:
+            parents_dict[id(child)] = parents[-1]
+    return parents_dict
+
+
+def _submit_node(node: _Node, parents: dict[int, Element]):
+    parent = parents.get(id(node.raw_element), None)
+    if parent is None:
+        return
+
+    if node.items:
+        pass  # TODO: 处理 platform 结构
+    else:
+        index = index_of_parent(parent, node.raw_element)
+        combined = next(
+            combine_text_segments(
+                segments=(t.strip_block_parents() for t in node.tail_text_segments),
+            ),
+            None,
+        )
+        if combined is not None:
+            combined_element, _ = combined
+            parent.insert(index + 1, combined_element)
+            combined_element.tail = node.raw_element.tail
+            node.raw_element.tail = None
+
+
+def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:
     # 需要翻译的文字会被嵌套到两种不同的结构中。
     # 最常见的的是 peak 结构，例如如下结构，没有任何子结构。可直接文本替换或追加。
     # <div>Some text <b>bold text</b> more text.</div>
     #
     # 但是还有一种少见的 platform 结构，它内部被其他 peak/platform 切割。
-    #       <div>
-    #         Some text before.
-    #         <!-- 如下 peak 将它的阅读流切段 -->
-    #         <div>Paragraph 1.</div>
-    #         Some text in between.
-    #       </div>
+    #   <div>
+    #     Some text before.
+    #     <!-- 如下 peak 将它的阅读流切段 -->
+    #     <div>Paragraph 1.</div>
+    #     Some text in between.
+    #   </div>
     # 如果直接对它进行替换或追加，读者阅读流会被破坏，从而读起来怪异。
     # 正是因为这种结构的存在，必须还原成树型结构，然后用特殊的方式来处理 platform 结构。
     #
     # 总之，我们假设 95% 的阅读体验由 peak 提供，但为兼顾剩下的 platform 结构，故加此步骤。
-    grouped_text_segments = nest((id(e), text_segments) for e, text_segments in mappings)
-    id2children: dict[int, list[int | _PeakNode | _PlatformNode]] = dict(
-        (id, []) for id in grouped_text_segments.keys()
-    )
-    for group_id, group in grouped_text_segments.items():
-        text_segment = group[0][0]
-        # ignore the last one (it's self element)
-        for i in range(len(text_segment.parent_stack) - 2, -1, -1):
-            parent = text_segment.parent_stack[i]
-            children = id2children.get(id(parent), None)
-            if children is not None:
-                children.append(group_id)
+    stack: list[_Node] = []
+
+    for block_element, text_segments in mappings:
+        keep_depth: int = 0
+        upwards: bool = False
+        for i in range(len(stack) - 1, -1, -1):
+            if stack[i].raw_element is block_element:
+                keep_depth = i + 1
+                upwards = True
                 break
 
-    nodes_buffer: dict[int, _PeakNode | _PlatformNode] = {}
-    while id2children:
-        for group_id, children in list(id2children.items()):
-            group = grouped_text_segments[group_id]
-            if not children:
-                id2children.pop(group_id)
-                nodes_buffer[group_id] = _PeakNode(
-                    raw_element=group[0][0].block_parent,
-                    text_segments=[t for ts in group for t in ts],
+        if not upwards:
+            for i in range(len(stack) - 1, -1, -1):
+                if _check_includes(stack[i].raw_element, block_element):
+                    keep_depth = i + 1
+                    break
+
+        while len(stack) > keep_depth:
+            child_node = _fold_top_of_stack(stack)
+            if not upwards and child_node is not None:
+                yield child_node
+
+        if upwards:
+            stack[keep_depth - 1].tail_text_segments.extend(text_segments)
+        else:
+            stack.append(
+                _Node(
+                    raw_element=block_element,
+                    items=[],
+                    tail_text_segments=list(text_segments),
                 )
-            else:
-                progress_count: int = 0
-                for i in range(len(children)):
-                    child = children[i]
-                    if not isinstance(child, int):
-                        progress_count += 1
-                    else:
-                        child_node = nodes_buffer.get(child, None)
-                        if child_node is not None:
-                            children[i] = child_node
-                            progress_count += 1
-                if progress_count >= len(children):
-                    id2children.pop(group_id)
-                    nodes_buffer[group_id] = _create_platform_node(
-                        group=group,
-                        children=cast(list[_PeakNode | _PlatformNode], children),
-                    )
+            )
+    while stack:
+        child_node = _fold_top_of_stack(stack)
+        if child_node is not None:
+            yield child_node
 
 
-def _create_platform_node(group: list[list[TextSegment]], children: list[_PeakNode | _PlatformNode]) -> _PlatformNode:
-    raise NotImplementedError()
+def _fold_top_of_stack(stack: list[_Node]):
+    child_node = stack.pop()
+    if not stack:
+        return child_node
+    parent_node = stack[-1]
+    parent_node.items.append((parent_node.tail_text_segments, child_node))
+    parent_node.tail_text_segments = []
+    return None
+
+
+def _check_includes(parent: Element, child: Element) -> bool:
+    for _, checked in iter_with_stack(parent):
+        if child is checked:
+            return True
+    return False
 
 
 def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping]) -> Element:
@@ -102,21 +139,6 @@ def _group_text_segments(mappings: list[InlineSegmentMapping]):
     for block_element, text_segments in mappings:
         parent_id = id(block_element)
         grouped_map[parent_id] = text_segments
-
-    # TODO: 如下是为了清除嵌入文字的 Block，当前版本忽略了嵌入文字的 Block 概念。
-    #       这是书籍中可能出现的一种情况，虽然不多见。
-    #       例如，作为非叶子的块元素，它的子块元素之间会夹杂文本，当前 collect_next_inline_segment 会忽略这些文字：
-    #       <div>
-    #         Some text before.
-    #         <!-- 只有下一行作为叶子节点的块元素内的文字会被处理 -->
-    #         <div>Paragraph 1.</div>
-    #         Some text in between.
-    #       </div>
-    for _, text_segments in mappings:
-        for text_segment in text_segments:
-            for parent_block in text_segment.parent_stack[: text_segment.block_depth - 1]:
-                grouped_map.pop(id(parent_block), None)
-
     return grouped_map
 
 
