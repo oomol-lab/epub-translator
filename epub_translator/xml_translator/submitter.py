@@ -8,13 +8,13 @@ from ..xml import index_of_parent, is_inline_tag, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
-class SubmitAction(Enum):
+class SubmitKind(Enum):
     REPLACE = auto()
     APPEND_TEXT = auto()
     APPEND_BLOCK = auto()
 
 
-def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]) -> Element:
+def submit(element: Element, action: SubmitKind, mappings: list[InlineSegmentMapping]) -> Element:
     submitter = _Submitter(
         element=element,
         action=action,
@@ -38,10 +38,10 @@ class _Submitter:
     def __init__(
         self,
         element: Element,
-        action: SubmitAction,
+        action: SubmitKind,
         mappings: list[InlineSegmentMapping],
     ) -> None:
-        self._action: SubmitAction = action
+        self._action: SubmitKind = action
         self._nodes: list[_Node] = list(_nest_nodes(mappings))
         self._parents: dict[int, Element] = self._collect_parents(element, mappings)
 
@@ -65,7 +65,7 @@ class _Submitter:
 
     # @return replaced root element, or None if appended to parent
     def _submit_node(self, node: _Node) -> Element | None:
-        if node.items or self._action == SubmitAction.APPEND_TEXT:
+        if node.items or self._action == SubmitKind.APPEND_TEXT:
             return self._submit_by_text(node)
         else:
             return self._submit_by_block(node)
@@ -76,7 +76,7 @@ class _Submitter:
             return node.raw_element
 
         preserved_elements: list[Element] = []
-        if self._action == SubmitAction.REPLACE:
+        if self._action == SubmitKind.REPLACE:
             for child in list(node.raw_element):
                 if not is_inline_tag(child.tag):
                     child.tail = None
@@ -87,7 +87,7 @@ class _Submitter:
 
         if combined is not None:
             # 在 APPEND_BLOCK 模式下，如果是 inline tag，则在文本前面加空格
-            if self._action == SubmitAction.APPEND_BLOCK and is_inline_tag(combined.tag) and combined.text:
+            if self._action == SubmitKind.APPEND_BLOCK and is_inline_tag(combined.tag) and combined.text:
                 combined.text = " " + combined.text
             parent.insert(index + 1, combined)
             index += 1
@@ -103,7 +103,7 @@ class _Submitter:
                 combined.tail = node.raw_element.tail
             node.raw_element.tail = None
 
-            if self._action == SubmitAction.REPLACE:
+            if self._action == SubmitKind.REPLACE:
                 parent.remove(node.raw_element)
 
         return None
@@ -125,7 +125,7 @@ class _Submitter:
             tail_element = tail_elements.get(id(child_node.raw_element), None)
             items_preserved_elements: list[Element] = []
 
-            if self._action == SubmitAction.REPLACE:
+            if self._action == SubmitKind.REPLACE:
                 end_index = index_of_parent(node.raw_element, child_node.raw_element)
                 items_preserved_elements = self._remove_elements_after_tail(
                     node_element=node.raw_element,
@@ -156,7 +156,7 @@ class _Submitter:
             last_tail_element = None
 
         tail_preserved_elements: list[Element] = []
-        if self._action == SubmitAction.REPLACE:
+        if self._action == SubmitKind.REPLACE:
             tail_preserved_elements = self._remove_elements_after_tail(
                 node_element=node.raw_element,
                 tail_element=last_tail_element,
@@ -216,7 +216,7 @@ class _Submitter:
             return
 
         if combined.text:
-            will_inject_space = self._action != SubmitAction.REPLACE and is_inline_tag(combined.tag)
+            will_inject_space = self._action != SubmitKind.REPLACE and is_inline_tag(combined.tag)
             if tail_element is not None:
                 tail_element.tail = self._append_text_in_element(
                     origin_text=tail_element.tail,

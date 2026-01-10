@@ -9,7 +9,7 @@ from ..xml import decode_friendly, encode_friendly
 from .callbacks import Callbacks, FillFailedEvent, warp_callbacks
 from .hill_climbing import HillClimbing
 from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
-from .submitter import SubmitAction, submit
+from .submitter import SubmitKind, submit
 
 T = TypeVar("T")
 
@@ -17,7 +17,7 @@ T = TypeVar("T")
 @dataclass
 class TranslationTask(Generic[T]):
     element: Element
-    action: SubmitAction
+    action: SubmitKind
     payload: T
 
 
@@ -99,7 +99,7 @@ class XMLTranslator:
             if task:
                 translated_element = submit(
                     element=element,
-                    action=SubmitAction.APPEND_BLOCK,
+                    action=task.action,
                     mappings=mappings,
                 )
                 yield translated_element, task.payload

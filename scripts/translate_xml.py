@@ -6,10 +6,10 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..")))
 from pathlib import Path
 from xml.etree.ElementTree import Element, fromstring
 
-from epub_translator import SubmitAction, TranslationTask
+from epub_translator import SubmitKind
 from epub_translator.language import CHINESE
 from epub_translator.xml import encode_friendly
-from epub_translator.xml_translator import XMLTranslator
+from epub_translator.xml_translator import TranslationTask, XMLTranslator
 from scripts.utils import load_llm, read_and_clean_temp
 
 
@@ -48,7 +48,7 @@ def main() -> None:
         translated_element, _ = translator.translate_element(
             task=TranslationTask(
                 element=source_ele,
-                action=SubmitAction.APPEND_BLOCK,
+                action=SubmitKind.APPEND_BLOCK,
                 payload=None,
             )
         )

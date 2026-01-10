@@ -5,7 +5,7 @@ from epub_translator.segment import search_text_segments
 from epub_translator.utils import normalize_whitespace
 from epub_translator.xml import iter_with_stack
 from epub_translator.xml_translator.stream_mapper import InlineSegmentMapping
-from epub_translator.xml_translator.submitter import SubmitAction, submit
+from epub_translator.xml_translator.submitter import SubmitKind, submit
 
 
 def parse_xml(xml_str: str) -> Element:
@@ -47,7 +47,7 @@ class TestSubmitReplace(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
 
-        result = submit(root, SubmitAction.REPLACE, mappings)
+        result = submit(root, SubmitKind.REPLACE, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -74,7 +74,7 @@ class TestSubmitReplace(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
 
-        result = submit(root, SubmitAction.REPLACE, mappings)
+        result = submit(root, SubmitKind.REPLACE, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -106,7 +106,7 @@ class TestSubmitReplace(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(d1, translated_segments)]
 
-        result = submit(root, SubmitAction.REPLACE, mappings)
+        result = submit(root, SubmitKind.REPLACE, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -150,7 +150,7 @@ class TestSubmitReplace(unittest.TestCase):
             (d1, trans3_segments),  # something 部分（tail_text_segments）
         ]
 
-        result = submit(root, SubmitAction.REPLACE, mappings)
+        result = submit(root, SubmitKind.REPLACE, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -180,7 +180,7 @@ class TestSubmitAppendText(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
 
-        result = submit(root, SubmitAction.APPEND_TEXT, mappings)
+        result = submit(root, SubmitKind.APPEND_TEXT, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -210,7 +210,7 @@ class TestSubmitAppendBlock(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
 
-        result = submit(root, SubmitAction.APPEND_BLOCK, mappings)
+        result = submit(root, SubmitKind.APPEND_BLOCK, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -229,7 +229,7 @@ class TestSubmitEdgeCases(unittest.TestCase):
         xml_str = "<div><p>hello</p></div>"
         root = parse_xml(xml_str)
 
-        result = submit(root, SubmitAction.REPLACE, [])
+        result = submit(root, SubmitKind.REPLACE, [])
 
         # 验证：返回原始元素
         self.assertEqual(element_to_string(result), element_to_string(root))
@@ -255,7 +255,7 @@ class TestSubmitEdgeCases(unittest.TestCase):
 
         mappings: list[InlineSegmentMapping] = [(d1, translated_segments)]
 
-        result = submit(root, SubmitAction.REPLACE, mappings)
+        result = submit(root, SubmitKind.REPLACE, mappings)
         result_str = element_to_string(result)
 
         expected = """
@@ -292,7 +292,7 @@ class TestSubmitEdgeCases(unittest.TestCase):
             (p1, trans2_segments),
         ]
 
-        result = submit(root, SubmitAction.APPEND_BLOCK, mappings)
+        result = submit(root, SubmitKind.APPEND_BLOCK, mappings)
         result_str = element_to_string(result)
 
         # 核心验证：确保译文结构正确，tail text 仍在原位置

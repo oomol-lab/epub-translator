@@ -17,7 +17,7 @@ from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, e
 from .llm import LLM
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_interrupter import XMLInterrupter
-from .xml_translator import FillFailedEvent, SubmitAction, TranslationTask, XMLTranslator
+from .xml_translator import FillFailedEvent, SubmitKind, TranslationTask, XMLTranslator
 
 
 class _ElementType(Enum):
@@ -36,6 +36,7 @@ def translate(
     source_path: PathLike | str,
     target_path: PathLike | str,
     target_language: str,
+    submit: SubmitKind,
     user_prompt: str | None = None,
     max_retries: int = 5,
     max_group_tokens: int = 1200,
@@ -98,6 +99,7 @@ def translate(
                 zip=zip,
                 toc_list=toc_list,
                 metadata_fields=metadata_fields,
+                submit=submit,
             ),
         ):
             if context.element_type == _ElementType.TOC:
@@ -132,18 +134,23 @@ def _generate_tasks_from_book(
     zip: Zip,
     toc_list: list,
     metadata_fields: list,
+    submit: SubmitKind,
 ) -> Generator[TranslationTask[_ElementContext], None, None]:
+    head_submit = submit
+    if head_submit == SubmitKind.APPEND_BLOCK:
+        head_submit = SubmitKind.APPEND_TEXT
+
     if toc_list:
         yield TranslationTask(
             element=encode_toc_list(toc_list),
-            action=SubmitAction.APPEND_TEXT,
+            action=head_submit,
             payload=_ElementContext(element_type=_ElementType.TOC),
         )
 
     if metadata_fields:
         yield TranslationTask(
             element=encode_metadata(metadata_fields),
-            action=SubmitAction.APPEND_TEXT,
+            action=head_submit,
             payload=_ElementContext(element_type=_ElementType.METADATA),
         )
 
@@ -157,7 +164,7 @@ def _generate_tasks_from_book(
         if body_element is not None:
             yield TranslationTask(
                 element=body_element,
-                action=SubmitAction.APPEND_BLOCK,
+                action=submit,
                 payload=_ElementContext(
                     element_type=_ElementType.CHAPTER,
                     chapter_data=(chapter_path, xml),
