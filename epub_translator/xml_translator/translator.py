@@ -1,5 +1,6 @@
 from collections.abc import Callable, Generator, Iterable
-from typing import TypeVar
+from dataclasses import dataclass
+from typing import Generic, TypeVar
 from xml.etree.ElementTree import Element
 
 from ..llm import LLM, Message, MessageRole
@@ -8,9 +9,16 @@ from ..xml import decode_friendly, encode_friendly
 from .callbacks import Callbacks, FillFailedEvent, warp_callbacks
 from .hill_climbing import HillClimbing
 from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
-from .submitter import submit_text_segments
+from .submitter import SubmitKind, submit
 
 T = TypeVar("T")
+
+
+@dataclass
+class TranslationTask(Generic[T]):
+    element: Element
+    action: SubmitKind
+    payload: T
 
 
 class XMLTranslator:
@@ -41,14 +49,14 @@ class XMLTranslator:
 
     def translate_element(
         self,
-        element: Element,
+        task: TranslationTask[T],
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_block_element: Callable[[Element], Element] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
-    ) -> Element:
+    ) -> tuple[Element, T]:
         for translated in self.translate_elements(
-            elements=((element),),
+            tasks=((task),),
             interrupt_source_text_segments=interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupt_translated_text_segments,
             interrupt_block_element=interrupt_block_element,
@@ -60,30 +68,41 @@ class XMLTranslator:
 
     def translate_elements(
         self,
-        elements: Iterable[Element],
+        tasks: Iterable[TranslationTask[T]],
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_block_element: Callable[[Element], Element] | None = None,
         on_fill_failed: Callable[[FillFailedEvent], None] | None = None,
-    ) -> Generator[Element, None, None]:
+    ) -> Generator[tuple[Element, T], None, None]:
+        element2task: dict[int, TranslationTask[T]] = {}
         callbacks = warp_callbacks(
             interrupt_source_text_segments=interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupt_translated_text_segments,
             interrupt_block_element=interrupt_block_element,
             on_fill_failed=on_fill_failed,
         )
+
+        def generate_elements():
+            for task in tasks:
+                element2task[id(task.element)] = task
+                yield task.element
+
         for element, mappings in self._stream_mapper.map_stream(
-            elements=iter(elements),
+            elements=generate_elements(),
             callbacks=callbacks,
             map=lambda inline_segments: self._translate_inline_segments(
                 inline_segments=inline_segments,
                 callbacks=callbacks,
             ),
         ):
-            yield submit_text_segments(
-                element=element,
-                mappings=mappings,
-            )
+            task = element2task.get(id(element), None)
+            if task:
+                translated_element = submit(
+                    element=element,
+                    action=task.action,
+                    mappings=mappings,
+                )
+                yield translated_element, task.payload
 
     def _translate_inline_segments(
         self,

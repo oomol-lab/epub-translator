@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from epub_translator import FillFailedEvent, translate
+from epub_translator import FillFailedEvent, SubmitKind, translate
 from epub_translator.language import ENGLISH
 from scripts.utils import load_llm, read_and_clean_temp
 
@@ -43,6 +43,7 @@ def main() -> None:
             translation_llm=translation_llm,
             fill_llm=fill_llm,
             target_language=ENGLISH,
+            submit=SubmitKind.APPEND_BLOCK,
             source_path=assets_path / "治疗精神病.epub",
             target_path=temp_path / "translated.epub",
             on_progress=on_progress,

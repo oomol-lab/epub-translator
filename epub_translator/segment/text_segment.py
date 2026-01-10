@@ -4,71 +4,7 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from ..xml import expand_left_element_texts, expand_right_element_texts, normalize_text_in_element
-
-# HTML inline-level elements
-# Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
-# Reference: https://developer.mozilla.org/en-US/docs/Glossary/Inline-level_content
-_HTML_INLINE_TAGS = frozenset(
-    (
-        # Inline text semantics
-        "a",
-        "abbr",
-        "b",
-        "bdi",
-        "bdo",
-        "br",
-        "cite",
-        "code",
-        "data",
-        "dfn",
-        "em",
-        "i",
-        "kbd",
-        "mark",
-        "q",
-        "rp",
-        "rt",
-        "ruby",
-        "s",
-        "samp",
-        "small",
-        "span",
-        "strong",
-        "sub",
-        "sup",
-        "time",
-        "u",
-        "var",
-        "wbr",
-        # Image and multimedia
-        "img",
-        "svg",
-        "canvas",
-        "audio",
-        "video",
-        "map",
-        "area",
-        # Form elements
-        "input",
-        "button",
-        "select",
-        "textarea",
-        "label",
-        "output",
-        "progress",
-        "meter",
-        # Embedded content
-        "iframe",
-        "embed",
-        "object",
-        # Other inline elements
-        "script",
-        "del",
-        "ins",
-        "slot",
-    )
-)
+from ..xml import expand_left_element_texts, expand_right_element_texts, is_inline_tag, normalize_text_in_element
 
 
 class TextPosition(Enum):
@@ -196,8 +132,7 @@ def _search_text_segments(stack: list[Element], element: Element) -> Generator[T
 def _find_block_depth(parent_stack: list[Element]) -> int:
     index: int = 0
     for i in range(len(parent_stack) - 1, -1, -1):
-        checked_tag = parent_stack[i].tag.lower()
-        if checked_tag not in _HTML_INLINE_TAGS:
+        if not is_inline_tag(parent_stack[i].tag):
             index = i
             break
     return index + 1  # depth is a count not index
