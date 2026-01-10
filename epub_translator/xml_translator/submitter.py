@@ -41,6 +41,7 @@ def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentM
 
 def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
     ids: set[int] = set(id(e) for e, _ in mappings)
+    assert id(element) not in ids
     parents_dict: dict[int, Element] = {}
     for parents, child in iter_with_stack(element):
         if parents and id(child) in ids:
@@ -172,12 +173,13 @@ def _submit_platform_node(node: _Node, action: SubmitAction, parents: dict[int, 
                     origin_text=tail_element.tail,
                     append_text=combined.text,
                 )
-        offset: int = 0
+        insert_position: int = 0
         if tail_element is not None:
-            offset = index_of_parent(node.raw_element, tail_element)
+            insert_position = index_of_parent(node.raw_element, tail_element)
+            insert_position += 1  # insert after tail_element
 
         for i, child in enumerate(combined):
-            node.raw_element.insert(i + offset, child)
+            node.raw_element.insert(i + insert_position, child)
 
     for _, child_node in node.items:
         submitted = _submit_node(
