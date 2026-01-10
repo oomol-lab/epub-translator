@@ -15,6 +15,7 @@ from .epub import (
 )
 from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, encode_toc_list
 from .llm import LLM
+from .punctuation import unwrap_french_quotes
 from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_interrupter import XMLInterrupter
 from .xml_translator import FillFailedEvent, SubmitKind, TranslationTask, XMLTranslator
@@ -103,6 +104,7 @@ def translate(
             ),
         ):
             if context.element_type == _ElementType.TOC:
+                translated_elem = unwrap_french_quotes(translated_elem)
                 decoded_toc = decode_toc_list(translated_elem)
                 write_toc(zip, decoded_toc)
 
@@ -111,6 +113,7 @@ def translate(
                     on_progress(current_progress)
 
             elif context.element_type == _ElementType.METADATA:
+                translated_elem = unwrap_french_quotes(translated_elem)
                 decoded_metadata = decode_metadata(translated_elem)
                 write_metadata(zip, decoded_metadata)
 
