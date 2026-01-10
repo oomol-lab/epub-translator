@@ -8,7 +8,7 @@ from ..xml import decode_friendly, encode_friendly
 from .callbacks import Callbacks, FillFailedEvent, warp_callbacks
 from .hill_climbing import HillClimbing
 from .stream_mapper import InlineSegmentMapping, XMLStreamMapper
-from .submitter import submit_text_segments
+from .submitter import SubmitAction, submit
 
 T = TypeVar("T")
 
@@ -80,8 +80,9 @@ class XMLTranslator:
                 callbacks=callbacks,
             ),
         ):
-            yield submit_text_segments(
+            yield submit(
                 element=element,
+                action=SubmitAction.APPEND,
                 mappings=mappings,
             )
 

@@ -9,8 +9,8 @@ from .stream_mapper import InlineSegmentMapping
 
 
 class SubmitAction(Enum):
-    Replace = auto()
-    Append = auto()
+    REPLACE = auto()
+    APPEND = auto()
 
 
 @dataclass
@@ -20,10 +20,22 @@ class _Node:
     tail_text_segments: list[TextSegment]
 
 
-def submit(element: Element, mappings: list[InlineSegmentMapping]):
+def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
+    replaced_root: Element | None = None
     parents = _collect_parents(element, mappings)
+
     for node in _nest_nodes(mappings):
-        _submit_node(node, parents)
+        submitted = _submit_node(
+            node=node,
+            action=action,
+            parents=parents,
+        )
+        if replaced_root is None:
+            replaced_root = submitted
+
+    if replaced_root is not None:
+        return replaced_root
+    return element
 
 
 def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
@@ -35,10 +47,11 @@ def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
     return parents_dict
 
 
-def _submit_node(node: _Node, parents: dict[int, Element]):
+# @return replaced root element, or None if appended to parent
+def _submit_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
     parent = parents.get(id(node.raw_element), None)
     if parent is None:
-        return
+        return node.raw_element
 
     if node.items:
         pass  # TODO: 处理 platform 结构
@@ -55,6 +68,8 @@ def _submit_node(node: _Node, parents: dict[int, Element]):
             parent.insert(index + 1, combined_element)
             combined_element.tail = node.raw_element.tail
             node.raw_element.tail = None
+
+    return None
 
 
 def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:
@@ -126,39 +141,3 @@ def _check_includes(parent: Element, child: Element) -> bool:
         if child is checked:
             return True
     return False
-
-
-def submit_text_segments(element: Element, mappings: list[InlineSegmentMapping]) -> Element:
-    grouped_map = _group_text_segments(mappings)
-    _append_text_segments(element, grouped_map)
-    return element
-
-
-def _group_text_segments(mappings: list[InlineSegmentMapping]):
-    grouped_map: dict[int, list[TextSegment]] = {}
-    for block_element, text_segments in mappings:
-        parent_id = id(block_element)
-        grouped_map[parent_id] = text_segments
-    return grouped_map
-
-
-def _append_text_segments(element: Element, grouped_map: dict[int, list[TextSegment]]):
-    for parents, child_element in iter_with_stack(element):
-        if not parents:
-            continue
-        grouped = grouped_map.get(id(child_element))
-        if not grouped:
-            continue
-        parent = parents[-1]
-        index = index_of_parent(parents[-1], child_element)
-        combined = next(
-            combine_text_segments(
-                segments=(t.strip_block_parents() for t in grouped),
-            ),
-            None,
-        )
-        if combined is not None:
-            combined_element, _ = combined
-            parent.insert(index + 1, combined_element)
-            combined_element.tail = child_element.tail
-            child_element.tail = None
