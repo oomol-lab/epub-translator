@@ -2,6 +2,7 @@ import unittest
 from xml.etree.ElementTree import Element, fromstring, tostring
 
 from epub_translator.segment import search_text_segments
+from epub_translator.utils import normalize_whitespace
 from epub_translator.xml import iter_with_stack
 from epub_translator.xml_translator.stream_mapper import InlineSegmentMapping
 from epub_translator.xml_translator.submitter import SubmitAction, submit
@@ -49,9 +50,12 @@ class TestSubmitReplace(unittest.TestCase):
         result = submit(root, SubmitAction.REPLACE, mappings)
         result_str = element_to_string(result)
 
-        # 验证：原 p1 被删除，插入新的翻译 block
-        self.assertIn("你好世界", result_str)
-        self.assertNotIn("hello world", result_str)
+        expected = """
+            <div>
+                <span>你好世界</span>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
     def test_replace_peak_with_inline_tags(self):
         """测试 REPLACE 模式 - Peak 结构，删除 inline 标签"""
@@ -73,11 +77,13 @@ class TestSubmitReplace(unittest.TestCase):
         result = submit(root, SubmitAction.REPLACE, mappings)
         result_str = element_to_string(result)
 
-        # 验证：inline 标签 <span> 被删除
-        self.assertIn("你好世界一二三", result_str)
-        self.assertNotIn("hello", result_str)
-        self.assertNotIn("world", result_str)
-        self.assertNotIn("abc", result_str)
+        expected = """
+            <div>
+                <span>你好世界一二三</span>
+                <p id="p2">next paragraph</p>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
     def test_replace_with_preserved_non_inline_tags(self):
         """测试 REPLACE 模式 - 保留非 inline 标签（如 <image>）"""
@@ -103,12 +109,12 @@ class TestSubmitReplace(unittest.TestCase):
         result = submit(root, SubmitAction.REPLACE, mappings)
         result_str = element_to_string(result)
 
-        # 验证：image 标签被保留
-        self.assertIn("你好世界", result_str)
-        self.assertIn("某些东西", result_str)
-        self.assertIn('<image src="test.png"', result_str)
-        self.assertNotIn("hello world", result_str)
-        self.assertNotIn("something", result_str)
+        expected = """
+            <div>
+                <div>你好世界某些东西</div><image src="test.png"></image>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
     def test_replace_platform_structure(self):
         """测试 REPLACE 模式 - Platform 结构"""
@@ -147,13 +153,12 @@ class TestSubmitReplace(unittest.TestCase):
         result = submit(root, SubmitAction.REPLACE, mappings)
         result_str = element_to_string(result)
 
-        # 验证：所有翻译都存在，原文被删除
-        self.assertIn("你好世界", result_str)
-        self.assertIn("子块", result_str)
-        self.assertIn("某些东西", result_str)
-        self.assertNotIn("hello world", result_str)
-        self.assertNotIn("sub block", result_str)
-        self.assertNotIn("something", result_str)
+        expected = """
+            <div>
+                <div id="d1">你好世界<span>子块</span>某些东西</div>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
 
 class TestSubmitAppendText(unittest.TestCase):
@@ -178,9 +183,12 @@ class TestSubmitAppendText(unittest.TestCase):
         result = submit(root, SubmitAction.APPEND_TEXT, mappings)
         result_str = element_to_string(result)
 
-        # 验证：原文和译文都存在
-        self.assertIn("hello world", result_str)
-        self.assertIn("你好世界", result_str)
+        expected = """
+            <div>
+                <p id="p1">hello world 你好世界</p>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
 
 class TestSubmitAppendBlock(unittest.TestCase):
@@ -205,13 +213,12 @@ class TestSubmitAppendBlock(unittest.TestCase):
         result = submit(root, SubmitAction.APPEND_BLOCK, mappings)
         result_str = element_to_string(result)
 
-        # 验证：应该在原 p1 后面插入新的 block
-        self.assertIn("hello world", result_str)
-        self.assertIn("你好世界", result_str)
-
-        # 验证有两个 p 标签
-        p_count = result_str.count("<p")
-        self.assertEqual(p_count, 2)
+        expected = """
+            <div>
+                <p id="p1">hello world</p><p>你好世界</p>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
 
 class TestSubmitEdgeCases(unittest.TestCase):
@@ -251,18 +258,12 @@ class TestSubmitEdgeCases(unittest.TestCase):
         result = submit(root, SubmitAction.REPLACE, mappings)
         result_str = element_to_string(result)
 
-        # 验证：两个 image 标签都被保留，且顺序正确
-        self.assertIn("你好", result_str)
-        self.assertIn("世界", result_str)
-        self.assertIn('image src="1.png"', result_str)
-        self.assertIn('image src="2.png"', result_str)
-        self.assertNotIn("hello", result_str)
-        self.assertNotIn("world", result_str)
-
-        # 验证顺序：img1 应该在 img2 之前
-        img1_pos = result_str.find('image src="1.png"')
-        img2_pos = result_str.find('image src="2.png"')
-        self.assertLess(img1_pos, img2_pos)
+        expected = """
+            <div>
+                <div>你好世界</div><image src="1.png" id="img1"></image><image src="2.png" id="img2"></image>
+            </div>
+        """
+        self.assertEqual(normalize_whitespace(result_str).strip(), normalize_whitespace(expected).strip())
 
 
 if __name__ == "__main__":

@@ -76,12 +76,31 @@ class _Submitter:
         if parent is None:
             return node.raw_element
 
+        preserved_elements: list[Element] = []
+        if self._action == SubmitAction.REPLACE:
+            for child in list(node.raw_element):
+                if not is_inline_tag(child.tag):
+                    child.tail = None
+                    preserved_elements.append(child)
+
         index = index_of_parent(parent, node.raw_element)
         combined = self._combine_text_segments(node.tail_text_segments)
+
         if combined is not None:
             parent.insert(index + 1, combined)
-            combined.tail = node.raw_element.tail
+            index += 1
+
+        for elem in preserved_elements:
+            parent.insert(index + 1, elem)
+            index += 1
+
+        if combined is not None or preserved_elements:
+            if preserved_elements:
+                preserved_elements[-1].tail = node.raw_element.tail
+            elif combined is not None:
+                combined.tail = node.raw_element.tail
             node.raw_element.tail = None
+
             if self._action == SubmitAction.REPLACE:
                 parent.remove(node.raw_element)
 
@@ -127,6 +146,11 @@ class _Submitter:
             submitted = self._submit_node(child_node)
             if replaced_root is None:
                 replaced_root = submitted
+
+        if node.raw_element:
+            last_tail_element = node.raw_element[-1]
+        else:
+            last_tail_element = None
 
         tail_preserved_elements: list[Element] = []
         if self._action == SubmitAction.REPLACE:
