@@ -1,0 +1,269 @@
+import unittest
+from xml.etree.ElementTree import Element, fromstring, tostring
+
+from epub_translator.segment import search_text_segments
+from epub_translator.xml import iter_with_stack
+from epub_translator.xml_translator.stream_mapper import InlineSegmentMapping
+from epub_translator.xml_translator.submitter import SubmitAction, submit
+
+
+def parse_xml(xml_str: str) -> Element:
+    """解析 XML 字符串为 Element"""
+    return fromstring(xml_str.strip())
+
+
+def element_to_string(element: Element) -> str:
+    """将 Element 转换为字符串，便于比较"""
+    result = tostring(element, encoding="unicode", method="html")
+    # 移除末尾的换行符
+    return result.rstrip()
+
+
+def find_element_by_id(root: Element, element_id: str) -> Element:
+    """通过 id 属性查找元素"""
+    for _, elem in iter_with_stack(root):
+        if elem.get("id") == element_id:
+            return elem
+    raise ValueError(f"Cannot find element with id={element_id}")
+
+
+class TestSubmitReplace(unittest.TestCase):
+    """测试 REPLACE 模式"""
+
+    def test_replace_peak_simple(self):
+        """测试 REPLACE 模式 - 简单 Peak 结构"""
+        xml_str = """
+        <div>
+            <p id="p1">hello world</p>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        p1 = find_element_by_id(root, "p1")
+
+        # 构造译文并提取 TextSegments
+        translated_xml = parse_xml("<span>你好世界</span>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
+
+        result = submit(root, SubmitAction.REPLACE, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：原 p1 被删除，插入新的翻译 block
+        self.assertIn("你好世界", result_str)
+        self.assertNotIn("hello world", result_str)
+
+    def test_replace_peak_with_inline_tags(self):
+        """测试 REPLACE 模式 - Peak 结构，删除 inline 标签"""
+        xml_str = """
+        <div>
+            <p id="p1">hello <span>world</span> abc</p>
+            <p id="p2">next paragraph</p>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        p1 = find_element_by_id(root, "p1")
+
+        # 构造译文并提取 TextSegments
+        translated_xml = parse_xml("<span>你好世界一二三</span>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
+
+        result = submit(root, SubmitAction.REPLACE, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：inline 标签 <span> 被删除
+        self.assertIn("你好世界一二三", result_str)
+        self.assertNotIn("hello", result_str)
+        self.assertNotIn("world", result_str)
+        self.assertNotIn("abc", result_str)
+
+    def test_replace_with_preserved_non_inline_tags(self):
+        """测试 REPLACE 模式 - 保留非 inline 标签（如 <image>）"""
+        xml_str = """
+        <div>
+            <div id="d1">
+                hello world
+                <image src="test.png" />
+                something
+            </div>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        d1 = find_element_by_id(root, "d1")
+
+        # 构造译文：将两部分文本合并翻译
+        # 使用 <br/> 分隔，以便 search_text_segments 能提取出两个 segment
+        translated_xml = parse_xml("<div>你好世界<br />某些东西</div>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(d1, translated_segments)]
+
+        result = submit(root, SubmitAction.REPLACE, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：image 标签被保留
+        self.assertIn("你好世界", result_str)
+        self.assertIn("某些东西", result_str)
+        self.assertIn('<image src="test.png"', result_str)
+        self.assertNotIn("hello world", result_str)
+        self.assertNotIn("something", result_str)
+
+    def test_replace_platform_structure(self):
+        """测试 REPLACE 模式 - Platform 结构"""
+        xml_str = """
+        <div>
+            <div id="d1">
+                hello world
+                <div id="d2">sub block</div>
+                something
+            </div>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        d1 = find_element_by_id(root, "d1")
+        d2 = find_element_by_id(root, "d2")
+
+        # 构造译文 - d1 的第一部分（hello world）
+        trans1_xml = parse_xml("<span>你好世界</span>")
+        trans1_segments = list(search_text_segments(trans1_xml))
+
+        # 构造译文 - d2（sub block）
+        trans2_xml = parse_xml("<span>子块</span>")
+        trans2_segments = list(search_text_segments(trans2_xml))
+
+        # 构造译文 - d1 的第二部分（something）
+        trans3_xml = parse_xml("<span>某些东西</span>")
+        trans3_segments = list(search_text_segments(trans3_xml))
+
+        # d1 是 platform 结构，包含 d2 作为子节点
+        mappings: list[InlineSegmentMapping] = [
+            (d1, trans1_segments),  # hello world 部分
+            (d2, trans2_segments),  # sub block
+            (d1, trans3_segments),  # something 部分（tail_text_segments）
+        ]
+
+        result = submit(root, SubmitAction.REPLACE, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：所有翻译都存在，原文被删除
+        self.assertIn("你好世界", result_str)
+        self.assertIn("子块", result_str)
+        self.assertIn("某些东西", result_str)
+        self.assertNotIn("hello world", result_str)
+        self.assertNotIn("sub block", result_str)
+        self.assertNotIn("something", result_str)
+
+
+class TestSubmitAppendText(unittest.TestCase):
+    """测试 APPEND_TEXT 模式"""
+
+    def test_append_text_simple(self):
+        """测试 APPEND_TEXT 模式 - 简单追加"""
+        xml_str = """
+        <div>
+            <p id="p1">hello world</p>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        p1 = find_element_by_id(root, "p1")
+
+        # 构造译文并提取 TextSegments
+        translated_xml = parse_xml("<span> 你好世界</span>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
+
+        result = submit(root, SubmitAction.APPEND_TEXT, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：原文和译文都存在
+        self.assertIn("hello world", result_str)
+        self.assertIn("你好世界", result_str)
+
+
+class TestSubmitAppendBlock(unittest.TestCase):
+    """测试 APPEND_BLOCK 模式"""
+
+    def test_append_block_peak(self):
+        """测试 APPEND_BLOCK 模式 - Peak 结构"""
+        xml_str = """
+        <div>
+            <p id="p1">hello world</p>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        p1 = find_element_by_id(root, "p1")
+
+        # 构造译文并提取 TextSegments
+        translated_xml = parse_xml("<p>你好世界</p>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]
+
+        result = submit(root, SubmitAction.APPEND_BLOCK, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：应该在原 p1 后面插入新的 block
+        self.assertIn("hello world", result_str)
+        self.assertIn("你好世界", result_str)
+
+        # 验证有两个 p 标签
+        p_count = result_str.count("<p")
+        self.assertEqual(p_count, 2)
+
+
+class TestSubmitEdgeCases(unittest.TestCase):
+    """测试边界情况"""
+
+    def test_empty_mappings(self):
+        """测试空 mappings"""
+        xml_str = "<div><p>hello</p></div>"
+        root = parse_xml(xml_str)
+
+        result = submit(root, SubmitAction.REPLACE, [])
+
+        # 验证：返回原始元素
+        self.assertEqual(element_to_string(result), element_to_string(root))
+
+    def test_multiple_non_inline_tags_order(self):
+        """测试多个非 inline 标签保持顺序"""
+        xml_str = """
+        <div>
+            <div id="d1">
+                hello
+                <image src="1.png" id="img1" />
+                world
+                <image src="2.png" id="img2" />
+            </div>
+        </div>
+        """
+        root = parse_xml(xml_str)
+        d1 = find_element_by_id(root, "d1")
+
+        # 构造译文：将两部分文本合并翻译
+        translated_xml = parse_xml("<div>你好<br />世界</div>")
+        translated_segments = list(search_text_segments(translated_xml))
+
+        mappings: list[InlineSegmentMapping] = [(d1, translated_segments)]
+
+        result = submit(root, SubmitAction.REPLACE, mappings)
+        result_str = element_to_string(result)
+
+        # 验证：两个 image 标签都被保留，且顺序正确
+        self.assertIn("你好", result_str)
+        self.assertIn("世界", result_str)
+        self.assertIn('image src="1.png"', result_str)
+        self.assertIn('image src="2.png"', result_str)
+        self.assertNotIn("hello", result_str)
+        self.assertNotIn("world", result_str)
+
+        # 验证顺序：img1 应该在 img2 之前
+        img1_pos = result_str.find('image src="1.png"')
+        img2_pos = result_str.find('image src="2.png"')
+        self.assertLess(img1_pos, img2_pos)
+
+
+if __name__ == "__main__":
+    unittest.main()
