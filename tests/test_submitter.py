@@ -175,7 +175,7 @@ class TestSubmitAppendText(unittest.TestCase):
         p1 = find_element_by_id(root, "p1")
 
         # 构造译文并提取 TextSegments
-        translated_xml = parse_xml("<span> 你好世界</span>")
+        translated_xml = parse_xml("<span>你好世界</span>")
         translated_segments = list(search_text_segments(translated_xml))
 
         mappings: list[InlineSegmentMapping] = [(p1, translated_segments)]

@@ -87,6 +87,9 @@ class _Submitter:
         combined = self._combine_text_segments(node.tail_text_segments)
 
         if combined is not None:
+            # 在 APPEND_BLOCK 模式下，如果是 inline tag，则在文本前面加空格
+            if self._action == SubmitAction.APPEND_BLOCK and is_inline_tag(combined.tag) and combined.text:
+                combined.text = " " + combined.text
             parent.insert(index + 1, combined)
             index += 1
 
@@ -211,15 +214,19 @@ class _Submitter:
             return
 
         if combined.text:
+            text_to_append = combined.text
+            if self._action != SubmitAction.REPLACE and is_inline_tag(combined.tag):
+                text_to_append = " " + text_to_append
+
             if tail_element is None:
                 node_element.text = append_text_in_element(
                     origin_text=node_element.text,
-                    append_text=combined.text,
+                    append_text=text_to_append,
                 )
             else:
                 tail_element.tail = append_text_in_element(
                     origin_text=tail_element.tail,
-                    append_text=combined.text,
+                    append_text=text_to_append,
                 )
         if tail_element is not None:
             insert_position = index_of_parent(node_element, tail_element) + 1
