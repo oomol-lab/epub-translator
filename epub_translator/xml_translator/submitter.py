@@ -216,7 +216,9 @@ class _Submitter:
             return
 
         if combined.text:
-            will_inject_space = self._action != SubmitKind.REPLACE and is_inline_tag(combined.tag)
+            will_inject_space = self._action == SubmitKind.APPEND_TEXT or (
+                is_inline_tag(combined.tag) and self._action == SubmitKind.APPEND_BLOCK
+            )
             if tail_element is not None:
                 tail_element.tail = self._append_text_in_element(
                     origin_text=tail_element.tail,
