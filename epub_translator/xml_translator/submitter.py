@@ -4,7 +4,7 @@ from enum import Enum, auto
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..xml import index_of_parent, iter_with_stack
+from ..xml import append_text_in_element, index_of_parent, is_inline_tag, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
@@ -21,6 +21,7 @@ class _Node:
 
 
 def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
+    # TODO: 尚未支持 SubmitAction.REPLACE，现在默认全是 APPEND
     replaced_root: Element | None = None
     parents = _collect_parents(element, mappings)
 
@@ -45,31 +46,6 @@ def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
         if parents and id(child) in ids:
             parents_dict[id(child)] = parents[-1]
     return parents_dict
-
-
-# @return replaced root element, or None if appended to parent
-def _submit_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
-    parent = parents.get(id(node.raw_element), None)
-    if parent is None:
-        return node.raw_element
-
-    if node.items:
-        pass  # TODO: 处理 platform 结构
-    else:
-        index = index_of_parent(parent, node.raw_element)
-        combined = next(
-            combine_text_segments(
-                segments=(t.strip_block_parents() for t in node.tail_text_segments),
-            ),
-            None,
-        )
-        if combined is not None:
-            combined_element, _ = combined
-            parent.insert(index + 1, combined_element)
-            combined_element.tail = node.raw_element.tail
-            node.raw_element.tail = None
-
-    return None
 
 
 def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:
@@ -141,3 +117,84 @@ def _check_includes(parent: Element, child: Element) -> bool:
         if child is checked:
             return True
     return False
+
+
+# @return replaced root element, or None if appended to parent
+def _submit_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
+    parent = parents.get(id(node.raw_element), None)
+    if parent is None:
+        return node.raw_element
+
+    if node.items:
+        return _submit_platform_node(node, action, parents)
+    else:
+        index = index_of_parent(parent, node.raw_element)
+        combined = _combine_text_segments(node.tail_text_segments)
+        if combined is not None:
+            parent.insert(index + 1, combined)
+            combined.tail = node.raw_element.tail
+            node.raw_element.tail = None
+
+    return None
+
+
+def _submit_platform_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
+    replaced_root: Element | None = None
+    child_nodes = dict((id(node), node) for _, node in node.items)
+    last_tail_element: Element | None = None
+    tail_elements: dict[int, Element] = {}
+
+    for child_element in node.raw_element:
+        child_node = child_nodes.get(id(child_element), None)
+        if child_node is not None:
+            if last_tail_element is not None:
+                tail_elements[id(child_element)] = last_tail_element
+            last_tail_element = child_element
+
+        elif is_inline_tag(child_element.tag):
+            # 与原文之间不许加载 block 元素，不好看
+            last_tail_element = child_element
+
+    for text_segments, child_node in node.items:
+        tail_element = tail_elements.get(id(child_node.raw_element), None)
+        combined = _combine_text_segments(text_segments)
+        if combined is None:
+            continue
+
+        if combined.text:
+            if tail_element is None:
+                node.raw_element.text = append_text_in_element(
+                    origin_text=node.raw_element.text,
+                    append_text=combined.text,
+                )
+            else:
+                tail_element.tail = append_text_in_element(
+                    origin_text=tail_element.tail,
+                    append_text=combined.text,
+                )
+        offset: int = 0
+        if tail_element is not None:
+            offset = index_of_parent(node.raw_element, tail_element)
+
+        for i, child in enumerate(combined):
+            node.raw_element.insert(i + offset, child)
+
+    for _, child_node in node.items:
+        submitted = _submit_node(
+            node=child_node,
+            action=action,
+            parents=parents,
+        )
+        if replaced_root is None:
+            replaced_root = submitted
+
+    return replaced_root
+
+
+def _combine_text_segments(text_segments: list[TextSegment]) -> Element | None:
+    segments = (t.strip_block_parents() for t in text_segments)
+    combined = next(combine_text_segments(segments), None)
+    if combined is None:
+        return None
+    else:
+        return combined[0]

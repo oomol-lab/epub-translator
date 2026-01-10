@@ -8,6 +8,7 @@ from .block_segment import (
     BlockWrongTagError,
 )
 from .common import FoundInvalidIDError
+from .inline import is_inline_tag
 from .inline_segment import (
     InlineError,
     InlineExpectedIDsError,
