@@ -158,28 +158,12 @@ def _submit_platform_node(node: _Node, action: SubmitAction, parents: dict[int, 
 
     for text_segments, child_node in node.items:
         tail_element = tail_elements.get(id(child_node.raw_element), None)
-        combined = _combine_text_segments(text_segments)
-        if combined is None:
-            continue
-
-        if combined.text:
-            if tail_element is None:
-                node.raw_element.text = append_text_in_element(
-                    origin_text=node.raw_element.text,
-                    append_text=combined.text,
-                )
-            else:
-                tail_element.tail = append_text_in_element(
-                    origin_text=tail_element.tail,
-                    append_text=combined.text,
-                )
-        insert_position: int = 0
-        if tail_element is not None:
-            insert_position = index_of_parent(node.raw_element, tail_element)
-            insert_position += 1  # insert after tail_element
-
-        for i, child in enumerate(combined):
-            node.raw_element.insert(i + insert_position, child)
+        _append_combined_after_tail(
+            node_element=node.raw_element,
+            text_segments=text_segments,
+            tail_element=tail_element,
+            append_to_end=False,
+        )
 
     for _, child_node in node.items:
         submitted = _submit_node(
@@ -190,7 +174,45 @@ def _submit_platform_node(node: _Node, action: SubmitAction, parents: dict[int, 
         if replaced_root is None:
             replaced_root = submitted
 
+    _append_combined_after_tail(
+        node_element=node.raw_element,
+        text_segments=node.tail_text_segments,
+        tail_element=last_tail_element,
+        append_to_end=True,
+    )
     return replaced_root
+
+
+def _append_combined_after_tail(
+    node_element: Element,
+    text_segments: list[TextSegment],
+    tail_element: Element | None,
+    append_to_end: bool = False,
+) -> None:
+    combined = _combine_text_segments(text_segments)
+    if combined is None:
+        return
+
+    if combined.text:
+        if tail_element is None:
+            node_element.text = append_text_in_element(
+                origin_text=node_element.text,
+                append_text=combined.text,
+            )
+        else:
+            tail_element.tail = append_text_in_element(
+                origin_text=tail_element.tail,
+                append_text=combined.text,
+            )
+    if tail_element is not None:
+        insert_position = index_of_parent(node_element, tail_element) + 1
+    elif append_to_end:
+        insert_position = len(node_element)
+    else:
+        insert_position = 0
+
+    for i, child in enumerate(combined):
+        node_element.insert(insert_position + i, child)
 
 
 def _combine_text_segments(text_segments: list[TextSegment]) -> Element | None:
