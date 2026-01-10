@@ -13,6 +13,19 @@ class SubmitAction(Enum):
     APPEND = auto()
 
 
+def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
+    submitter = _Submitter(
+        element=element,
+        action=action,
+        mappings=mappings,
+    )
+    replaced_root = submitter.do()
+    if replaced_root is not None:
+        return replaced_root
+
+    return element
+
+
 @dataclass
 class _Node:
     raw_element: Element
@@ -20,33 +33,135 @@ class _Node:
     tail_text_segments: list[TextSegment]
 
 
-def submit(element: Element, action: SubmitAction, mappings: list[InlineSegmentMapping]):
-    # TODO: 尚未支持 SubmitAction.REPLACE，现在默认全是 APPEND
-    replaced_root: Element | None = None
-    parents = _collect_parents(element, mappings)
+class _Submitter:
+    def __init__(
+        self,
+        element: Element,
+        action: SubmitAction,
+        mappings: list[InlineSegmentMapping],
+    ) -> None:
+        self._action: SubmitAction = action
+        self._nodes: list[_Node] = list(_nest_nodes(mappings))
+        self._parents: dict[int, Element] = self._collect_parents(element, mappings)
 
-    for node in _nest_nodes(mappings):
-        submitted = _submit_node(
-            node=node,
-            action=action,
-            parents=parents,
-        )
-        if replaced_root is None:
-            replaced_root = submitted
+    def _collect_parents(self, element: Element, mappings: list[InlineSegmentMapping]):
+        ids: set[int] = set(id(e) for e, _ in mappings)
+        assert id(element) not in ids
+        parents_dict: dict[int, Element] = {}
+        for parents, child in iter_with_stack(element):
+            if parents and id(child) in ids:
+                parents_dict[id(child)] = parents[-1]
+        return parents_dict
 
-    if replaced_root is not None:
+    def do(self):
+        # TODO: 尚未支持 SubmitAction.REPLACE，现在默认全是 APPEND
+        replaced_root: Element | None = None
+
+        for node in self._nodes:
+            submitted = self._submit_node(node)
+            if replaced_root is None:
+                replaced_root = submitted
+
         return replaced_root
-    return element
 
+    # @return replaced root element, or None if appended to parent
+    def _submit_node(self, node: _Node) -> Element | None:
+        if not node.items:
+            return self._submit_node_by_replace(node)
+        else:
+            return self._submit_node_by_append_text(node)
 
-def _collect_parents(element: Element, mappings: list[InlineSegmentMapping]):
-    ids: set[int] = set(id(e) for e, _ in mappings)
-    assert id(element) not in ids
-    parents_dict: dict[int, Element] = {}
-    for parents, child in iter_with_stack(element):
-        if parents and id(child) in ids:
-            parents_dict[id(child)] = parents[-1]
-    return parents_dict
+    def _submit_node_by_replace(self, node: _Node) -> Element | None:
+        parent = self._parents.get(id(node.raw_element), None)
+        if parent is None:
+            return node.raw_element
+
+        index = index_of_parent(parent, node.raw_element)
+        combined = self._combine_text_segments(node.tail_text_segments)
+        if combined is not None:
+            parent.insert(index + 1, combined)
+            combined.tail = node.raw_element.tail
+            node.raw_element.tail = None
+        return None
+
+    def _submit_node_by_append_text(self, node: _Node) -> Element | None:
+        replaced_root: Element | None = None
+        child_nodes = dict((id(node), node) for _, node in node.items)
+        last_tail_element: Element | None = None
+        tail_elements: dict[int, Element] = {}
+
+        for child_element in node.raw_element:
+            child_node = child_nodes.get(id(child_element), None)
+            if child_node is not None:
+                if last_tail_element is not None:
+                    tail_elements[id(child_element)] = last_tail_element
+                last_tail_element = child_element
+
+            elif is_inline_tag(child_element.tag):
+                # 与原文之间不许加载 block 元素，不好看
+                last_tail_element = child_element
+
+        for text_segments, child_node in node.items:
+            tail_element = tail_elements.get(id(child_node.raw_element), None)
+            self._append_combined_after_tail(
+                node_element=node.raw_element,
+                text_segments=text_segments,
+                tail_element=tail_element,
+                append_to_end=False,
+            )
+
+        for _, child_node in node.items:
+            submitted = self._submit_node(child_node)
+            if replaced_root is None:
+                replaced_root = submitted
+
+        self._append_combined_after_tail(
+            node_element=node.raw_element,
+            text_segments=node.tail_text_segments,
+            tail_element=last_tail_element,
+            append_to_end=True,
+        )
+        return replaced_root
+
+    def _append_combined_after_tail(
+        self,
+        node_element: Element,
+        text_segments: list[TextSegment],
+        tail_element: Element | None,
+        append_to_end: bool = False,
+    ) -> None:
+        combined = self._combine_text_segments(text_segments)
+        if combined is None:
+            return
+
+        if combined.text:
+            if tail_element is None:
+                node_element.text = append_text_in_element(
+                    origin_text=node_element.text,
+                    append_text=combined.text,
+                )
+            else:
+                tail_element.tail = append_text_in_element(
+                    origin_text=tail_element.tail,
+                    append_text=combined.text,
+                )
+        if tail_element is not None:
+            insert_position = index_of_parent(node_element, tail_element) + 1
+        elif append_to_end:
+            insert_position = len(node_element)
+        else:
+            insert_position = 0
+
+        for i, child in enumerate(combined):
+            node_element.insert(insert_position + i, child)
+
+    def _combine_text_segments(self, text_segments: list[TextSegment]) -> Element | None:
+        segments = (t.strip_block_parents() for t in text_segments)
+        combined = next(combine_text_segments(segments), None)
+        if combined is None:
+            return None
+        else:
+            return combined[0]
 
 
 def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, None]:
@@ -118,107 +233,3 @@ def _check_includes(parent: Element, child: Element) -> bool:
         if child is checked:
             return True
     return False
-
-
-# @return replaced root element, or None if appended to parent
-def _submit_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
-    parent = parents.get(id(node.raw_element), None)
-    if parent is None:
-        return node.raw_element
-
-    if node.items:
-        return _submit_platform_node(node, action, parents)
-    else:
-        index = index_of_parent(parent, node.raw_element)
-        combined = _combine_text_segments(node.tail_text_segments)
-        if combined is not None:
-            parent.insert(index + 1, combined)
-            combined.tail = node.raw_element.tail
-            node.raw_element.tail = None
-
-    return None
-
-
-def _submit_platform_node(node: _Node, action: SubmitAction, parents: dict[int, Element]) -> Element | None:
-    replaced_root: Element | None = None
-    child_nodes = dict((id(node), node) for _, node in node.items)
-    last_tail_element: Element | None = None
-    tail_elements: dict[int, Element] = {}
-
-    for child_element in node.raw_element:
-        child_node = child_nodes.get(id(child_element), None)
-        if child_node is not None:
-            if last_tail_element is not None:
-                tail_elements[id(child_element)] = last_tail_element
-            last_tail_element = child_element
-
-        elif is_inline_tag(child_element.tag):
-            # 与原文之间不许加载 block 元素，不好看
-            last_tail_element = child_element
-
-    for text_segments, child_node in node.items:
-        tail_element = tail_elements.get(id(child_node.raw_element), None)
-        _append_combined_after_tail(
-            node_element=node.raw_element,
-            text_segments=text_segments,
-            tail_element=tail_element,
-            append_to_end=False,
-        )
-
-    for _, child_node in node.items:
-        submitted = _submit_node(
-            node=child_node,
-            action=action,
-            parents=parents,
-        )
-        if replaced_root is None:
-            replaced_root = submitted
-
-    _append_combined_after_tail(
-        node_element=node.raw_element,
-        text_segments=node.tail_text_segments,
-        tail_element=last_tail_element,
-        append_to_end=True,
-    )
-    return replaced_root
-
-
-def _append_combined_after_tail(
-    node_element: Element,
-    text_segments: list[TextSegment],
-    tail_element: Element | None,
-    append_to_end: bool = False,
-) -> None:
-    combined = _combine_text_segments(text_segments)
-    if combined is None:
-        return
-
-    if combined.text:
-        if tail_element is None:
-            node_element.text = append_text_in_element(
-                origin_text=node_element.text,
-                append_text=combined.text,
-            )
-        else:
-            tail_element.tail = append_text_in_element(
-                origin_text=tail_element.tail,
-                append_text=combined.text,
-            )
-    if tail_element is not None:
-        insert_position = index_of_parent(node_element, tail_element) + 1
-    elif append_to_end:
-        insert_position = len(node_element)
-    else:
-        insert_position = 0
-
-    for i, child in enumerate(combined):
-        node_element.insert(insert_position + i, child)
-
-
-def _combine_text_segments(text_segments: list[TextSegment]) -> Element | None:
-    segments = (t.strip_block_parents() for t in text_segments)
-    combined = next(combine_text_segments(segments), None)
-    if combined is None:
-        return None
-    else:
-        return combined[0]
