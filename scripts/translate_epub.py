@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -8,12 +9,24 @@ from pathlib import Path
 from tqdm import tqdm
 
 from epub_translator import FillFailedEvent, SubmitKind, translate
-from epub_translator.language import ENGLISH
 from scripts.utils import load_llm, read_and_clean_temp
 
 
 def main() -> None:
-    assets_path = Path(__file__).parent / ".." / "tests" / "assets"
+    parser = argparse.ArgumentParser(description="Translate EPUB files to target language")
+    parser.add_argument("source_path", type=str, help="Path to the source EPUB file")
+    parser.add_argument(
+        "-l", "--lan", type=str, default="Chinese", help="Target language for translation (default: Chinese)"
+    )
+    args = parser.parse_args()
+    source_path = Path(args.source_path)
+
+    if not source_path.exists():
+        print(f"Error: Source file '{source_path}' does not exist")
+        sys.exit(1)
+
+    target_language = args.lan
+
     temp_path = read_and_clean_temp()
     translation_llm, fill_llm = load_llm(
         cache_path=Path(__file__).parent / ".." / "cache",
@@ -42,9 +55,9 @@ def main() -> None:
         translate(
             translation_llm=translation_llm,
             fill_llm=fill_llm,
-            target_language=ENGLISH,
+            target_language=target_language,
             submit=SubmitKind.APPEND_BLOCK,
-            source_path=assets_path / "治疗精神病.epub",
+            source_path=source_path,
             target_path=temp_path / "translated.epub",
             on_progress=on_progress,
             on_fill_failed=on_fill_failed,
