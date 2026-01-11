@@ -340,7 +340,6 @@ class TestBugReproduction(unittest.TestCase):
         """
         root = parse_xml(xml_str)
         parent = find_element_by_id(root, "parent")
-        wrapper = find_element_by_id(root, "wrapper")
         math = find_element_by_id(root, "math")
 
         # 创建 mappings 让 _nest_nodes 认为 math 应该是 parent 的 item
