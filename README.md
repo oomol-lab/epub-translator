@@ -205,16 +205,17 @@ translate(
 
 ### Error Handling with `on_fill_failed`
 
-Monitor and handle translation errors using the `on_fill_failed` callback:
+Monitor translation errors using the `on_fill_failed` callback. The system automatically retries failed translations up to `max_retries` times (default: 5). Most errors are recovered during retries and don't affect the final output.
 
 ```python
 from epub_translator import FillFailedEvent
 
 def handle_fill_error(event: FillFailedEvent):
-    print(f"Translation error (attempt {event.retried_count}):")
-    print(f"  {event.error_message}")
+    # Only log critical errors that will affect the final EPUB
     if event.over_maximum_retries:
-        print("  Maximum retries exceeded!")
+        print(f"Critical error after {event.retried_count} attempts:")
+        print(f"  {event.error_message}")
+        print("  This error will be present in the final EPUB file!")
 
 translate(
     source_path="source.epub",
@@ -226,10 +227,32 @@ translate(
 )
 ```
 
+**Understanding Error Severity:**
+
 The `FillFailedEvent` contains:
 - `error_message: str` - Description of the error
-- `retried_count: int` - Current retry attempt number
-- `over_maximum_retries: bool` - Whether max retries has been exceeded
+- `retried_count: int` - Current retry attempt number (1 to max_retries)
+- `over_maximum_retries: bool` - Whether the error is critical
+
+**Error Categories:**
+
+- **Recoverable errors** (`over_maximum_retries=False`): Errors during retry attempts. The system will continue retrying and may resolve these automatically. Safe to ignore in most cases.
+
+- **Critical errors** (`over_maximum_retries=True`): Errors that persist after all retry attempts. These will appear in the final EPUB file and should be investigated.
+
+**Advanced Usage:**
+
+For verbose logging during translation debugging:
+
+```python
+def handle_fill_error(event: FillFailedEvent):
+    if event.over_maximum_retries:
+        # Critical: affects final output
+        print(f"❌ CRITICAL: {event.error_message}")
+    else:
+        # Informational: system is retrying
+        print(f"⚠️  Retry {event.retried_count}: {event.error_message}")
+```
 
 ### Dual-LLM Architecture
 
