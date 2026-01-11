@@ -122,11 +122,17 @@ class _Submitter:
                 last_tail_element = child_element
 
         for text_segments, child_node in node.items:
-            tail_element = tail_elements.get(id(child_node.raw_element), None)
+            anchor_element = _find_anchor_in_parent(node.raw_element, child_node.raw_element)
+            if anchor_element is None:
+                # 防御性编程：理论上 anchor_element 不应该为 None，
+                #           因为 _nest_nodes 已经通过 _check_includes 验证了包含关系。
+                continue
+
+            tail_element = tail_elements.get(id(anchor_element), None)
             items_preserved_elements: list[Element] = []
 
             if self._action == SubmitKind.REPLACE:
-                end_index = index_of_parent(node.raw_element, child_node.raw_element)
+                end_index = index_of_parent(node.raw_element, anchor_element)
                 items_preserved_elements = self._remove_elements_after_tail(
                     node_element=node.raw_element,
                     tail_element=tail_element,
@@ -137,11 +143,11 @@ class _Submitter:
                 node_element=node.raw_element,
                 text_segments=text_segments,
                 tail_element=tail_element,
+                anchor_element=anchor_element,
                 append_to_end=False,
-                ref_element=child_node.raw_element,
             )
             if items_preserved_elements:
-                insert_position = index_of_parent(node.raw_element, child_node.raw_element)
+                insert_position = index_of_parent(node.raw_element, anchor_element)
                 for i, elem in enumerate(items_preserved_elements):
                     node.raw_element.insert(insert_position + i, elem)
 
@@ -166,7 +172,7 @@ class _Submitter:
             node_element=node.raw_element,
             text_segments=node.tail_text_segments,
             tail_element=last_tail_element,
-            ref_element=None,
+            anchor_element=None,
             append_to_end=True,
         )
         if tail_preserved_elements:
@@ -208,7 +214,7 @@ class _Submitter:
         node_element: Element,
         text_segments: list[TextSegment],
         tail_element: Element | None,
-        ref_element: Element | None,
+        anchor_element: Element | None,
         append_to_end: bool,
     ) -> None:
         combined = self._combine_text_segments(text_segments)
@@ -225,14 +231,14 @@ class _Submitter:
                     append_text=combined.text,
                     will_inject_space=will_inject_space,
                 )
-            elif ref_element is None:
+            elif anchor_element is None:
                 node_element.text = self._append_text_in_element(
                     origin_text=node_element.text,
                     append_text=combined.text,
                     will_inject_space=will_inject_space,
                 )
             else:
-                ref_index = index_of_parent(node_element, ref_element)
+                ref_index = index_of_parent(node_element, anchor_element)
                 if ref_index > 0:
                     # 添加到前一个元素的 tail
                     prev_element = node_element[ref_index - 1]
@@ -253,10 +259,10 @@ class _Submitter:
             insert_position = index_of_parent(node_element, tail_element) + 1
         elif append_to_end:
             insert_position = len(node_element)
-        elif ref_element is not None:
+        elif anchor_element is not None:
             # 使用 ref_element 来定位插入位置
             # 如果文本被添加到前一个元素的 tail，则在前一个元素之后插入
-            ref_index = index_of_parent(node_element, ref_element)
+            ref_index = index_of_parent(node_element, anchor_element)
             if ref_index > 0:
                 # 在前一个元素之后插入
                 insert_position = ref_index
@@ -344,6 +350,18 @@ def _nest_nodes(mappings: list[InlineSegmentMapping]) -> Generator[_Node, None, 
         child_node = _fold_top_of_stack(stack)
         if child_node is not None:
             yield child_node
+
+
+def _find_anchor_in_parent(parent: Element, descendant: Element) -> Element | None:
+    for child in parent:
+        if child is descendant:
+            return descendant
+
+    for child in parent:
+        if _check_includes(child, descendant):
+            return child
+
+    return None
 
 
 def _fold_top_of_stack(stack: list[_Node]):
