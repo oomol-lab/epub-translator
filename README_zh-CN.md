@@ -205,16 +205,17 @@ translate(
 
 ### 使用 `on_fill_failed` 处理错误
 
-使用 `on_fill_failed` 回调监控和处理翻译错误：
+使用 `on_fill_failed` 回调监控翻译错误。系统会自动重试失败的翻译，最多重试 `max_retries` 次（默认：5 次）。大多数错误会在重试过程中恢复，不会影响最终输出。
 
 ```python
 from epub_translator import FillFailedEvent
 
 def handle_fill_error(event: FillFailedEvent):
-    print(f"翻译错误（第 {event.retried_count} 次尝试）：")
-    print(f"  {event.error_message}")
+    # 只记录会影响最终 EPUB 的关键错误
     if event.over_maximum_retries:
-        print("  已超过最大重试次数！")
+        print(f"关键错误（已尝试 {event.retried_count} 次）：")
+        print(f"  {event.error_message}")
+        print("  此错误将出现在最终的 EPUB 文件中！")
 
 translate(
     source_path="source.epub",
@@ -226,10 +227,32 @@ translate(
 )
 ```
 
+**理解错误严重程度：**
+
 `FillFailedEvent` 包含：
 - `error_message: str` - 错误描述
-- `retried_count: int` - 当前重试次数
-- `over_maximum_retries: bool` - 是否超过最大重试次数
+- `retried_count: int` - 当前重试次数（1 到 max_retries）
+- `over_maximum_retries: bool` - 错误是否为关键错误
+
+**错误分类：**
+
+- **可恢复错误**（`over_maximum_retries=False`）：重试过程中发生的错误。系统会继续重试并可能自动解决这些问题。大多数情况下可以安全忽略。
+
+- **关键错误**（`over_maximum_retries=True`）：所有重试尝试后仍然存在的错误。这些错误会出现在最终的 EPUB 文件中，需要进行调查。
+
+**进阶用法：**
+
+在翻译调试期间进行详细日志记录：
+
+```python
+def handle_fill_error(event: FillFailedEvent):
+    if event.over_maximum_retries:
+        # 关键错误：影响最终输出
+        print(f"❌ 关键错误: {event.error_message}")
+    else:
+        # 信息提示：系统正在重试
+        print(f"⚠️  第 {event.retried_count} 次重试: {event.error_message}")
+```
 
 ### 双 LLM 架构
 
