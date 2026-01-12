@@ -5,7 +5,7 @@ from importlib.metadata import version as get_package_version
 from os import PathLike
 from pathlib import Path
 
-from .epub import (
+from ..epub import (
     Zip,
     read_metadata,
     read_toc,
@@ -13,12 +13,12 @@ from .epub import (
     write_metadata,
     write_toc,
 )
+from ..llm import LLM
+from ..xml import XMLLikeNode, deduplicate_ids_in_element, find_first
+from ..xml_translator import FillFailedEvent, SubmitKind, TranslationTask, XMLTranslator
 from .epub_transcode import decode_metadata, decode_toc_list, encode_metadata, encode_toc_list
-from .llm import LLM
 from .punctuation import unwrap_french_quotes
-from .xml import XMLLikeNode, deduplicate_ids_in_element, find_first
 from .xml_interrupter import XMLInterrupter
-from .xml_translator import FillFailedEvent, SubmitKind, TranslationTask, XMLTranslator
 
 
 class _ElementType(Enum):

@@ -2,7 +2,7 @@ from xml.etree import ElementTree as ET
 
 from epub_translator.epub.metadata import MetadataField
 from epub_translator.epub.toc import Toc
-from epub_translator.epub_transcode import (
+from epub_translator.translation.epub_transcode import (
     decode_metadata,
     decode_toc,
     decode_toc_list,
