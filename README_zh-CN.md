@@ -123,7 +123,7 @@ translate(
     submit: SubmitKind,                # 如何插入译文 (REPLACE, APPEND_TEXT, 或 APPEND_BLOCK)
     user_prompt: str | None = None,    # 自定义翻译指令
     max_retries: int = 5,              # 翻译失败的最大重试次数
-    max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
+    max_group_tokens: int = 2300,      # 每个翻译组的最大 token 数
     llm: LLM | None = None,            # 用于翻译和填充的单个 LLM 实例
     translation_llm: LLM | None = None,  # 翻译专用 LLM 实例（优先于 llm）
     fill_llm: LLM | None = None,       # XML 填充专用 LLM 实例（优先于 llm）

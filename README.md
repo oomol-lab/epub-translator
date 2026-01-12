@@ -123,7 +123,7 @@ translate(
     submit: SubmitKind,                # How to insert translations (REPLACE, APPEND_TEXT, or APPEND_BLOCK)
     user_prompt: str | None = None,    # Custom translation instructions
     max_retries: int = 5,              # Maximum retries for failed translations
-    max_group_tokens: int = 1200,      # Maximum tokens per translation group
+    max_group_tokens: int = 2300,      # Maximum tokens per translation group
     llm: LLM | None = None,            # Single LLM instance for both translation and filling
     translation_llm: LLM | None = None,  # LLM instance for translation (overrides llm)
     fill_llm: LLM | None = None,       # LLM instance for XML filling (overrides llm)
