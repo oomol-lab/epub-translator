@@ -20,6 +20,7 @@ def run_concurrency(
         return
 
     executor = ThreadPoolExecutor(max_workers=concurrency)
+    did_shutdown = False
     try:
         futures: deque[Future[R]] = deque()
         params_iter = iter(parameters)
@@ -41,8 +42,11 @@ def run_concurrency(
             except StopIteration:
                 pass
 
-        executor.shutdown(wait=True)
-
     except KeyboardInterrupt:
         executor.shutdown(wait=False, cancel_futures=True)
+        did_shutdown = True
         raise
+
+    finally:
+        if not did_shutdown:
+            executor.shutdown(wait=True)
