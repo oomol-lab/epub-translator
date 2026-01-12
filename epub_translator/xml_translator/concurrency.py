@@ -41,9 +41,8 @@ def run_concurrency(
             except StopIteration:
                 pass
 
+        executor.shutdown(wait=True)
+
     except KeyboardInterrupt:
         executor.shutdown(wait=False, cancel_futures=True)
         raise
-
-    finally:
-        executor.shutdown(wait=True)

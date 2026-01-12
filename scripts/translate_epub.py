@@ -55,6 +55,7 @@ def main() -> None:
         translate(
             translation_llm=translation_llm,
             fill_llm=fill_llm,
+            concurrency=4,
             target_language=target_language,
             submit=SubmitKind.APPEND_BLOCK,
             source_path=source_path,
