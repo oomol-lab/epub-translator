@@ -12,6 +12,7 @@ def run_concurrency(
     execute: Callable[[P], R],
     concurrency: int,
 ) -> Iterable[R]:
+    assert concurrency >= 1, "the concurrency must be at least 1"
     # Fast path: concurrency == 1, no thread overhead
     if concurrency == 1:
         for param in parameters:
@@ -23,16 +24,19 @@ def run_concurrency(
         params_iter = iter(parameters)
 
         for _ in range(concurrency):
-            param = next(params_iter, None)
-            if param is None:
+            try:
+                param = next(params_iter)
+                future = executor.submit(execute, param)
+                futures.append(future)
+            except StopIteration:
                 break
-            future = executor.submit(execute, param)
-            futures.append(future)
 
         while futures:
             future = futures.popleft()
             yield future.result()
-            param = next(params_iter, None)
-            if param is not None:
+            try:
+                param = next(params_iter)
                 new_future = executor.submit(execute, param)
                 futures.append(new_future)
+            except StopIteration:
+                pass
