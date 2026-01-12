@@ -13,6 +13,7 @@ _PAGE_INCISION = 0
 _BLOCK_INCISION = 1
 
 _ELLIPSIS = "..."
+_ID_WEIGHT = 150
 
 
 InlineSegmentMapping = tuple[Element, list[TextSegment]]
@@ -136,7 +137,7 @@ class XMLStreamMapper:
             inline_segment.create_element()
 
             yield Resource(
-                count=self._resource_count_with(inline_segment),
+                count=self._inline_segment_score(inline_segment),
                 start_incision=start_incision,
                 end_incision=end_incision,
                 payload=inline_segment,
@@ -145,18 +146,11 @@ class XMLStreamMapper:
             start_incision = end_incision
 
         yield Resource(
-            count=self._resource_count_with(inline_segment),
+            count=self._inline_segment_score(inline_segment),
             start_incision=start_incision,
             end_incision=_PAGE_INCISION,
             payload=inline_segment,
         )
-
-    def _resource_count_with(self, inline_segment: InlineSegment) -> int:
-        element = inline_segment.create_element()
-        element.set(DATA_ORIGIN_LEN_KEY, "999")
-        text = encode_friendly(element)
-        tokens_count = len(self._encoding.encode(text))
-        return tokens_count
 
     def _truncate_inline_segments(self, inline_segments: Iterable[InlineSegment], remain_head: bool, remain_count: int):
         def clone_and_expand(segments: Iterable[InlineSegment]):
@@ -262,3 +256,18 @@ class XMLStreamMapper:
         else:
             segment.text = f"{_ELLIPSIS} {remain_text}"
         return segment
+
+    def _inline_segment_score(self, inline_segment: InlineSegment) -> int:
+        element = inline_segment.create_element()
+        element.set(DATA_ORIGIN_LEN_KEY, "999")
+        text = encode_friendly(element)
+        tokens_count = len(self._encoding.encode(text))
+        ids_count = sum(1 for _ in self._collect_ids_with(inline_segment))
+        return tokens_count + ids_count * _ID_WEIGHT
+
+    def _collect_ids_with(self, inline_segment: InlineSegment):
+        if inline_segment.id is not None:
+            yield inline_segment.id
+        for child in inline_segment.children:
+            if isinstance(child, InlineSegment):
+                yield from self._collect_ids_with(child)

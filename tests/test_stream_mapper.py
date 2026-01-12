@@ -4,7 +4,8 @@ from xml.etree.ElementTree import Element, SubElement
 
 from tiktoken import Encoding
 
-from epub_translator.segment import search_text_segments
+from epub_translator.segment import TextSegment, search_text_segments
+from epub_translator.xml import expand_left_element_texts, expand_right_element_texts
 from epub_translator.xml_translator.stream_mapper import XMLStreamMapper
 
 
@@ -67,7 +68,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # tokens: ['<div id="99" data-orig-len="999">', '你', '好', '</div>']
@@ -95,7 +96,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # tokens: ['<div id="99" data-orig-len="999">', '你', '好', '世', '界', '</div>']
@@ -123,7 +124,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # tokens: ['<p id="99" data-orig-len="999">', 'Hello', ' ', 'World', ...]
@@ -150,7 +151,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # tokens: ['<div id="99" data-orig-len="999">', 'Hello', '你', '好', 'World', '</div>']
@@ -178,7 +179,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # 只保留 1 个 token（开标签），不包含任何文本
@@ -201,7 +202,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # remain_count 足够大，包含所有内容
@@ -227,7 +228,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # 保留开标签 + 部分文本
@@ -252,7 +253,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # 保留部分文本
@@ -279,7 +280,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # 从尾部只保留 1 个 token（闭标签）
@@ -309,7 +310,7 @@ class TestTruncateTextSegment(unittest.TestCase):
 
         # 如果产生了 segment（不应该），测试它的行为
         segment = segments[0]
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # 只保留开标签和空格
@@ -332,7 +333,7 @@ class TestTruncateTextSegment(unittest.TestCase):
         segments = list(search_text_segments(root))
         segment = segments[0]
 
-        raw_xml_text = segment.xml_text
+        raw_xml_text = _to_xml_text(segment)
         tokens = self.encoding.encode(raw_xml_text)
 
         # tokens: ['<div id="99" data-orig-len="999">', 'ABC', '</div>']
@@ -368,6 +369,18 @@ class TestTruncateTextSegment(unittest.TestCase):
         # 测试解码
         decoded = self.encoding.decode(cast(list[int], ["Hello", " ", "你", "好"]))
         self.assertEqual(decoded, "Hello 你好")
+
+
+def _to_xml_text(text_segment: TextSegment):
+    return "".join(_expand_xml_texts(text_segment))
+
+
+def _expand_xml_texts(text_segment: TextSegment):
+    for i in range(text_segment.left_common_depth, len(text_segment.parent_stack)):
+        yield from expand_left_element_texts(text_segment.parent_stack[i])
+    yield text_segment.text
+    for i in range(len(text_segment.parent_stack) - 1, text_segment.right_common_depth - 1, -1):
+        yield from expand_right_element_texts(text_segment.parent_stack[i])
 
 
 if __name__ == "__main__":

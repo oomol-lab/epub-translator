@@ -33,10 +33,6 @@ class TextSegment:
     def block_parent(self) -> Element:
         return self.parent_stack[self.block_depth - 1]
 
-    @property
-    def xml_text(self) -> str:
-        return "".join(_expand_xml_texts(self))
-
     def strip_block_parents(self) -> Self:
         self.parent_stack = self.parent_stack[self.block_depth - 1 :]
         self.block_depth = 1
