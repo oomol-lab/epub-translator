@@ -1,6 +1,6 @@
 from .const import *
 from .deduplication import *
-from .firendly import *
+from .friendly import *
 from .inline import *
 from .utils import *
 from .xml import *

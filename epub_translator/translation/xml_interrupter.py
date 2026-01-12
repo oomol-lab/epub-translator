@@ -2,8 +2,8 @@ from collections.abc import Generator, Iterable
 from typing import cast
 from xml.etree.ElementTree import Element
 
-from .segment import TextSegment
-from .utils import ensure_list, normalize_whitespace
+from ..segment import TextSegment
+from ..utils import ensure_list, normalize_whitespace
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"

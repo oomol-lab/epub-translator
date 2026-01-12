@@ -1,7 +1,7 @@
 import unittest
 from xml.etree.ElementTree import Element, SubElement
 
-from epub_translator.xml.firendly import decode_friendly, encode_friendly
+from epub_translator.xml import decode_friendly, encode_friendly
 
 
 class TestFriendlyXML(unittest.TestCase):

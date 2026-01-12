@@ -1,6 +1,6 @@
 from xml.etree.ElementTree import Element
 
-from .xml import iter_with_stack
+from ..xml import iter_with_stack
 
 _QUOTE_MAPPING = {
     # 法语引号

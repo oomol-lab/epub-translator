@@ -1,6 +1,5 @@
-from . import language
 from .llm import LLM
-from .translator import FillFailedEvent, translate
+from .translation import FillFailedEvent, language, translate
 from .xml_translator import SubmitKind
 
 __all__ = [
