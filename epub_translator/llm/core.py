@@ -108,24 +108,24 @@ class LLM:
             return None
 
         now = datetime.datetime.now(datetime.UTC)
-        timestamp = now.strftime("%Y-%m-%d %H-%M-%S %f")
+        # Use second-level precision for collision detection
+        timestamp_key = now.strftime("%Y-%m-%d %H-%M-%S")
 
         with _LOGGER_LOCK:
-            if _LAST_TIMESTAMP == timestamp:
+            if _LAST_TIMESTAMP == timestamp_key:
                 _LOGGER_SUFFIX_ID += 1
                 suffix_id = _LOGGER_SUFFIX_ID
             else:
-                _LAST_TIMESTAMP = timestamp
+                _LAST_TIMESTAMP = timestamp_key
                 _LOGGER_SUFFIX_ID = 1
                 suffix_id = 1
 
-        # 多线程情况下可能碰撞
         if suffix_id == 1:
-            file_name = f"request {timestamp}.log"
-            logger_name = f"LLM Request {timestamp}"
+            file_name = f"request {timestamp_key}.log"
+            logger_name = f"LLM Request {timestamp_key}"
         else:
-            file_name = f"request {timestamp}_{suffix_id}.log"
-            logger_name = f"LLM Request {timestamp}_{suffix_id}"
+            file_name = f"request {timestamp_key}_{suffix_id}.log"
+            logger_name = f"LLM Request {timestamp_key}_{suffix_id}"
 
         file_path = self._logger_save_path / file_name
         logger = getLogger(logger_name)
