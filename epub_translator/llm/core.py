@@ -1,4 +1,5 @@
 import datetime
+import threading
 from collections.abc import Generator
 from importlib.resources import files
 from logging import DEBUG, FileHandler, Formatter, Logger, getLogger
@@ -13,6 +14,11 @@ from .context import LLMContext
 from .executor import LLMExecutor
 from .increasable import Increasable
 from .types import Message
+
+# Global state for logger filename generation
+_LOGGER_LOCK = threading.Lock()
+_LAST_TIMESTAMP: str | None = None
+_LOGGER_SUFFIX_ID: int = 1
 
 
 class LLM:
@@ -95,13 +101,34 @@ class LLM:
         return dir_path.resolve()
 
     def _create_logger(self) -> Logger | None:
+        # pylint: disable=global-statement
+        global _LAST_TIMESTAMP, _LOGGER_SUFFIX_ID
+
         if self._logger_save_path is None:
             return None
 
         now = datetime.datetime.now(datetime.UTC)
-        timestamp = now.strftime("%Y-%m-%d %H-%M-%S %f")
-        file_path = self._logger_save_path / f"request {timestamp}.log"
-        logger = getLogger(f"LLM Request {timestamp}")
+        # Use second-level precision for collision detection
+        timestamp_key = now.strftime("%Y-%m-%d %H-%M-%S")
+
+        with _LOGGER_LOCK:
+            if _LAST_TIMESTAMP == timestamp_key:
+                _LOGGER_SUFFIX_ID += 1
+                suffix_id = _LOGGER_SUFFIX_ID
+            else:
+                _LAST_TIMESTAMP = timestamp_key
+                _LOGGER_SUFFIX_ID = 1
+                suffix_id = 1
+
+        if suffix_id == 1:
+            file_name = f"request {timestamp_key}.log"
+            logger_name = f"LLM Request {timestamp_key}"
+        else:
+            file_name = f"request {timestamp_key}_{suffix_id}.log"
+            logger_name = f"LLM Request {timestamp_key}_{suffix_id}"
+
+        file_path = self._logger_save_path / file_name
+        logger = getLogger(logger_name)
         logger.setLevel(DEBUG)
         handler = FileHandler(file_path, encoding="utf-8")
         handler.setLevel(DEBUG)

@@ -123,7 +123,8 @@ translate(
     submit: SubmitKind,                # 如何插入译文 (REPLACE, APPEND_TEXT, 或 APPEND_BLOCK)
     user_prompt: str | None = None,    # 自定义翻译指令
     max_retries: int = 5,              # 翻译失败的最大重试次数
-    max_group_tokens: int = 1200,      # 每个翻译组的最大 token 数
+    max_group_tokens: int = 2600,      # 每个翻译组的最大 token 数
+    concurrency: int = 1,              # 并发翻译任务数 (默认: 1)
     llm: LLM | None = None,            # 用于翻译和填充的单个 LLM 实例
     translation_llm: LLM | None = None,  # 翻译专用 LLM 实例（优先于 llm）
     fill_llm: LLM | None = None,       # XML 填充专用 LLM 实例（优先于 llm）
@@ -360,6 +361,32 @@ llm = LLM(
     cache_path="./translation_cache",  # 翻译结果缓存在此
 )
 ```
+
+### 并发翻译
+
+通过并发处理多个文本段落来加速翻译。使用 `concurrency` 参数控制并行运行的翻译任务数量：
+
+```python
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language="Chinese",
+    submit=SubmitKind.APPEND_BLOCK,
+    llm=llm,
+    concurrency=4,  # 同时处理 4 个段落
+)
+```
+
+**性能建议：**
+
+- 建议从 `concurrency=4` 开始，根据 API 速率限制和系统资源进行调整
+- 更高的并发值可以显著减少大型书籍的翻译时间
+- 无论并发设置如何，翻译顺序都会被保留
+- 注意监控 API 提供商的速率限制，避免触发限流
+
+**线程安全：**
+
+当使用 `concurrency > 1` 时，请确保任何自定义回调函数（`on_progress`、`on_fill_failed`）是线程安全的。内置回调函数默认是线程安全的。
 
 ## 相关项目
 

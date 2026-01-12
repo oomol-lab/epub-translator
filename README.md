@@ -123,7 +123,8 @@ translate(
     submit: SubmitKind,                # How to insert translations (REPLACE, APPEND_TEXT, or APPEND_BLOCK)
     user_prompt: str | None = None,    # Custom translation instructions
     max_retries: int = 5,              # Maximum retries for failed translations
-    max_group_tokens: int = 1200,      # Maximum tokens per translation group
+    max_group_tokens: int = 2600,      # Maximum tokens per translation group
+    concurrency: int = 1,              # Number of concurrent translation tasks (default: 1)
     llm: LLM | None = None,            # Single LLM instance for both translation and filling
     translation_llm: LLM | None = None,  # LLM instance for translation (overrides llm)
     fill_llm: LLM | None = None,       # LLM instance for XML filling (overrides llm)
@@ -360,6 +361,32 @@ llm = LLM(
     cache_path="./translation_cache",  # Translations are cached here
 )
 ```
+
+### Concurrent Translation
+
+Speed up translation by processing multiple text segments concurrently. Use the `concurrency` parameter to control how many translation tasks run in parallel:
+
+```python
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language="English",
+    submit=SubmitKind.APPEND_BLOCK,
+    llm=llm,
+    concurrency=4,  # Process 4 segments concurrently
+)
+```
+
+**Performance Tips:**
+
+- Start with `concurrency=4` and adjust based on your API rate limits and system resources
+- Higher concurrency values can significantly reduce translation time for large books
+- The translation order is preserved regardless of concurrency settings
+- Monitor your API provider's rate limits to avoid throttling
+
+**Thread Safety:**
+
+When using `concurrency > 1`, ensure that any custom callback functions (`on_progress`, `on_fill_failed`) are thread-safe. Built-in callbacks are thread-safe by default.
 
 ## Related Projects
 

@@ -52,6 +52,7 @@
     "pbar",
     "Peekable",
     "pixmap",
+    "popleft",
     "pylint",
     "rects",
     "rootfile",

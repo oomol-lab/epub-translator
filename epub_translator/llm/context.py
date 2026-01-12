@@ -1,5 +1,6 @@
 import hashlib
 import json
+import threading
 import uuid
 from pathlib import Path
 from typing import Self
@@ -7,6 +8,9 @@ from typing import Self
 from .executor import LLMExecutor
 from .increasable import Increasable, Increaser
 from .types import Message, MessageRole
+
+# Global lock for cache file commit operations
+_CACHE_COMMIT_LOCK = threading.Lock()
 
 
 class LLMContext:
@@ -101,7 +105,12 @@ class LLMContext:
                 # Remove the .[context-id].txt suffix to get permanent name
                 permanent_name = temp_file.name.rsplit(".", 2)[0] + ".txt"
                 permanent_file = temp_file.parent / permanent_name
-                temp_file.rename(permanent_file)
+
+                with _CACHE_COMMIT_LOCK:  # 多线程下的线程安全
+                    if permanent_file.exists():
+                        temp_file.unlink()
+                    else:
+                        temp_file.rename(permanent_file)
 
     def _rollback(self) -> None:
         for temp_file in self._temp_files:

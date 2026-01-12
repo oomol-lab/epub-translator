@@ -7,7 +7,7 @@ from tiktoken import Encoding
 from ..segment import InlineSegment, TextSegment
 from .common import DATA_ORIGIN_LEN_KEY
 
-_ID_WEIGHT = 150
+_ID_WEIGHT = 80
 _ELLIPSIS = "..."
 
 
