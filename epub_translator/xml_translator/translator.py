@@ -31,7 +31,7 @@ class XMLTranslator:
         ignore_translated_error: bool,
         max_retries: int,
         max_fill_displaying_errors: int,
-        max_group_tokens: int,
+        max_group_score: int,
         cache_seed_content: str | None = None,
     ) -> None:
         self._translation_llm: LLM = translation_llm
@@ -44,7 +44,7 @@ class XMLTranslator:
         self._cache_seed_content: str | None = cache_seed_content
         self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
             encoding=translation_llm.encoding,
-            max_group_tokens=max_group_tokens,
+            max_group_score=max_group_score,
         )
 
     def translate_element(
@@ -117,8 +117,7 @@ class XMLTranslator:
                 inline_segments=inline_segments,
             ),
         )
-        text_segments = (text for inline in inline_segments for text in inline)
-        source_text = "".join(self._render_text_segments(text_segments))
+        source_text = "".join(self._render_source_text_parts(inline_segments))
         translated_text = self._translate_text(source_text)
 
         self._request_and_submit(
@@ -137,21 +136,12 @@ class XMLTranslator:
 
         return mappings
 
-    def _render_text_segments(self, segments: Iterable[TextSegment]):
-        # TODO: 没必要，直接按照新的 inline segment 组织就行了
-        iterator = iter(segments)
-        segment = next(iterator, None)
-        if segment is None:
-            return
-        while True:
-            next_segment = next(iterator, None)
-            if next_segment is None:
-                break
-            yield segment.text
-            if id(segment.block_parent) != id(next_segment.block_parent):
+    def _render_source_text_parts(self, inline_segments: list[InlineSegment]):
+        for i, inline_segment in enumerate(inline_segments):
+            if i > 0:
                 yield "\n\n"
-            segment = next_segment
-        yield segment.text
+            for text_segment in inline_segment:
+                yield text_segment.text
 
     def _translate_text(self, text: str) -> str:
         with self._translation_llm.context(cache_seed_content=self._cache_seed_content) as ctx:

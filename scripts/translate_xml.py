@@ -33,7 +33,7 @@ def main() -> None:
         ignore_translated_error=False,
         max_retries=5,
         max_fill_displaying_errors=10,
-        max_group_tokens=1200,
+        max_group_score=2600,
     )
     print("✓ Created XMLTranslator instance")
 
