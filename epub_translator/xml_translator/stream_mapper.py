@@ -21,9 +21,9 @@ InlineSegmentGroupMap = Callable[[list[InlineSegment]], list[InlineSegmentMappin
 
 
 class XMLStreamMapper:
-    def __init__(self, encoding: Encoding, max_group_tokens: int) -> None:
+    def __init__(self, encoding: Encoding, max_group_score: int) -> None:
         self._encoding: Encoding = encoding
-        self._max_group_tokens: int = max_group_tokens
+        self._max_group_score: int = max_group_score
 
     def map_stream(
         self,
@@ -61,7 +61,7 @@ class XMLStreamMapper:
         def generate():
             for element in elements:
                 yield from split(
-                    max_segment_count=self._max_group_tokens,
+                    max_segment_count=self._max_group_score,
                     border_incision=_PAGE_INCISION,
                     resources=self._expand_to_resources(element, callbacks),
                 )
@@ -82,7 +82,7 @@ class XMLStreamMapper:
             next_sum_body_count = sum(x.count for x in self._expand_resource_segments(next_group.body))
             next_sum_count = sum_count + next_sum_body_count
 
-            if next_sum_count + next_group.tail_remain_count > self._max_group_tokens:
+            if next_sum_count + next_group.tail_remain_count > self._max_group_score:
                 yield group
                 group = next_group
                 sum_count = group.head_remain_count + next_sum_body_count

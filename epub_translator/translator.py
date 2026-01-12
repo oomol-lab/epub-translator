@@ -40,7 +40,7 @@ def translate(
     submit: SubmitKind,
     user_prompt: str | None = None,
     max_retries: int = 5,
-    max_group_tokens: int = 1200,
+    max_group_tokens: int = 2600,
     llm: LLM | None = None,
     translation_llm: LLM | None = None,
     fill_llm: LLM | None = None,
@@ -62,7 +62,7 @@ def translate(
         ignore_translated_error=False,
         max_retries=max_retries,
         max_fill_displaying_errors=10,
-        max_group_tokens=max_group_tokens,
+        max_group_score=max_group_tokens,
         cache_seed_content=f"{_get_version()}:{target_language}",
     )
     with Zip(

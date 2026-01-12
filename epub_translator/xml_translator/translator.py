@@ -31,7 +31,7 @@ class XMLTranslator:
         ignore_translated_error: bool,
         max_retries: int,
         max_fill_displaying_errors: int,
-        max_group_tokens: int,
+        max_group_score: int,
         cache_seed_content: str | None = None,
     ) -> None:
         self._translation_llm: LLM = translation_llm
@@ -44,7 +44,7 @@ class XMLTranslator:
         self._cache_seed_content: str | None = cache_seed_content
         self._stream_mapper: XMLStreamMapper = XMLStreamMapper(
             encoding=translation_llm.encoding,
-            max_group_tokens=max_group_tokens,
+            max_group_score=max_group_score,
         )
 
     def translate_element(
