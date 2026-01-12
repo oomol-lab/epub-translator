@@ -1,19 +1,19 @@
 from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import TypeVar
 from xml.etree.ElementTree import Element
 
 from resource_segmentation import Group, Resource, Segment, split
 from tiktoken import Encoding
 
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
-from ..xml import encode_friendly
 from .callbacks import Callbacks
-from .common import DATA_ORIGIN_LEN_KEY
+from .score import ScoreSegment, expand_to_score_segments, truncate_score_segment
 
 _PAGE_INCISION = 0
 _BLOCK_INCISION = 1
+_T = TypeVar("_T")
 
-_ELLIPSIS = "..."
-_ID_WEIGHT = 150
+_ResourcePayload = tuple[InlineSegment, list[ScoreSegment]]
 
 
 InlineSegmentMapping = tuple[Element, list[TextSegment]]
@@ -94,23 +94,25 @@ class XMLStreamMapper:
 
         yield group
 
-    def _truncate_and_transform_group(self, group: Group[InlineSegment]):
-        head = list(
-            self._truncate_inline_segments(
-                inline_segments=self._expand_inline_segments(group.head),
-                remain_head=False,
-                remain_count=group.head_remain_count,
-            )
+    def _truncate_and_transform_group(
+        self, group: Group[_ResourcePayload]
+    ) -> tuple[list[InlineSegment], list[InlineSegment], list[InlineSegment]]:
+        head = self._truncate_group_gap(
+            gap=group.head,
+            remain_head=False,
+            remain_score=group.head_remain_count,
         )
-        body = list(self._expand_inline_segments(group.body))
-        tail = list(
-            self._truncate_inline_segments(
-                inline_segments=self._expand_inline_segments(group.tail),
-                remain_head=True,
-                remain_count=group.tail_remain_count,
-            )
+        body = self._expand_inline_segments(group.body)
+        tail = self._truncate_group_gap(
+            gap=group.tail,
+            remain_head=True,
+            remain_score=group.tail_remain_count,
         )
-        return head, body, tail
+        return (
+            list(r.payload[0] for r in head),
+            list(p[0] for p in body),
+            list(r.payload[0] for r in tail),
+        )
 
     def _expand_to_resources(self, element: Element, callbacks: Callbacks):
         def expand(element: Element):
@@ -134,140 +136,138 @@ class XMLStreamMapper:
             else:
                 end_incision = _PAGE_INCISION
 
-            inline_segment.create_element()
-
-            yield Resource(
-                count=self._inline_segment_score(inline_segment),
+            yield self._transform_to_resource(
+                inline_segment=inline_segment,
                 start_incision=start_incision,
                 end_incision=end_incision,
-                payload=inline_segment,
             )
             inline_segment = next_inline_segment
             start_incision = end_incision
 
-        yield Resource(
-            count=self._inline_segment_score(inline_segment),
+        yield self._transform_to_resource(
+            inline_segment=inline_segment,
             start_incision=start_incision,
             end_incision=_PAGE_INCISION,
-            payload=inline_segment,
         )
 
-    def _truncate_inline_segments(self, inline_segments: Iterable[InlineSegment], remain_head: bool, remain_count: int):
-        def clone_and_expand(segments: Iterable[InlineSegment]):
-            for segment in segments:
-                for child_segment in segment:
-                    yield child_segment.clone()  # 切割对应的 head 和 tail 会与其他 group 重叠，复制避免互相影响
-
-        truncated_text_segments = self._truncate_text_segments(
-            text_segments=clone_and_expand(inline_segments),
-            remain_head=remain_head,
-            remain_count=remain_count,
+    def _transform_to_resource(
+        self,
+        inline_segment: InlineSegment,
+        start_incision: int,
+        end_incision: int,
+    ) -> Resource[_ResourcePayload]:
+        source_segments = list(
+            expand_to_score_segments(
+                encoding=self._encoding,
+                inline_segment=inline_segment,
+            )
         )
-        yield from search_inline_segments(truncated_text_segments)
+        return Resource(
+            count=sum(segment.score for segment in source_segments),
+            start_incision=start_incision,
+            end_incision=end_incision,
+            payload=(inline_segment, source_segments),
+        )
 
-    def _expand_inline_segments(self, items: list[Resource[InlineSegment] | Segment[InlineSegment]]):
+    def _expand_inline_segments(self, items: list[Resource[_ResourcePayload] | Segment[_ResourcePayload]]):
         for resource in self._expand_resource_segments(items):
             yield resource.payload
 
-    def _expand_resource_segments(self, items: list[Resource[InlineSegment] | Segment[InlineSegment]]):
+    def _expand_resource_segments(self, items: list[Resource[_ResourcePayload] | Segment[_ResourcePayload]]):
         for item in items:
             if isinstance(item, Resource):
                 yield item
             elif isinstance(item, Segment):
                 yield from item.resources
 
-    def _truncate_text_segments(self, text_segments: Iterable[TextSegment], remain_head: bool, remain_count: int):
-        if remain_head:
-            yield from self._filter_and_remain_segments(
-                segments=text_segments,
-                remain_head=remain_head,
-                remain_count=remain_count,
-            )
-        else:
-            yield from reversed(
-                list(
-                    self._filter_and_remain_segments(
-                        segments=reversed(list(text_segments)),
-                        remain_head=remain_head,
-                        remain_count=remain_count,
-                    )
-                )
-            )
-
-    def _filter_and_remain_segments(self, segments: Iterable[TextSegment], remain_head: bool, remain_count: int):
-        for segment in segments:
-            if remain_count <= 0:
-                break
-            raw_xml_text = segment.xml_text
-            tokens = self._encoding.encode(raw_xml_text)
-            tokens_count = len(tokens)
-
-            if tokens_count > remain_count:
-                truncated_segment = self._truncate_text_segment(
-                    segment=segment,
-                    tokens=tokens,
-                    raw_xml_text=raw_xml_text,
-                    remain_head=remain_head,
-                    remain_count=remain_count,
-                )
-                if truncated_segment is not None:
-                    yield truncated_segment
-                break
-
-            yield segment
-            remain_count -= tokens_count
-
-    def _truncate_text_segment(
+    def _truncate_group_gap(
         self,
-        segment: TextSegment,
-        tokens: list[int],
-        raw_xml_text: str,
+        gap: list[Resource[_ResourcePayload] | Segment[_ResourcePayload]],
         remain_head: bool,
-        remain_count: int,
-    ) -> TextSegment | None:
-        # 典型的 xml_text: <tag id="99" data-origin-len="999">Some text</tag>
-        # 如果切割点在前缀 XML 区，则整体舍弃
-        # 如果切割点在后缀 XML 区，则整体保留
-        # 只有刚好切割在正文区，才执行文本截断操作
-        remain_text: str
-        xml_text_head_length = raw_xml_text.find(segment.text)
+        remain_score: int,
+    ):
+        def expand_resource_segments(items: list[Resource[_ResourcePayload] | Segment[_ResourcePayload]]):
+            for item in items:
+                if isinstance(item, Resource):
+                    yield item
+                elif isinstance(item, Segment):
+                    yield from item.resources
 
-        if remain_head:
-            remain_xml_text = self._encoding.decode(tokens[:remain_count])  # remain_count cannot be 0 here
-            if len(remain_xml_text) <= xml_text_head_length:
-                return None
-            if len(remain_xml_text) >= xml_text_head_length + len(segment.text):
-                return segment
-            remain_text = remain_xml_text[xml_text_head_length:]
-        else:
-            xml_text_tail_length = len(raw_xml_text) - (xml_text_head_length + len(segment.text))
-            remain_xml_text = self._encoding.decode(tokens[-remain_count:])
-            if len(remain_xml_text) <= xml_text_tail_length:
-                return None
-            if len(remain_xml_text) >= xml_text_tail_length + len(segment.text):
-                return segment
-            remain_text = remain_xml_text[: len(remain_xml_text) - xml_text_tail_length]
+        resources, remain_score = _truncate_items(
+            items=expand_resource_segments(gap),
+            score=lambda resource: resource.count,
+            remain_head=remain_head,
+            remain_score=remain_score,
+        )
+        if remain_score > 0:
+            resource = resources.pop() if remain_head else resources.pop(0)
+            inline_segment, score_segments = resource.payload
+            score_segments, remain_score = _truncate_items(
+                items=score_segments,
+                score=lambda score_segment: score_segment.score,
+                remain_head=remain_head,
+                remain_score=remain_score,
+            )
+            if remain_score > 0:
+                score_segment = score_segments.pop() if remain_head else score_segments.pop(0)
+                score_segment = truncate_score_segment(
+                    score_segment=score_segment,
+                    encoding=self._encoding,
+                    remain_head=remain_head,
+                    remain_score=remain_score,
+                )
+                if score_segment is not None:
+                    if remain_head:
+                        score_segments.append(score_segment)
+                    else:
+                        score_segments.insert(0, score_segment)
 
-        if not remain_text.strip():
-            return None
+                inline_segment = next(
+                    search_inline_segments(s.text_segment for s in score_segments),
+                    None,
+                )
 
-        if remain_head:
-            segment.text = f"{remain_text} {_ELLIPSIS}"
-        else:
-            segment.text = f"{_ELLIPSIS} {remain_text}"
-        return segment
+            if inline_segment is not None:
+                resource = Resource(
+                    count=sum(s.score for s in score_segments),
+                    start_incision=resource.start_incision,
+                    end_incision=resource.end_incision,
+                    payload=(inline_segment, score_segments),
+                )
+                if remain_head:
+                    resources.append(resource)
+                else:
+                    resources.insert(0, resource)
 
-    def _inline_segment_score(self, inline_segment: InlineSegment) -> int:
-        element = inline_segment.create_element()
-        element.set(DATA_ORIGIN_LEN_KEY, "999")
-        text = encode_friendly(element)
-        tokens_count = len(self._encoding.encode(text))
-        ids_count = sum(1 for _ in self._collect_ids_with(inline_segment))
-        return tokens_count + ids_count * _ID_WEIGHT
+        return resources
 
-    def _collect_ids_with(self, inline_segment: InlineSegment):
-        if inline_segment.id is not None:
-            yield inline_segment.id
-        for child in inline_segment.children:
-            if isinstance(child, InlineSegment):
-                yield from self._collect_ids_with(child)
+
+def _truncate_items(items: Iterable[_T], score: Callable[[_T], int], remain_head: bool, remain_score: int):
+    truncated_items = list(items)
+    if not truncated_items:
+        return truncated_items, 0
+
+    if not remain_head:
+        truncated_items.reverse()
+
+    truncated_index: int | None = None
+    for i, item in enumerate(truncated_items):
+        item_score = score(item)
+        remain_score -= item_score
+        if remain_score <= 0:
+            truncated_index = i
+            break
+
+    if truncated_index is not None:
+        while len(truncated_items) > truncated_index + 1:
+            truncated_items.pop()
+
+    if truncated_items and remain_score < 0:
+        remain_score = score(truncated_items[-1]) + remain_score
+    else:
+        remain_score = 0
+
+    if not remain_head:
+        truncated_items.reverse()
+
+    return truncated_items, remain_score
