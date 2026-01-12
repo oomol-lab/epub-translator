@@ -19,10 +19,10 @@ def run_concurrency(
             yield execute(param)
         return
 
-    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+    executor = ThreadPoolExecutor(max_workers=concurrency)
+    try:
         futures: deque[Future[R]] = deque()
         params_iter = iter(parameters)
-
         for _ in range(concurrency):
             try:
                 param = next(params_iter)
@@ -40,3 +40,10 @@ def run_concurrency(
                 futures.append(new_future)
             except StopIteration:
                 pass
+
+    except KeyboardInterrupt:
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
+
+    finally:
+        executor.shutdown(wait=True)
