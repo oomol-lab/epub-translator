@@ -50,6 +50,7 @@ class XMLTranslator:
     def translate_element(
         self,
         task: TranslationTask[T],
+        concurrency: int = 1,
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_block_element: Callable[[Element], Element] | None = None,
@@ -57,6 +58,7 @@ class XMLTranslator:
     ) -> tuple[Element, T]:
         for translated in self.translate_elements(
             tasks=((task),),
+            concurrency=concurrency,
             interrupt_source_text_segments=interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupt_translated_text_segments,
             interrupt_block_element=interrupt_block_element,
@@ -69,6 +71,7 @@ class XMLTranslator:
     def translate_elements(
         self,
         tasks: Iterable[TranslationTask[T]],
+        concurrency: int = 1,
         interrupt_source_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_translated_text_segments: Callable[[Iterable[TextSegment]], Iterable[TextSegment]] | None = None,
         interrupt_block_element: Callable[[Element], Element] | None = None,
@@ -90,6 +93,7 @@ class XMLTranslator:
         for element, mappings in self._stream_mapper.map_stream(
             elements=generate_elements(),
             callbacks=callbacks,
+            concurrency=concurrency,
             map=lambda inline_segments: self._translate_inline_segments(
                 inline_segments=inline_segments,
                 callbacks=callbacks,

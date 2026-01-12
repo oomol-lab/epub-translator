@@ -41,6 +41,7 @@ def translate(
     user_prompt: str | None = None,
     max_retries: int = 5,
     max_group_tokens: int = 2600,
+    concurrency: int = 1,
     llm: LLM | None = None,
     translation_llm: LLM | None = None,
     fill_llm: LLM | None = None,
@@ -92,6 +93,7 @@ def translate(
         current_progress = 0.0
 
         for translated_elem, context in translator.translate_elements(
+            concurrency=concurrency,
             interrupt_source_text_segments=interrupter.interrupt_source_text_segments,
             interrupt_translated_text_segments=interrupter.interrupt_translated_text_segments,
             interrupt_block_element=interrupter.interrupt_block_element,

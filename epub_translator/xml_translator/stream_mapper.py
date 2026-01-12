@@ -7,6 +7,7 @@ from tiktoken import Encoding
 
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
 from .callbacks import Callbacks
+from .concurrency import run_concurrency
 from .score import ScoreSegment, expand_to_score_segments, truncate_score_segment
 
 _PAGE_INCISION = 0
@@ -30,14 +31,22 @@ class XMLStreamMapper:
         elements: Iterator[Element],
         callbacks: Callbacks,
         map: InlineSegmentGroupMap,
+        concurrency: int,
     ) -> Generator[tuple[Element, list[InlineSegmentMapping]], None, None]:
         current_element: Element | None = None
         mapping_buffer: list[InlineSegmentMapping] = []
 
-        for group in self._split_into_serial_groups(elements, callbacks):
+        def execute(group: Group[_ResourcePayload]):
             head, body, tail = self._truncate_and_transform_group(group)
             target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
-            for origin, target in zip(body, target_body, strict=False):
+            return zip(body, target_body, strict=False)
+
+        for mapping_pairs in run_concurrency(
+            parameters=self._split_into_serial_groups(elements, callbacks),
+            execute=execute,
+            concurrency=concurrency,
+        ):
+            for origin, target in mapping_pairs:
                 origin_element = origin.head.root
                 if current_element is None:
                     current_element = origin_element
