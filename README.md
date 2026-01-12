@@ -26,6 +26,13 @@ Translate EPUB books using Large Language Models while preserving the original t
 - **Flexible LLM Support**: Works with any OpenAI-compatible API endpoint
 - **Caching**: Built-in caching for progress recovery when translation fails
 
+## Use Cases
+
+- **Language Learning**: Read books in their original language with side-by-side translations
+- **Academic Research**: Access foreign literature with bilingual references
+- **Content Localization**: Prepare books for international audiences
+- **Cross-Cultural Reading**: Enjoy literature while understanding cultural nuances
+
 ## Installation
 
 ```bash
@@ -323,13 +330,6 @@ llm = LLM(
     token_encoding="o200k_base",  # Match your model's encoding
 )
 ```
-
-## Use Cases
-
-- **Language Learning**: Read books in their original language with side-by-side translations
-- **Academic Research**: Access foreign literature with bilingual references
-- **Content Localization**: Prepare books for international audiences
-- **Cross-Cultural Reading**: Enjoy literature while understanding cultural nuances
 
 ## Advanced Features
 
