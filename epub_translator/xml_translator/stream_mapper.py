@@ -5,7 +5,9 @@ from resource_segmentation import Group, Resource, Segment, split
 from tiktoken import Encoding
 
 from ..segment import InlineSegment, TextSegment, search_inline_segments, search_text_segments
+from ..xml import encode_friendly
 from .callbacks import Callbacks
+from .common import DATA_ORIGIN_LEN_KEY
 
 _PAGE_INCISION = 0
 _BLOCK_INCISION = 1
@@ -131,8 +133,10 @@ class XMLStreamMapper:
             else:
                 end_incision = _PAGE_INCISION
 
+            inline_segment.create_element()
+
             yield Resource(
-                count=sum(len(self._encoding.encode(t.xml_text)) for t in inline_segment),
+                count=self._resource_count_with(inline_segment),
                 start_incision=start_incision,
                 end_incision=end_incision,
                 payload=inline_segment,
@@ -141,11 +145,18 @@ class XMLStreamMapper:
             start_incision = end_incision
 
         yield Resource(
-            count=sum(len(self._encoding.encode(t.xml_text)) for t in inline_segment),
+            count=self._resource_count_with(inline_segment),
             start_incision=start_incision,
             end_incision=_PAGE_INCISION,
             payload=inline_segment,
         )
+
+    def _resource_count_with(self, inline_segment: InlineSegment) -> int:
+        element = inline_segment.create_element()
+        element.set(DATA_ORIGIN_LEN_KEY, "999")
+        text = encode_friendly(element)
+        tokens_count = len(self._encoding.encode(text))
+        return tokens_count
 
     def _truncate_inline_segments(self, inline_segments: Iterable[InlineSegment], remain_head: bool, remain_count: int):
         def clone_and_expand(segments: Iterable[InlineSegment]):

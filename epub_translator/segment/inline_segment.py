@@ -47,6 +47,7 @@ def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["I
                 inline_segment = _pop_stack_data(stack_data)
                 stack_data = None
                 if inline_segment:
+                    inline_segment.id = 0
                     yield inline_segment
 
         if stack_data is None:
@@ -73,6 +74,7 @@ def search_inline_segments(text_segments: Iterable[TextSegment]) -> Generator["I
     if stack_data is not None:
         inline_segment = _pop_stack_data(stack_data)
         if inline_segment:
+            inline_segment.id = 0
             yield inline_segment
 
 
@@ -115,7 +117,7 @@ class InlineSegment:
         self._child_tag2ids: dict[str, list[int]] = {}
         self._child_tag2count: dict[str, int] = {}
 
-        next_temp_id: int = 0
+        next_temp_id: int = 1
         terms = nest((child.parent.tag, child) for child in children if isinstance(child, InlineSegment))
 
         for tag, child_terms in terms.items():
