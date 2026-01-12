@@ -164,6 +164,14 @@ class InlineSegment:
             elif isinstance(child, InlineSegment):
                 yield from child
 
+    def clone(self) -> "InlineSegment":
+        cloned_segment = InlineSegment(
+            depth=len(self._parent_stack),
+            children=[child.clone() for child in self._children],
+        )
+        cloned_segment.id = self.id
+        return cloned_segment
+
     def recreate_ids(self, id_generator: IDGenerator) -> None:
         self._child_tag2count.clear()
         self._child_tag2ids.clear()

@@ -38,6 +38,8 @@ class XMLStreamMapper:
 
         def execute(group: Group[_ResourcePayload]):
             head, body, tail = self._truncate_and_transform_group(group)
+            head = [segment.clone() for segment in head]
+            tail = [segment.clone() for segment in tail]
             target_body = map(head + body + tail)[len(head) : len(head) + len(body)]
             return zip(body, target_body, strict=False)
 
@@ -118,9 +120,9 @@ class XMLStreamMapper:
             remain_score=group.tail_remain_count,
         )
         return (
-            list(r.payload[0] for r in head),
-            list(p[0] for p in body),
-            list(r.payload[0] for r in tail),
+            [r.payload[0] for r in head],
+            [p[0] for p in body],
+            [r.payload[0] for r in tail],
         )
 
     def _expand_to_resources(self, element: Element, callbacks: Callbacks):
