@@ -81,6 +81,10 @@ class XMLInterrupter:
                     _ID_KEY: cast(str, interrupted_element.get(_ID_KEY)),
                 },
             )
+            interrupted_display = interrupted_element.get("display", None)
+            if interrupted_display is not None:
+                placeholder_element.set("display", interrupted_display)
+
             raw_parent_stack = text_segment.parent_stack[:interrupted_index]
             parent_stack = raw_parent_stack + [placeholder_element]
             merged_text_segment = TextSegment(

@@ -1,3 +1,5 @@
+from xml.etree.ElementTree import Element
+
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
 # Reference: https://developer.mozilla.org/en-US/docs/Glossary/Inline-level_content
@@ -63,5 +65,11 @@ _HTML_INLINE_TAGS = frozenset(
 )
 
 
-def is_inline_tag(tag: str) -> bool:
-    return tag.lower() in _HTML_INLINE_TAGS
+def is_inline_element(element: Element) -> bool:
+    if element.tag.lower() in _HTML_INLINE_TAGS:
+        return True
+    display = element.get("display", None)
+    if display is not None and display.lower() == "inline":
+        return True
+    print("is not inline:", element.tag, element.get("display", None))
+    return False

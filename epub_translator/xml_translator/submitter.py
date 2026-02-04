@@ -4,7 +4,7 @@ from enum import Enum, auto
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, combine_text_segments
-from ..xml import index_of_parent, is_inline_tag, iter_with_stack
+from ..xml import index_of_parent, is_inline_element, iter_with_stack
 from .stream_mapper import InlineSegmentMapping
 
 
@@ -78,7 +78,7 @@ class _Submitter:
         preserved_elements: list[Element] = []
         if self._action == SubmitKind.REPLACE:
             for child in list(node.raw_element):
-                if not is_inline_tag(child.tag):
+                if not is_inline_element(child):
                     child.tail = None
                     preserved_elements.append(child)
 
@@ -87,7 +87,7 @@ class _Submitter:
 
         if combined is not None:
             # 在 APPEND_BLOCK 模式下，如果是 inline tag，则在文本前面加空格
-            if self._action == SubmitKind.APPEND_BLOCK and is_inline_tag(combined.tag) and combined.text:
+            if self._action == SubmitKind.APPEND_BLOCK and is_inline_element(combined) and combined.text:
                 combined.text = " " + combined.text
             parent.insert(index + 1, combined)
             index += 1
@@ -200,7 +200,7 @@ class _Submitter:
         preserved_elements: list[Element] = []
         for i in range(start_index, end_index):
             elem = node_element[i]
-            if not is_inline_tag(elem.tag):
+            if not is_inline_element(elem):
                 elem.tail = None
                 preserved_elements.append(elem)
 
@@ -223,7 +223,7 @@ class _Submitter:
 
         if combined.text:
             will_inject_space = self._action == SubmitKind.APPEND_TEXT or (
-                is_inline_tag(combined.tag) and self._action == SubmitKind.APPEND_BLOCK
+                is_inline_element(combined) and self._action == SubmitKind.APPEND_BLOCK
             )
             if tail_element is not None:
                 tail_element.tail = self._append_text_in_element(
