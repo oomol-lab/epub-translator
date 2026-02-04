@@ -71,5 +71,4 @@ def is_inline_element(element: Element) -> bool:
     display = element.get("display", None)
     if display is not None and display.lower() == "inline":
         return True
-    print("is not inline:", element.tag, element.get("display", None))
     return False

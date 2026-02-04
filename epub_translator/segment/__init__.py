@@ -21,6 +21,7 @@ from .text_segment import (
     TextPosition,
     TextSegment,
     combine_text_segments,
+    find_block_depth,
     incision_between,
     search_text_segments,
 )

@@ -2,7 +2,7 @@ from collections.abc import Generator, Iterable
 from typing import cast
 from xml.etree.ElementTree import Element
 
-from ..segment import TextSegment
+from ..segment import TextSegment, find_block_depth
 from ..utils import ensure_list, normalize_whitespace
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
@@ -92,7 +92,7 @@ class XMLInterrupter:
                 parent_stack=parent_stack,
                 left_common_depth=text_segments[0].left_common_depth,
                 right_common_depth=text_segments[-1].right_common_depth,
-                block_depth=len(parent_stack),
+                block_depth=find_block_depth(parent_stack),
                 position=text_segments[0].position,
             )
             self._placeholder2interrupted[id(placeholder_element)] = interrupted_element
@@ -120,8 +120,8 @@ class XMLInterrupter:
                 # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
                 text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
                 text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
-                text_segment.block_depth = 1
                 text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
+                text_segment.block_depth = find_block_depth(text_segment.parent_stack)
 
         return merged_text_segment
 

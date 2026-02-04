@@ -334,7 +334,7 @@ class TestBugReproduction(unittest.TestCase):
         xml_str = """
         <p id="parent">
             <span id="wrapper">
-                <math id="math">formula</math>
+                <math id="math" display="inline">formula</math>
             </span>
         </p>
         """
