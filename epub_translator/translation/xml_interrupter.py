@@ -136,21 +136,21 @@ class XMLInterrupter:
         return interrupted_index
 
     def _expand_translated_text_segment(self, text_segment: TextSegment):
-        interrupted_id = text_segment.block_parent.attrib.pop(_ID_KEY, None)
+        parent_element = text_segment.parent_stack[-1]
+        interrupted_id = parent_element.attrib.pop(_ID_KEY, None)
         if interrupted_id is None:
             yield text_segment
             return
 
         raw_text_segments = self._raw_text_segments.pop(interrupted_id, None)
         if not raw_text_segments:
-            return
-
-        raw_block = raw_text_segments[0].parent_stack[0]
-        if not self._is_inline_math(raw_block):
+            yield text_segment
             return
 
         for raw_text_segment in raw_text_segments:
+            text_basic_parent_stack = text_segment.parent_stack[:-1]
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
+            raw_text_segment.parent_stack = text_basic_parent_stack + raw_text_segment.parent_stack
             yield raw_text_segment
 
     def _has_no_math_texts(self, element: Element):
