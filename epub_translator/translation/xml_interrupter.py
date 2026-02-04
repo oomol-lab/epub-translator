@@ -142,6 +142,8 @@ class XMLInterrupter:
     def _render_latex(self, text_segments: list[TextSegment]) -> str:
         math_element, _ = next(combine_text_segments(text_segments))
         while math_element.tag != _MATH_TAG:
+            if len(math_element) == 0:
+                return ""
             math_element = math_element[0]
 
         math_element = clone_element(math_element)
