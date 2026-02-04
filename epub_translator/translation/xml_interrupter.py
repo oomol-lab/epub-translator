@@ -3,7 +3,7 @@ from typing import cast
 from xml.etree.ElementTree import Element
 
 from ..segment import TextSegment, find_block_depth
-from ..utils import ensure_list, normalize_whitespace
+from ..utils import ensure_list
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -142,6 +142,10 @@ class XMLInterrupter:
             yield text_segment
             return
 
+        if parent_element is text_segment.block_parent:
+            # Block-level math， need to be hidden
+            return
+
         raw_text_segments = self._raw_text_segments.pop(interrupted_id, None)
         if not raw_text_segments:
             yield text_segment
@@ -152,20 +156,3 @@ class XMLInterrupter:
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
             raw_text_segment.parent_stack = text_basic_parent_stack + raw_text_segment.parent_stack
             yield raw_text_segment
-
-    def _has_no_math_texts(self, element: Element):
-        if element.tag == _MATH_TAG:
-            return True
-        if element.text and normalize_whitespace(element.text).strip():
-            return False
-        for child_element in element:
-            if not self._has_no_math_texts(child_element):
-                return False
-            if child_element.tail and normalize_whitespace(child_element.tail).strip():
-                return False
-        return True
-
-    def _is_inline_math(self, element: Element) -> bool:
-        if element.tag != _MATH_TAG:
-            return False
-        return element.get("display", "").lower() != "block"
