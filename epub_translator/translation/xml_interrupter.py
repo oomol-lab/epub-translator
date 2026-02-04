@@ -37,8 +37,10 @@ class XMLInterrupter:
     def interrupt_block_element(self, element: Element) -> Element:
         interrupted_element = self._placeholder2interrupted.pop(id(element), None)
         if interrupted_element is None:
+            element.attrib.pop(_ID_KEY, None)
             return element
         else:
+            interrupted_element.attrib.pop(_ID_KEY, None)
             return interrupted_element
 
     def _expand_source_text_segment(self, text_segment: TextSegment):
