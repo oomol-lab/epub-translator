@@ -2,8 +2,8 @@ from collections.abc import Generator, Iterable
 from typing import cast
 from xml.etree.ElementTree import Element
 
-from ..segment import TextSegment
-from ..utils import ensure_list, normalize_whitespace
+from ..segment import TextSegment, find_block_depth
+from ..utils import ensure_list
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -37,8 +37,10 @@ class XMLInterrupter:
     def interrupt_block_element(self, element: Element) -> Element:
         interrupted_element = self._placeholder2interrupted.pop(id(element), None)
         if interrupted_element is None:
+            element.attrib.pop(_ID_KEY, None)
             return element
         else:
+            interrupted_element.attrib.pop(_ID_KEY, None)
             return interrupted_element
 
     def _expand_source_text_segment(self, text_segment: TextSegment):
@@ -81,6 +83,10 @@ class XMLInterrupter:
                     _ID_KEY: cast(str, interrupted_element.get(_ID_KEY)),
                 },
             )
+            interrupted_display = interrupted_element.get("display", None)
+            if interrupted_display is not None:
+                placeholder_element.set("display", interrupted_display)
+
             raw_parent_stack = text_segment.parent_stack[:interrupted_index]
             parent_stack = raw_parent_stack + [placeholder_element]
             merged_text_segment = TextSegment(
@@ -88,7 +94,7 @@ class XMLInterrupter:
                 parent_stack=parent_stack,
                 left_common_depth=text_segments[0].left_common_depth,
                 right_common_depth=text_segments[-1].right_common_depth,
-                block_depth=len(parent_stack),
+                block_depth=find_block_depth(parent_stack),
                 position=text_segments[0].position,
             )
             self._placeholder2interrupted[id(placeholder_element)] = interrupted_element
@@ -116,8 +122,8 @@ class XMLInterrupter:
                 # 原始栈退光，仅留下相对 interrupted 元素的栈，这种格式与 translated 要求一致
                 text_segment.left_common_depth = max(0, text_segment.left_common_depth - interrupted_index)
                 text_segment.right_common_depth = max(0, text_segment.right_common_depth - interrupted_index)
-                text_segment.block_depth = 1
                 text_segment.parent_stack = text_segment.parent_stack[interrupted_index:]
+                text_segment.block_depth = find_block_depth(text_segment.parent_stack)
 
         return merged_text_segment
 
@@ -130,36 +136,23 @@ class XMLInterrupter:
         return interrupted_index
 
     def _expand_translated_text_segment(self, text_segment: TextSegment):
-        interrupted_id = text_segment.block_parent.attrib.pop(_ID_KEY, None)
+        parent_element = text_segment.parent_stack[-1]
+        interrupted_id = parent_element.attrib.pop(_ID_KEY, None)
         if interrupted_id is None:
             yield text_segment
             return
 
-        raw_text_segments = self._raw_text_segments.pop(interrupted_id, None)
-        if not raw_text_segments:
+        if parent_element is text_segment.block_parent:
+            # Block-level math， need to be hidden
             return
 
-        raw_block = raw_text_segments[0].parent_stack[0]
-        if not self._is_inline_math(raw_block):
+        raw_text_segments = self._raw_text_segments.pop(interrupted_id, None)
+        if not raw_text_segments:
+            yield text_segment
             return
 
         for raw_text_segment in raw_text_segments:
+            text_basic_parent_stack = text_segment.parent_stack[:-1]
             raw_text_segment.block_parent.attrib.pop(_ID_KEY, None)
+            raw_text_segment.parent_stack = text_basic_parent_stack + raw_text_segment.parent_stack
             yield raw_text_segment
-
-    def _has_no_math_texts(self, element: Element):
-        if element.tag == _MATH_TAG:
-            return True
-        if element.text and normalize_whitespace(element.text).strip():
-            return False
-        for child_element in element:
-            if not self._has_no_math_texts(child_element):
-                return False
-            if child_element.tail and normalize_whitespace(child_element.tail).strip():
-                return False
-        return True
-
-    def _is_inline_math(self, element: Element) -> bool:
-        if element.tag != _MATH_TAG:
-            return False
-        return element.get("display", "").lower() != "block"

@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from ..xml import expand_left_element_texts, expand_right_element_texts, is_inline_tag, normalize_text_in_element
+from ..xml import expand_left_element_texts, expand_right_element_texts, is_inline_element, normalize_text_in_element
 
 
 class TextPosition(Enum):
@@ -100,7 +100,7 @@ def search_text_segments(root: Element) -> Generator[TextSegment, None, None]:
 def _search_text_segments(stack: list[Element], element: Element) -> Generator[TextSegment, None, None]:
     text = normalize_text_in_element(element.text)
     next_stack = stack + [element]
-    next_block_depth = _find_block_depth(next_stack)
+    next_block_depth = find_block_depth(next_stack)
 
     if text is not None:
         yield TextSegment(
@@ -125,12 +125,11 @@ def _search_text_segments(stack: list[Element], element: Element) -> Generator[T
             )
 
 
-def _find_block_depth(parent_stack: list[Element]) -> int:
+def find_block_depth(parent_stack: list[Element]) -> int:
     index: int = 0
-    for i in range(len(parent_stack) - 1, -1, -1):
-        if not is_inline_tag(parent_stack[i].tag):
+    for i in range(len(parent_stack)):
+        if not is_inline_element(parent_stack[i]):
             index = i
-            break
     return index + 1  # depth is a count not index
 
 
