@@ -1,9 +1,13 @@
 from collections.abc import Generator, Iterable
 from typing import cast
-from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import Element, tostring
 
-from ..segment import TextSegment, find_block_depth
+from bs4 import BeautifulSoup
+from mathml2latex.mathml import process_mathml
+
+from ..segment import TextSegment, combine_text_segments, find_block_depth
 from ..utils import ensure_list
+from ..xml import clone_element
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -90,7 +94,7 @@ class XMLInterrupter:
             raw_parent_stack = text_segment.parent_stack[:interrupted_index]
             parent_stack = raw_parent_stack + [placeholder_element]
             merged_text_segment = TextSegment(
-                text="".join(t.text for t in text_segments),
+                text=self._render_latex(text_segments),
                 parent_stack=parent_stack,
                 left_common_depth=text_segments[0].left_common_depth,
                 right_common_depth=text_segments[-1].right_common_depth,
@@ -134,6 +138,33 @@ class XMLInterrupter:
                 interrupted_index = i
                 break
         return interrupted_index
+
+    def _render_latex(self, text_segments: list[TextSegment]) -> str:
+        math_element, _ = next(combine_text_segments(text_segments))
+        while math_element.tag != _MATH_TAG:
+            if len(math_element) == 0:
+                return ""
+            math_element = math_element[0]
+
+        math_element = clone_element(math_element)
+        math_element.attrib.pop(_ID_KEY, None)
+        math_element.tail = None
+        latex: str | None = None
+        try:
+            mathml_str = tostring(math_element, encoding="unicode")
+            soup = BeautifulSoup(mathml_str, "html.parser")
+            latex = process_mathml(soup)
+        except Exception:
+            pass
+
+        if latex is None:
+            latex = "".join(t.text for t in text_segments)
+        elif math_element.get("display", None) == "inline":
+            latex = f"${latex}$"
+        else:
+            latex = f"$${latex}$$"
+
+        return f" {latex} "
 
     def _expand_translated_text_segment(self, text_segment: TextSegment):
         parent_element = text_segment.parent_stack[-1]

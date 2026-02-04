@@ -8,22 +8,6 @@ def element_fingerprint(element: Element) -> str:
     return f"<{element.tag} {' '.join(attrs)}/>"
 
 
-def unwrap_parents(element: Element) -> tuple[Element, list[Element]]:
-    parents: list[Element] = []
-    while True:
-        if len(element) != 1:
-            break
-        child = element[0]
-        if not element.text:
-            break
-        if not child.tail:
-            break
-        parents.append(element)
-        element = child
-        element.tail = None
-    return element, parents
-
-
 def id_in_element(element: Element) -> int | None:
     id_str = element.get(ID_KEY, None)
     if id_str is None:
