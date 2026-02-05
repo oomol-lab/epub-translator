@@ -32,6 +32,25 @@ _ENCODING_PATTERN = re.compile(r'encoding\s*=\s*["\']([^"\']+)["\']', re.IGNOREC
 _FIRST_ELEMENT_PATTERN = re.compile(r"<(?![?!])[a-zA-Z]")
 _NAMESPACE_IN_TAG = re.compile(r"\{([^}]+)\}")
 
+# When an attribute name exists in multiple namespaces (e.g., 'type' in XHTML and EPUB ops),
+# _attr_to_namespace only records ONE namespace per attribute name. During serialization,
+# the global string replacement wrongly adds namespace prefixes to ALL occurrences of that
+# attribute, including ones that should remain unprefixed (e.g., <link type="text/css">).
+#
+# Example problem:
+#   Original file has:
+#     - <link type="text/css">           (no namespace, standard HTML attribute)
+#     - <nav epub:type="toc">             (EPUB ops namespace)
+#   After parsing, _attr_to_namespace records: {'type': 'http://www.idpf.org/2007/ops'}
+#   During serialization, ALL ' type="' get replaced to ' epub:type="', breaking <link>
+#
+# This workaround fixes specific known cases where HTML standard attributes should not
+# be prefixed, even if the same attribute name appears with a namespace elsewhere.
+_STANDARD_HTML_ATTRS = (
+    (re.compile(r'<link([^>]*?) epub:type="'), r'<link\1 type="'),  # <link type="...">
+    (re.compile(r'<link([^>]*?) epub:rel="'), r'<link\1 rel="'),  # <link rel="...">
+)
+
 
 class XMLLikeNode:
     def __init__(self, file: IO[bytes], is_html_like: bool = False) -> None:
@@ -197,10 +216,13 @@ class XMLLikeNode:
                 xml_string = xml_string.replace(f"</{tag_name}>", f"</{prefix}:{tag_name}>")
                 xml_string = xml_string.replace(f"<{tag_name}/>", f"<{prefix}:{tag_name}/>")
 
-        # Similarly for attributes (though less common in EPUB)
         for attr_name, namespace_uri in self._attr_to_namespace.items():
             if namespace_uri not in _ROOT_NAMESPACES:
                 prefix = self._namespaces[namespace_uri]
                 xml_string = xml_string.replace(f' {attr_name}="', f' {prefix}:{attr_name}="')
+
+        # Apply workaround to fix standard HTML attributes (see _STANDARD_HTML_ATTRS comment)
+        for pattern, replacement in _STANDARD_HTML_ATTRS:
+            xml_string = pattern.sub(replacement, xml_string)
 
         return xml_string
