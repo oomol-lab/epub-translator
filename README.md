@@ -12,26 +12,11 @@
 </div>
 
 
-Translate EPUB books using Large Language Models while preserving the original text. The translated content is displayed side-by-side with the original, creating bilingual books perfect for language learning and cross-reference reading.
+Want to read a book in a foreign language without losing the original context? EPUB Translator transforms any EPUB into a bilingual edition with AI-powered translations displayed side-by-side with the original text.
+
+Whether you're learning a new language, conducting academic research, or simply enjoying foreign literature, you get both versions in one book - preserving all formatting, images, and structure.
 
 ![Translation Effect](./docs/images/translation.png)
-
-## Features
-
-- **Bilingual Output**: Preserves original text alongside translations for easy comparison
-- **LLM-Powered**: Leverages large language models for high-quality, context-aware translations
-- **Format Preservation**: Maintains EPUB structure, styles, images, and formatting
-- **Complete Translation**: Translates chapter content, table of contents, and metadata
-- **Progress Tracking**: Monitor translation progress with built-in callbacks
-- **Flexible LLM Support**: Works with any OpenAI-compatible API endpoint
-- **Caching**: Built-in caching for progress recovery when translation fails
-
-## Use Cases
-
-- **Language Learning**: Read books in their original language with side-by-side translations
-- **Academic Research**: Access foreign literature with bilingual references
-- **Content Localization**: Prepare books for international audiences
-- **Cross-Cultural Reading**: Enjoy literature while understanding cultural nuances
 
 ## Installation
 
