@@ -388,6 +388,105 @@ translate(
 
 When using `concurrency > 1`, ensure that any custom callback functions (`on_progress`, `on_fill_failed`) are thread-safe. Built-in callbacks are thread-safe by default.
 
+### Token Usage Monitoring
+
+Track token consumption during translation to monitor API costs and usage:
+
+```python
+from epub_translator import LLM, translate, language, SubmitKind
+
+llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+)
+
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language=language.ENGLISH,
+    submit=SubmitKind.APPEND_BLOCK,
+    llm=llm,
+)
+
+# Access token statistics after translation
+print(f"Total tokens: {llm.total_tokens}")
+print(f"Input tokens: {llm.input_tokens}")
+print(f"Input cache tokens: {llm.input_cache_tokens}")
+print(f"Output tokens: {llm.output_tokens}")
+```
+
+**Available Statistics:**
+
+- `total_tokens` - Total number of tokens used (input + output)
+- `input_tokens` - Number of prompt/input tokens
+- `input_cache_tokens` - Number of cached input tokens (when using prompt caching)
+- `output_tokens` - Number of generated/completion tokens
+
+**Real-time Monitoring:**
+
+You can also monitor token usage in real-time during translation:
+
+```python
+from tqdm import tqdm
+import time
+
+with tqdm(total=100, desc="Translating", unit="%") as pbar:
+    last_progress = 0.0
+    start_time = time.time()
+
+    def on_progress(progress: float):
+        nonlocal last_progress
+        increment = (progress - last_progress) * 100
+        pbar.update(increment)
+        last_progress = progress
+
+        # Update token stats in progress bar
+        pbar.set_postfix({
+            'tokens': llm.total_tokens,
+            'cost_est': f'${llm.total_tokens * 0.00001:.4f}'  # Estimate based on your pricing
+        })
+
+    translate(
+        source_path="source.epub",
+        target_path="translated.epub",
+        target_language=language.ENGLISH,
+        submit=SubmitKind.APPEND_BLOCK,
+        llm=llm,
+        on_progress=on_progress,
+    )
+
+    elapsed = time.time() - start_time
+    print(f"\nTranslation completed in {elapsed:.1f}s")
+    print(f"Total tokens used: {llm.total_tokens:,}")
+    print(f"Average tokens/second: {llm.total_tokens/elapsed:.1f}")
+```
+
+**Dual-LLM Token Tracking:**
+
+When using separate LLMs for translation and filling, each LLM tracks its own statistics:
+
+```python
+translation_llm = LLM(key="...", url="...", model="gpt-4", token_encoding="o200k_base")
+fill_llm = LLM(key="...", url="...", model="gpt-4", token_encoding="o200k_base")
+
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language=language.ENGLISH,
+    submit=SubmitKind.APPEND_BLOCK,
+    translation_llm=translation_llm,
+    fill_llm=fill_llm,
+)
+
+print(f"Translation tokens: {translation_llm.total_tokens}")
+print(f"Fill tokens: {fill_llm.total_tokens}")
+print(f"Combined total: {translation_llm.total_tokens + fill_llm.total_tokens}")
+```
+
+**Note:** Token statistics are cumulative across all API calls made by the LLM instance. The counts only increase and are thread-safe when using concurrent translation.
+
 ## Related Projects
 
 ### PDF Craft
