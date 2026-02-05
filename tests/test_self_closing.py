@@ -9,11 +9,11 @@ class TestSelfCloseVoidElements(unittest.TestCase):
     def test_basic_void_elements(self):
         """测试基本的 void 元素转换"""
         cases = [
-            ('<br>', '<br />'),
-            ('<hr>', '<hr />'),
+            ("<br>", "<br />"),
+            ("<hr>", "<hr />"),
             ('<img src="test.png">', '<img src="test.png" />'),
             ('<input type="text">', '<input type="text" />'),
-            ('<meta charset="utf-8">', '<meta charset="utf-8" />'),
+            # Note: <meta> is excluded from void tags to avoid conflicts with OPF meta elements
             ('<link href="style.css" rel="stylesheet">', '<link href="style.css" rel="stylesheet" />'),
         ]
 
@@ -25,10 +25,10 @@ class TestSelfCloseVoidElements(unittest.TestCase):
     def test_already_self_closed(self):
         """测试已经自闭合的标签不被修改"""
         cases = [
-            '<br />',
-            '<br/>',
-            '<hr />',
-            '<meta charset="utf-8" />',
+            "<br />",
+            "<br/>",
+            "<hr />",
+            # Note: <meta> is excluded from void tags
             '<link href="style.css" rel="stylesheet" />',
             '<img src="test.png" />',
         ]
@@ -55,12 +55,12 @@ class TestSelfCloseVoidElements(unittest.TestCase):
     def test_attributes_with_special_chars(self):
         """测试属性值中包含特殊字符的情况"""
         cases = [
-            # 属性值中有 >
-            ('<meta content="a>b">', '<meta content="a>b" />'),
+            # 属性值中有 >  - 使用 link 而不是 meta
+            ('<link content="a>b">', '<link content="a>b" />'),
             # 属性值中有引号（转义）
-            ('<meta content="He said \\"hello\\"">', '<meta content="He said \\"hello\\"" />'),
+            ('<link content="He said \\"hello\\"">', '<link content="He said \\"hello\\"" />'),
             # 属性值中有等号
-            ('<meta content="a=b">', '<meta content="a=b" />'),
+            ('<link content="a=b">', '<link content="a=b" />'),
         ]
 
         for input_html, expected in cases:
@@ -71,20 +71,29 @@ class TestSelfCloseVoidElements(unittest.TestCase):
     def test_attributes_with_newlines(self):
         """测试属性中包含换行的情况"""
         cases = [
-            # 标签跨行
-            ('''<meta
-    charset="utf-8">''', '''<meta
-    charset="utf-8" />'''),
+            # 标签跨行 - 使用 link 而不是 meta
+            (
+                """<link
+    charset="utf-8">""",
+                """<link
+    charset="utf-8" />""",
+            ),
             # 多个属性，每个占一行
-            ('''<link
+            (
+                """<link
     href="style.css"
-    rel="stylesheet">''', '''<link
+    rel="stylesheet">""",
+                """<link
     href="style.css"
-    rel="stylesheet" />'''),
-            # 属性值中有换行（虽然不常见）
-            ('''<meta content="line1
-line2">''', '''<meta content="line1
-line2" />'''),
+    rel="stylesheet" />""",
+            ),
+            # 属性值中有换行（虽然不常见） - 使用 link 而不是 meta
+            (
+                """<link content="line1
+line2">""",
+                """<link content="line1
+line2" />""",
+            ),
         ]
 
         for input_html, expected in cases:
@@ -95,11 +104,11 @@ line2" />'''),
     def test_void_element_with_trailing_whitespace(self):
         """测试标签末尾有空白的情况"""
         cases = [
-            ('<br >', '<br />'),
-            ('<br  >', '<br />'),
-            ('<br\t>', '<br />'),
-            ('<br\n>', '<br />'),
-            ('<meta charset="utf-8" >', '<meta charset="utf-8" />'),
+            ("<br >", "<br />"),
+            ("<br  >", "<br />"),
+            ("<br\t>", "<br />"),
+            ("<br\n>", "<br />"),
+            # Meta is excluded from void tags now,
         ]
 
         for input_html, expected in cases:
@@ -110,11 +119,11 @@ line2" />'''),
     def test_illegal_void_element_with_content(self):
         """测试非法的 void 元素包含内容（应删除内容）"""
         cases = [
-            ('<meta>invalid content</meta>', '<meta />'),
-            ('<base>some content</base>', '<base />'),
-            ('<link>text</link>', '<link />'),
-            ('<br>text</br>', '<br />'),
-            ('<hr>content</hr>', '<hr />'),
+            ("<meta>invalid content</meta>", "<meta>invalid content</meta>"),
+            ("<base>some content</base>", "<base />"),
+            ("<link>text</link>", "<link />"),
+            ("<br>text</br>", "<br />"),
+            ("<hr>content</hr>", "<hr />"),
         ]
 
         for input_html, expected in cases:
@@ -126,8 +135,8 @@ line2" />'''),
         """测试非法的 void 元素包含嵌套标签（应删除所有内容）"""
         cases = [
             ('<base href="/"><span>nested</span></base>', '<base href="/" />'),
-            ('<meta><div>invalid</div></meta>', '<meta />'),
-            ('<link><p>text</p></link>', '<link />'),
+            ("<meta><div>invalid</div></meta>", "<meta><div>invalid</div></meta>"),
+            ("<link><p>text</p></link>", "<link />"),
         ]
 
         for input_html, expected in cases:
@@ -138,10 +147,13 @@ line2" />'''),
     def test_multiple_void_elements(self):
         """测试多个 void 元素"""
         cases = [
-            ('<br><br><br>', '<br /><br /><br />'),
-            ('<meta name="a" content="1"><meta name="b" content="2">',
-             '<meta name="a" content="1" /><meta name="b" content="2" />'),
-            ('<hr><p>Text</p><hr>', '<hr /><p>Text</p><hr />'),
+            ("<br><br><br>", "<br /><br /><br />"),
+            # Use link instead of meta since meta is excluded from void tags
+            (
+                '<link name="a" content="1"><link name="b" content="2">',
+                '<link name="a" content="1" /><link name="b" content="2" />',
+            ),
+            ("<hr><p>Text</p><hr>", "<hr /><p>Text</p><hr />"),
         ]
 
         for input_html, expected in cases:
@@ -153,13 +165,14 @@ line2" />'''),
         """测试在完整 HTML 上下文中的 void 元素"""
         cases = [
             # 在段落中的 <br>
-            ('<p>Text <br> more text</p>', '<p>Text <br /> more text</p>'),
-            # 在 <head> 中的 <meta>
-            ('<head><meta charset="utf-8"><title>Test</title></head>',
-             '<head><meta charset="utf-8" /><title>Test</title></head>'),
+            ("<p>Text <br> more text</p>", "<p>Text <br /> more text</p>"),
+            # 在 <head> 中使用 link 而不是 meta
+            (
+                '<head><link charset="utf-8"><title>Test</title></head>',
+                '<head><link charset="utf-8" /><title>Test</title></head>',
+            ),
             # 混合正常标签和 void 元素
-            ('<div><p>Hello</p><hr><p>World</p></div>',
-             '<div><p>Hello</p><hr /><p>World</p></div>'),
+            ("<div><p>Hello</p><hr><p>World</p></div>", "<div><p>Hello</p><hr /><p>World</p></div>"),
         ]
 
         for input_html, expected in cases:
@@ -169,7 +182,7 @@ line2" />'''),
 
     def test_complex_real_world_html(self):
         """测试真实世界的复杂 HTML"""
-        input_html = '''<!DOCTYPE html>
+        input_html = """<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
@@ -184,13 +197,13 @@ line2" />'''),
 <hr>
 <p>Another paragraph.</p>
 </body>
-</html>'''
+</html>"""
 
-        expected = '''<!DOCTYPE html>
+        expected = """<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="/css/style.css" rel="stylesheet" />
 <title>Test Page</title>
 </head>
@@ -201,28 +214,28 @@ line2" />'''),
 <hr />
 <p>Another paragraph.</p>
 </body>
-</html>'''
+</html>"""
 
         result = self_close_void_elements(input_html)
         self.assertEqual(result, expected)
 
     def test_no_void_elements(self):
         """测试没有 void 元素的 HTML（应不变）"""
-        input_html = '<div><p>Hello</p><span>World</span></div>'
+        input_html = "<div><p>Hello</p><span>World</span></div>"
         result = self_close_void_elements(input_html)
         self.assertEqual(result, input_html)
 
     def test_empty_string(self):
         """测试空字符串"""
-        result = self_close_void_elements('')
-        self.assertEqual(result, '')
+        result = self_close_void_elements("")
+        self.assertEqual(result, "")
 
     def test_attributes_without_quotes(self):
         """测试没有引号的属性值（虽然不规范，但可能存在）"""
         # 注意：这种情况下我们的实现可能无法完美处理，但不应该崩溃
         cases = [
-            ('<meta charset=utf-8>', '<meta charset=utf-8 />'),
-            ('<br class=line>', '<br class=line />'),
+            # Meta is excluded from void tags now,
+            ("<br class=line>", "<br class=line />"),
         ]
 
         for input_html, expected in cases:
@@ -237,9 +250,9 @@ class TestUncloseVoidElements(unittest.TestCase):
     def test_basic_unclosing(self):
         """测试基本的 void 元素取消自闭合"""
         cases = [
-            ('<br />', '<br>'),
-            ('<hr />', '<hr>'),
-            ('<meta charset="utf-8" />', '<meta charset="utf-8">'),
+            ("<br />", "<br>"),
+            ("<hr />", "<hr>"),
+            # Meta is excluded from void tags, so it won't be unclosed
             ('<link href="style.css" rel="stylesheet" />', '<link href="style.css" rel="stylesheet">'),
             ('<img src="test.png" />', '<img src="test.png">'),
         ]
@@ -252,11 +265,10 @@ class TestUncloseVoidElements(unittest.TestCase):
     def test_unclosing_with_different_spacing(self):
         """测试不同空白格式的自闭合标签"""
         cases = [
-            ('<br/>', '<br>'),  # 没有空格
-            ('<br />', '<br>'),  # 一个空格
-            ('<br  />', '<br>'),  # 多个空格
-            ('<meta charset="utf-8"/>', '<meta charset="utf-8">'),
-            ('<meta charset="utf-8" />', '<meta charset="utf-8">'),
+            ("<br/>", "<br>"),  # 没有空格
+            ("<br />", "<br>"),  # 一个空格
+            ("<br  />", "<br>"),  # 多个空格
+            # Meta is excluded from void tags
         ]
 
         for input_html, expected in cases:
@@ -279,15 +291,17 @@ class TestUncloseVoidElements(unittest.TestCase):
 
     def test_non_void_elements_unchanged(self):
         """测试非 void 元素不受影响"""
-        input_html = '<div><p>Hello</p><span /></div>'
+        input_html = "<div><p>Hello</p><span /></div>"
         result = unclose_void_elements(input_html)
         # <span /> 不是 void 元素，应保持不变
         self.assertEqual(result, input_html)
 
     def test_mixed_content(self):
         """测试混合内容"""
-        input_html = '<head><meta charset="utf-8" /><title>Test</title><link href="style.css" rel="stylesheet" /></head>'
-        expected = '<head><meta charset="utf-8"><title>Test</title><link href="style.css" rel="stylesheet"></head>'
+        input_html = (
+            '<head><meta charset="utf-8" /><title>Test</title><link href="style.css" rel="stylesheet" /></head>'
+        )
+        expected = '<head><meta charset="utf-8" /><title>Test</title><link href="style.css" rel="stylesheet"></head>'
         result = unclose_void_elements(input_html)
         self.assertEqual(result, expected)
 
@@ -299,10 +313,11 @@ class TestUncloseVoidElements(unittest.TestCase):
         unclosed = unclose_void_elements(self_closed)
 
         # 结果可能有细微差别（如空格），但应该在功能上等价
+        # Meta 不再是 void tag，所以保持不变
         # 这里只检查关键标签存在
-        self.assertIn('<br>', unclosed)
-        self.assertIn('<meta charset="utf-8">', unclosed)
-        self.assertIn('<hr>', unclosed)
+        self.assertIn("<br>", unclosed)
+        self.assertIn('<meta charset="utf-8">', unclosed)  # Meta 不会被处理
+        self.assertIn("<hr>", unclosed)
 
 
 class TestEdgeCases(unittest.TestCase):
@@ -312,9 +327,9 @@ class TestEdgeCases(unittest.TestCase):
         """测试标签名大小写（XML 区分大小写，但 HTML 不区分）"""
         # 我们的实现使用小写标签名
         cases = [
-            ('<br>', '<br />'),
-            ('<BR>', '<BR>'),  # 大写不会被识别为 void 元素
-            ('<Br>', '<Br>'),  # 混合大小写也不会
+            ("<br>", "<br />"),
+            ("<BR>", "<BR>"),  # 大写不会被识别为 void 元素
+            ("<Br>", "<Br>"),  # 混合大小写也不会
         ]
 
         for input_html, expected in cases:
@@ -326,8 +341,8 @@ class TestEdgeCases(unittest.TestCase):
         """测试相似的标签名不被误匹配"""
         # 'br' 是 void 元素，但 'brain' 不是
         cases = [
-            ('<brain>content</brain>', '<brain>content</brain>'),  # 不应修改
-            ('<br><brain>test</brain>', '<br /><brain>test</brain>'),  # 只修改 br
+            ("<brain>content</brain>", "<brain>content</brain>"),  # 不应修改
+            ("<br><brain>test</brain>", "<br /><brain>test</brain>"),  # 只修改 br
         ]
 
         for input_html, expected in cases:
@@ -339,9 +354,9 @@ class TestEdgeCases(unittest.TestCase):
         """测试畸形 HTML（不应崩溃）"""
         # 这些情况下函数应该尽力处理，不崩溃
         cases = [
-            '<br<',  # 不完整的标签
+            "<br<",  # 不完整的标签
             '<meta charset="utf-8"',  # 缺少结束 >
-            '<br>>>',  # 多余的 >
+            "<br>>>",  # 多余的 >
         ]
 
         for input_html in cases:
@@ -356,9 +371,10 @@ class TestEdgeCases(unittest.TestCase):
     def test_unicode_content(self):
         """测试 Unicode 内容"""
         cases = [
-            ('<meta content="中文内容">', '<meta content="中文内容" />'),
+            # Use link instead of meta since meta is excluded from void tags
+            ('<link content="中文内容">', '<link content="中文内容" />'),
             ('<img alt="图片" src="test.png">', '<img alt="图片" src="test.png" />'),
-            ('<p>文字<br>换行</p>', '<p>文字<br />换行</p>'),
+            ("<p>文字<br>换行</p>", "<p>文字<br />换行</p>"),
         ]
 
         for input_html, expected in cases:
@@ -369,8 +385,9 @@ class TestEdgeCases(unittest.TestCase):
     def test_very_long_attribute_value(self):
         """测试非常长的属性值"""
         long_value = "a" * 10000
-        input_html = f'<meta content="{long_value}">'
-        expected = f'<meta content="{long_value}" />'
+        # Using link instead of meta since meta is excluded from void tags
+        input_html = f'<link content="{long_value}">'
+        expected = f'<link content="{long_value}" />'
         result = self_close_void_elements(input_html)
         self.assertEqual(result, expected)
 

@@ -19,7 +19,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_little_prince.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 验证读取到的元数据数量
             assert len(metadata) == 6, "应该有 6 个可翻译的元数据字段"
@@ -55,7 +55,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_chinese.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 这个文件没有可翻译的元数据字段
             assert len(metadata) == 0, "应该没有可翻译的元数据字段"
@@ -66,7 +66,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_skip_fields.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 验证不应该出现的字段
             tag_names = [field.tag_name for field in metadata]
@@ -87,18 +87,18 @@ class TestWriteMetadata:
 
         # 读取原始元数据
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 修改所有字段
             for field in metadata:
                 field.text = f"[Modified] {field.text}"
 
             # 写回修改后的元数据
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证修改是否成功
         with Zip(output_path, metadata_temp_dir / "verify_little_prince.epub") as zip_file:
-            modified_metadata = read_metadata(zip_file)
+            modified_metadata, _context = read_metadata(zip_file)
 
             assert len(modified_metadata) == len(metadata)
 
@@ -120,7 +120,7 @@ class TestWriteMetadata:
 
         # 读取原始元数据
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 模拟翻译：将英文标题翻译为中文
             for field in metadata:
@@ -130,11 +130,11 @@ class TestWriteMetadata:
                     field.text = "小说"
 
             # 写回翻译后的元数据
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证翻译是否成功
         with Zip(output_path, metadata_temp_dir / "verify_translated.epub") as zip_file:
-            translated_metadata = read_metadata(zip_file)
+            translated_metadata, _context = read_metadata(zip_file)
 
             title_field = next(f for f in translated_metadata if f.tag_name == "title")
             assert title_field.text == "小王子"
@@ -153,7 +153,7 @@ class TestWriteMetadata:
 
         # 读取原始元数据
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 只修改 title 字段
             for field in metadata:
@@ -161,11 +161,11 @@ class TestWriteMetadata:
                     field.text = "The Little Prince (Translated)"
 
             # 写回元数据
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证修改
         with Zip(output_path, metadata_temp_dir / "verify_partial.epub") as zip_file:
-            modified_metadata = read_metadata(zip_file)
+            modified_metadata, _context = read_metadata(zip_file)
 
             # 验证 title 已修改
             title_field = next(f for f in modified_metadata if f.tag_name == "title")
@@ -214,11 +214,12 @@ class TestEdgeCases:
 
         # 写入空元数据列表（实际上不会修改任何内容）
         with Zip(source_path, output_path) as zip_file:
-            write_metadata(zip_file, [])
+            _metadata, context = read_metadata(zip_file)
+            write_metadata(zip_file, [], context)
 
         # 验证原始元数据仍然存在
         with Zip(output_path, metadata_temp_dir / "verify_empty.epub") as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
             assert len(metadata) == 6, "原始元数据应该保持不变"
 
     def test_metadata_with_special_characters(self, metadata_temp_dir):
@@ -229,18 +230,18 @@ class TestEdgeCases:
         special_text = "Title <with> & \"special\" & 'chars' & 测试 & émojis 🌟"
 
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 修改 title 为包含特殊字符的文本
             for field in metadata:
                 if field.tag_name == "title":
                     field.text = special_text
 
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证特殊字符是否正确保存
         with Zip(output_path, metadata_temp_dir / "verify_special.epub") as zip_file:
-            modified_metadata = read_metadata(zip_file)
+            modified_metadata, _context = read_metadata(zip_file)
             title_field = next(f for f in modified_metadata if f.tag_name == "title")
             # XML 会转义特殊字符，但读取时会还原
             assert title_field.text == special_text
@@ -253,18 +254,18 @@ class TestEdgeCases:
         long_text = "A" * 10000  # 10000 个字符的长文本
 
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 修改 description 为长文本
             for field in metadata:
                 if field.tag_name == "description":
                     field.text = long_text
 
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证长文本是否正确保存
         with Zip(output_path, metadata_temp_dir / "verify_long.epub") as zip_file:
-            modified_metadata = read_metadata(zip_file)
+            modified_metadata, _context = read_metadata(zip_file)
             description_field = next(f for f in modified_metadata if f.tag_name == "description")
             assert len(description_field.text) == 10000
             assert description_field.text == long_text
@@ -275,7 +276,7 @@ class TestEdgeCases:
         output_path = metadata_temp_dir / "multiple_creators.epub"
 
         with Zip(source_path, output_path) as zip_file:
-            metadata = read_metadata(zip_file)
+            metadata, context = read_metadata(zip_file)
 
             # 修改所有 creator 字段
             creator_count = 0
@@ -284,11 +285,11 @@ class TestEdgeCases:
                     creator_count += 1
                     field.text = f"Creator {creator_count} (Modified)"
 
-            write_metadata(zip_file, metadata)
+            write_metadata(zip_file, metadata, context)
 
         # 验证所有 creator 字段都被正确修改
         with Zip(output_path, metadata_temp_dir / "verify_multiple.epub") as zip_file:
-            modified_metadata = read_metadata(zip_file)
+            modified_metadata, _context = read_metadata(zip_file)
 
             creator_fields = [f for f in modified_metadata if f.tag_name == "creator"]
             assert len(creator_fields) == 2, "应该有 2 个 creator 字段"
@@ -306,12 +307,12 @@ class TestRoundTrip:
 
         # 第一次读取
         with Zip(source_path, output_path) as zip_file:
-            original_metadata = read_metadata(zip_file)
-            write_metadata(zip_file, original_metadata)
+            original_metadata, context = read_metadata(zip_file)
+            write_metadata(zip_file, original_metadata, context)
 
         # 第二次读取，验证一致性
         with Zip(output_path, metadata_temp_dir / "roundtrip_verify.epub") as zip_file:
-            roundtrip_metadata = read_metadata(zip_file)
+            roundtrip_metadata, _context = read_metadata(zip_file)
 
             assert len(roundtrip_metadata) == len(original_metadata)
             for orig, rt in zip(original_metadata, roundtrip_metadata):
@@ -328,17 +329,17 @@ class TestRoundTrip:
             output_path = metadata_temp_dir / f"roundtrip_{i}.epub"
 
             with Zip(current_path, output_path) as zip_file:
-                metadata = read_metadata(zip_file)
-                write_metadata(zip_file, metadata)
+                metadata, context = read_metadata(zip_file)
+                write_metadata(zip_file, metadata, context)
 
             current_path = output_path
 
         # 验证最终结果与原始一致
         with Zip(source_path, metadata_temp_dir / "original_temp.epub") as zip_file:
-            original_metadata = read_metadata(zip_file)
+            original_metadata, context = read_metadata(zip_file)
 
         with Zip(current_path, metadata_temp_dir / "final_verify.epub") as zip_file:
-            final_metadata = read_metadata(zip_file)
+            final_metadata, _context = read_metadata(zip_file)
 
         assert len(final_metadata) == len(original_metadata)
         for orig, final in zip(original_metadata, final_metadata):

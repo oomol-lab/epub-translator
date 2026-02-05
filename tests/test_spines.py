@@ -113,7 +113,7 @@ class TestSpineCompletenessComparison:
             spine_files = {path.name for path, _ in spine_results}
 
             # 获取 TOC 中引用的所有文件
-            toc_list = read_toc(zip_file)
+            toc_list, _context = read_toc(zip_file)
             toc_files = set()
 
             def collect_toc_files(items):
