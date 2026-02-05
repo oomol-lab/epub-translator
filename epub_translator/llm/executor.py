@@ -7,7 +7,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
-from .statistics import LLMStatistics
+from .statistics import Statistics
 from .types import Message, MessageRole
 
 
@@ -21,7 +21,7 @@ class LLMExecutor:
         retry_times: int,
         retry_interval_seconds: float,
         create_logger: Callable[[], Logger | None],
-        statistics: LLMStatistics,
+        statistics: Statistics,
     ) -> None:
         self._model_name: str = model
         self._timeout: float | None = timeout
@@ -168,6 +168,5 @@ class LLMExecutor:
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 buffer.write(chunk.choices[0].delta.content)
-            if hasattr(chunk, "usage") and chunk.usage is not None:
-                self._statistics.update_from_usage(chunk.usage)
+            self._statistics.submit_usage(chunk.usage)
         return buffer.getvalue()
