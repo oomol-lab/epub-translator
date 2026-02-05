@@ -13,6 +13,7 @@ from ..template import create_env
 from .context import LLMContext
 from .executor import LLMExecutor
 from .increasable import Increasable
+from .statistics import LLMStatistics
 from .types import Message
 
 # Global state for logger filename generation
@@ -44,7 +45,7 @@ class LLM:
         self._temperature: Increasable = Increasable(temperature)
         self._cache_path: Path | None = self._ensure_dir_path(cache_path)
         self._logger_save_path: Path | None = self._ensure_dir_path(log_dir_path)
-
+        self._statistics = LLMStatistics()
         self._executor = LLMExecutor(
             url=url,
             model=model,
@@ -53,11 +54,32 @@ class LLM:
             retry_times=retry_times,
             retry_interval_seconds=retry_interval_seconds,
             create_logger=self._create_logger,
+            statistics=self._statistics,
         )
 
     @property
     def encoding(self) -> Encoding:
         return self._encoding
+
+    @property
+    def total_tokens(self) -> int:
+        return self._statistics.total_tokens
+
+    @property
+    def input_tokens(self) -> int:
+        return self._statistics.input_tokens
+
+    @property
+    def input_cache_tokens(self) -> int:
+        return self._statistics.input_cache_tokens
+
+    @property
+    def output_tokens(self) -> int:
+        return self._statistics.output_tokens
+
+    @property
+    def output_cache_tokens(self) -> int:
+        return self._statistics.output_cache_tokens
 
     def context(self, cache_seed_content: str | None = None) -> LLMContext:
         return LLMContext(
