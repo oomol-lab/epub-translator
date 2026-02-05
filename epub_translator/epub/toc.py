@@ -3,8 +3,8 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element
 
-from ..xml.xml import plain_text
-from .common import extract_namespace, find_opf_path, strip_namespace
+from ..xml import XMLLikeNode, plain_text
+from .common import find_opf_path, strip_namespace
 from .zip import Zip
 
 
@@ -41,30 +41,40 @@ class Toc:
         return self.href
 
 
-def read_toc(zip: Zip) -> list[Toc]:
-    version = _detect_epub_version(zip)
-    toc_path = _find_toc_path(zip, version)
-
-    if toc_path is None:
-        return []
-
-    if version == 2:
-        return _read_ncx_toc(zip, toc_path)
-    else:
-        return _read_nav_toc(zip, toc_path)
+@dataclass
+class TocContext:
+    version: int
+    toc_path: Path
+    xml_node: XMLLikeNode
 
 
-def write_toc(zip: Zip, toc: list[Toc]) -> None:
+def read_toc(zip: Zip) -> tuple[list[Toc], TocContext]:
     version = _detect_epub_version(zip)
     toc_path = _find_toc_path(zip, version)
 
     if toc_path is None:
         raise ValueError("Cannot find TOC file in EPUB")
 
-    if version == 2:
-        _write_ncx_toc(zip, toc_path, toc)
+    with zip.read(toc_path) as f:
+        xml_node = XMLLikeNode(f, is_html_like=False)
+
+    if version == 3:
+        toc_list = _read_nav_toc(xml_node.element)
     else:
-        _write_nav_toc(zip, toc_path, toc)
+        toc_list = _read_ncx_toc(xml_node.element)
+
+    context = TocContext(version=version, toc_path=toc_path, xml_node=xml_node)
+    return toc_list, context
+
+
+def write_toc(zip: Zip, toc: list[Toc], context: TocContext) -> None:
+    if context.version == 2:
+        _update_ncx_toc(context.xml_node.element, toc)
+    else:
+        _update_nav_toc(context.xml_node.element, toc)
+
+    with zip.replace(context.toc_path) as f:
+        context.xml_node.save(f)
 
 
 def _detect_epub_version(zip: Zip) -> int:
@@ -72,8 +82,6 @@ def _detect_epub_version(zip: Zip) -> int:
     with zip.read(opf_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-
-        # 检查 package 元素的 version 属性
         version_str = root.get("version", "2.0")
 
         if version_str.startswith("3"):
@@ -89,7 +97,7 @@ def _find_toc_path(zip: Zip, version: int) -> Path | None:
     with zip.read(opf_path) as f:
         content = f.read()
         root = ET.fromstring(content)
-        strip_namespace(root)  # 移除命名空间前缀以简化 XPath
+        strip_namespace(root)
 
         manifest = root.find(".//manifest")
         if manifest is None:
@@ -115,23 +123,18 @@ def _find_toc_path(zip: Zip, version: int) -> Path | None:
         return None
 
 
-def _read_ncx_toc(zip: Zip, ncx_path: Path) -> list[Toc]:
-    with zip.read(ncx_path) as f:
-        content = f.read()
-        root = ET.fromstring(content)
-        strip_namespace(root)  # 移除命名空间前缀以简化 XPath
+def _read_ncx_toc(root: Element) -> list[Toc]:
+    nav_map = root.find(".//navMap")
+    if nav_map is None:
+        return []
 
-        nav_map = root.find(".//navMap")
-        if nav_map is None:
-            return []
+    result = []
+    for nav_point in nav_map.findall("navPoint"):
+        toc_item = _parse_nav_point(nav_point)
+        if toc_item:
+            result.append(toc_item)
 
-        result = []
-        for nav_point in nav_map.findall("navPoint"):
-            toc_item = _parse_nav_point(nav_point)
-            if toc_item:
-                result.append(toc_item)
-
-        return result
+    return result
 
 
 def _parse_nav_point(nav_point: Element) -> Toc | None:
@@ -172,18 +175,11 @@ def _parse_nav_point(nav_point: Element) -> Toc | None:
     )
 
 
-def _write_ncx_toc(zip: Zip, ncx_path: Path, toc_list: list[Toc]) -> None:
-    with zip.read(ncx_path) as f:
-        content = f.read()
-        root = ET.fromstring(content)
-        ns = extract_namespace(root.tag)
-        nav_map = root.find(f".//{{{ns}}}navMap" if ns else ".//navMap")
-        if nav_map is None:
-            raise ValueError("Cannot find navMap in NCX file")
-        _update_nav_points(nav_map, toc_list, ns)
-        tree = ET.ElementTree(root)
-        with zip.replace(ncx_path) as out:
-            tree.write(out, encoding="utf-8", xml_declaration=True)
+def _update_ncx_toc(root: Element, toc_list: list[Toc]) -> None:
+    nav_map = root.find(".//navMap")
+    if nav_map is None:
+        raise ValueError("Cannot find navMap in NCX file")
+    _update_nav_points(nav_map, toc_list, None)
 
 
 def _update_nav_points(parent: Element, toc_list: list[Toc], ns: str | None, start_play_order: int = 1) -> int:
@@ -255,34 +251,28 @@ def _create_nav_point(toc: Toc, ns: str | None, play_order: int) -> Element:
     return nav_point
 
 
-def _read_nav_toc(zip: Zip, nav_path: Path) -> list[Toc]:
-    with zip.read(nav_path) as f:
-        content = f.read()
-        root = ET.fromstring(content)
+def _read_nav_toc(root: Element) -> list[Toc]:
+    nav_elem = None
+    for nav in root.findall(".//nav"):
+        epub_type = nav.get("type")
+        if epub_type == "toc":
+            nav_elem = nav
+            break
 
-        strip_namespace(root)
+    if nav_elem is None:
+        return []
 
-        nav_elem = None
-        for nav in root.findall(".//nav"):
-            epub_type = nav.get("{http://www.idpf.org/2007/ops}type") or nav.get("type")
-            if epub_type == "toc":
-                nav_elem = nav
-                break
+    ol = nav_elem.find(".//ol")
+    if ol is None:
+        return []
 
-        if nav_elem is None:
-            return []
+    result = []
+    for li in ol.findall("li"):
+        toc_item = _parse_nav_li(li)
+        if toc_item:
+            result.append(toc_item)
 
-        ol = nav_elem.find(".//ol")
-        if ol is None:
-            return []
-
-        result = []
-        for li in ol.findall("li"):
-            toc_item = _parse_nav_li(li)
-            if toc_item:
-                result.append(toc_item)
-
-        return result
+    return result
 
 
 def _parse_nav_li(li: Element) -> Toc | None:
@@ -331,30 +321,22 @@ def _parse_nav_li(li: Element) -> Toc | None:
     )
 
 
-def _write_nav_toc(zip: Zip, nav_path: Path, toc_list: list[Toc]) -> None:
-    with zip.read(nav_path) as f:
-        content = f.read()
-        root = ET.fromstring(content)
-        ns = extract_namespace(root.tag)
-        nav_elem = None
-        for nav in root.findall(f".//{{{ns}}}nav" if ns else ".//nav"):
-            epub_type = nav.get("{http://www.idpf.org/2007/ops}type") or nav.get("type") or nav.get(f"{{{ns}}}type")
-            if epub_type == "toc":
-                nav_elem = nav
-                break
+def _update_nav_toc(root: Element, toc_list: list[Toc]) -> None:
+    nav_elem = None
+    for nav in root.findall(".//nav"):
+        epub_type = nav.get("type")
+        if epub_type == "toc":
+            nav_elem = nav
+            break
 
-        if nav_elem is None:
-            raise ValueError("Cannot find nav element with type='toc'")
+    if nav_elem is None:
+        raise ValueError("Cannot find nav element with type='toc'")
 
-        ol = nav_elem.find(f".//{{{ns}}}ol" if ns else ".//ol")
-        if ol is None:
-            raise ValueError("Cannot find ol in nav element")
+    ol = nav_elem.find(".//ol")
+    if ol is None:
+        raise ValueError("Cannot find ol in nav element")
 
-        _update_nav_lis(ol, toc_list, ns)
-
-        tree = ET.ElementTree(root)
-        with zip.replace(nav_path) as out:
-            tree.write(out, encoding="utf-8", xml_declaration=True)
+    _update_nav_lis(ol, toc_list, None)
 
 
 def _update_nav_lis(ol: Element, toc_list: list[Toc], ns: str | None) -> None:
