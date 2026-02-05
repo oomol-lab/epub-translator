@@ -7,31 +7,22 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
   </p>
-  <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
+  <p><a href="https://hub.oomol.com/zh-CN/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p><a href="./README.md">English</a> | 中文</p>
 </div>
 
 
-使用大语言模型翻译 EPUB 电子书，同时保留原文。译文与原文并列显示，打造完美的双语阅读体验，特别适合语言学习和对照阅读。
+想读一本外文书,却担心失去原文的语境?EPUB Translator 可以将任何 EPUB 转换成双语版本,AI 翻译与原文并列展示。
+
+无论你是在学习新语言、进行学术研究,还是纯粹享受外国文学,你都能在一本书中同时获得两种版本——保留所有格式、图片和结构。
 
 ![翻译效果](./docs/images/translation.png)
 
-## 特性
+### 在线体验
 
-- **双语对照**: 保留原文并与译文并列显示，方便对照阅读
-- **AI 驱动**: 利用大语言模型提供高质量、上下文感知的翻译
-- **格式保留**: 完整保持 EPUB 结构、样式、图片和格式
-- **全面翻译**: 翻译章节内容、目录和元数据
-- **进度追踪**: 内置回调函数监控翻译进度
-- **灵活的 LLM 支持**: 兼容任何 OpenAI 风格的 API 端点
-- **缓存机制**: 内置缓存功能用于翻译失败后恢复进度
+我们提供[在线演示平台](https://hub.oomol.com/zh-CN/package/books-translator),无需安装即可体验 EPUB Translator 的双语翻译功能。只需上传您的 EPUB 文件,即可获得翻译后的双语版本。
 
-## 使用场景
-
-- **语言学习**: 阅读原版书籍的同时参考译文
-- **学术研究**: 访问外文文献并获得双语参考
-- **内容本地化**: 为国际读者准备书籍
-- **跨文化阅读**: 在理解文化细微差别的同时欣赏文学作品
+[![EPUB Translator 在线演示](docs/images/online-cn.png)](https://hub.oomol.com/zh-CN/package/books-translator)
 
 ## 安装
 
