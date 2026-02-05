@@ -1,5 +1,7 @@
 from xml.etree.ElementTree import Element
 
+from .const import DISPLAY_ATTRIBUTE
+
 # HTML inline-level elements
 # Reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
 # Reference: https://developer.mozilla.org/en-US/docs/Glossary/Inline-level_content
@@ -105,9 +107,14 @@ _HTML_INLINE_TAGS = frozenset(
 
 
 def is_inline_element(element: Element) -> bool:
-    if element.tag.lower() in _HTML_INLINE_TAGS:
+    tag = element.tag.lower()
+    if tag in _HTML_INLINE_TAGS:
         return True
-    display = element.get("display", None)
-    if display is not None and display.lower() == "inline":
+    display = element.get(DISPLAY_ATTRIBUTE, None)
+    if display is not None:
+        display = display.lower()
+        if display == "inline":
+            return True
+    if tag == "math" and display != "block":
         return True
     return False
