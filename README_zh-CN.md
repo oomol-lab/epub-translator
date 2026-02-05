@@ -388,6 +388,105 @@ translate(
 
 当使用 `concurrency > 1` 时，请确保任何自定义回调函数（`on_progress`、`on_fill_failed`）是线程安全的。内置回调函数默认是线程安全的。
 
+### Token 使用量监控
+
+在翻译过程中跟踪 token 消耗，以监控 API 成本和用量：
+
+```python
+from epub_translator import LLM, translate, language, SubmitKind
+
+llm = LLM(
+    key="your-api-key",
+    url="https://api.openai.com/v1",
+    model="gpt-4",
+    token_encoding="o200k_base",
+)
+
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
+    llm=llm,
+)
+
+# 翻译后访问 token 统计信息
+print(f"总 token 数: {llm.total_tokens}")
+print(f"输入 token 数: {llm.input_tokens}")
+print(f"输入缓存 token 数: {llm.input_cache_tokens}")
+print(f"输出 token 数: {llm.output_tokens}")
+```
+
+**可用的统计数据：**
+
+- `total_tokens` - 使用的 token 总数（输入 + 输出）
+- `input_tokens` - 提示词/输入的 token 数量
+- `input_cache_tokens` - 缓存的输入 token 数量（使用 prompt caching 时）
+- `output_tokens` - 生成/完成的 token 数量
+
+**实时监控：**
+
+您也可以在翻译过程中实时监控 token 使用量：
+
+```python
+from tqdm import tqdm
+import time
+
+with tqdm(total=100, desc="翻译中", unit="%") as pbar:
+    last_progress = 0.0
+    start_time = time.time()
+
+    def on_progress(progress: float):
+        nonlocal last_progress
+        increment = (progress - last_progress) * 100
+        pbar.update(increment)
+        last_progress = progress
+
+        # 在进度条中更新 token 统计
+        pbar.set_postfix({
+            'tokens': llm.total_tokens,
+            'cost_est': f'${llm.total_tokens * 0.00001:.4f}'  # 根据您的定价估算成本
+        })
+
+    translate(
+        source_path="source.epub",
+        target_path="translated.epub",
+        target_language=language.CHINESE,
+        submit=SubmitKind.APPEND_BLOCK,
+        llm=llm,
+        on_progress=on_progress,
+    )
+
+    elapsed = time.time() - start_time
+    print(f"\n翻译完成，耗时 {elapsed:.1f} 秒")
+    print(f"使用的 token 总数: {llm.total_tokens:,}")
+    print(f"平均 tokens/秒: {llm.total_tokens/elapsed:.1f}")
+```
+
+**双 LLM Token 追踪：**
+
+当使用独立的 LLM 进行翻译和填充时，每个 LLM 都会跟踪自己的统计信息：
+
+```python
+translation_llm = LLM(key="...", url="...", model="gpt-4", token_encoding="o200k_base")
+fill_llm = LLM(key="...", url="...", model="gpt-4", token_encoding="o200k_base")
+
+translate(
+    source_path="source.epub",
+    target_path="translated.epub",
+    target_language=language.CHINESE,
+    submit=SubmitKind.APPEND_BLOCK,
+    translation_llm=translation_llm,
+    fill_llm=fill_llm,
+)
+
+print(f"翻译 tokens: {translation_llm.total_tokens}")
+print(f"填充 tokens: {fill_llm.total_tokens}")
+print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
+```
+
+**注意：** Token 统计数据是累积的，包含 LLM 实例发出的所有 API 调用。计数只会增加，并且在使用并发翻译时是线程安全的。
+
 ## 相关项目
 
 ### PDF Craft

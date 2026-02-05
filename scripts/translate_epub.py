@@ -64,6 +64,34 @@ def main() -> None:
             on_fill_failed=on_fill_failed,
         )
 
+    # Print token usage statistics
+    print("\n" + "=" * 50)
+    print("Token Usage Statistics")
+    print("=" * 50)
+    print("\nTranslation LLM:")
+    print(f"  Total tokens:       {translation_llm.total_tokens:,}")
+    print(f"  Input tokens:       {translation_llm.input_tokens:,}")
+    print(f"  Input cache tokens: {translation_llm.input_cache_tokens:,}")
+    print(f"  Output tokens:      {translation_llm.output_tokens:,}")
+
+    print("\nFill LLM:")
+    print(f"  Total tokens:       {fill_llm.total_tokens:,}")
+    print(f"  Input tokens:       {fill_llm.input_tokens:,}")
+    print(f"  Input cache tokens: {fill_llm.input_cache_tokens:,}")
+    print(f"  Output tokens:      {fill_llm.output_tokens:,}")
+
+    total_combined = translation_llm.total_tokens + fill_llm.total_tokens
+    input_combined = translation_llm.input_tokens + fill_llm.input_tokens
+    input_cache_combined = translation_llm.input_cache_tokens + fill_llm.input_cache_tokens
+    output_combined = translation_llm.output_tokens + fill_llm.output_tokens
+
+    print("\nCombined Total:")
+    print(f"  Total tokens:       {total_combined:,}")
+    print(f"  Input tokens:       {input_combined:,}")
+    print(f"  Input cache tokens: {input_cache_combined:,}")
+    print(f"  Output tokens:      {output_combined:,}")
+    print("=" * 50 + "\n")
+
 
 if __name__ == "__main__":
     main()
