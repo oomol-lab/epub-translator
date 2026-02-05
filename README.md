@@ -18,6 +18,12 @@ Whether you're learning a new language, conducting academic research, or simply 
 
 ![Translation Effect](./docs/images/translation.png)
 
+### Online Demo
+
+We provide an [online demo platform](https://hub.oomol.com/package/books-translator) where you can try EPUB Translator's bilingual translation capabilities without any installation. Simply upload your EPUB file and get a translated bilingual edition.
+
+[![EPUB Translator Online Demo](docs/images/online-en.png)](https://hub.oomol.com/package/books-translator)
+
 ## Installation
 
 ```bash

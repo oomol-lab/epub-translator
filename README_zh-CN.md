@@ -7,7 +7,7 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
   </p>
-  <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
+  <p><a href="https://hub.oomol.com/zh-CN/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p><a href="./README.md">English</a> | 中文</p>
 </div>
 
@@ -17,6 +17,12 @@
 无论你是在学习新语言、进行学术研究,还是纯粹享受外国文学,你都能在一本书中同时获得两种版本——保留所有格式、图片和结构。
 
 ![翻译效果](./docs/images/translation.png)
+
+### 在线体验
+
+我们提供[在线演示平台](https://hub.oomol.com/zh-CN/package/books-translator),无需安装即可体验 EPUB Translator 的双语翻译功能。只需上传您的 EPUB 文件,即可获得翻译后的双语版本。
+
+[![EPUB Translator 在线演示](docs/images/online-cn.png)](https://hub.oomol.com/zh-CN/package/books-translator)
 
 ## 安装
 
