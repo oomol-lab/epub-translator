@@ -4,7 +4,12 @@ from enum import Enum, auto
 from typing import Self
 from xml.etree.ElementTree import Element
 
-from ..xml import expand_left_element_texts, expand_right_element_texts, is_inline_element, normalize_text_in_element
+from ..xml import (
+    expand_left_element_texts,
+    expand_right_element_texts,
+    is_inline_element,
+    normalize_text_in_element,
+)
 
 
 class TextPosition(Enum):

@@ -7,7 +7,7 @@ from mathml2latex.mathml import process_mathml
 
 from ..segment import TextSegment, combine_text_segments, find_block_depth
 from ..utils import ensure_list
-from ..xml import clone_element
+from ..xml import DISPLAY_ATTRIBUTE, clone_element
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -87,9 +87,9 @@ class XMLInterrupter:
                     _ID_KEY: cast(str, interrupted_element.get(_ID_KEY)),
                 },
             )
-            interrupted_display = interrupted_element.get("display", None)
+            interrupted_display = interrupted_element.get(DISPLAY_ATTRIBUTE, None)
             if interrupted_display is not None:
-                placeholder_element.set("display", interrupted_display)
+                placeholder_element.set(DISPLAY_ATTRIBUTE, interrupted_display)
 
             raw_parent_stack = text_segment.parent_stack[:interrupted_index]
             parent_stack = raw_parent_stack + [placeholder_element]
@@ -159,7 +159,7 @@ class XMLInterrupter:
 
         if latex is None:
             latex = "".join(t.text for t in text_segments)
-        elif math_element.get("display", None) == "inline":
+        elif math_element.get(DISPLAY_ATTRIBUTE, None) == "inline":
             latex = f"${latex}$"
         else:
             latex = f"$${latex}$$"
