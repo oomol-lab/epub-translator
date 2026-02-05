@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from mathml2latex.mathml import process_mathml
 
 from ..segment import TextSegment, combine_text_segments, find_block_depth
-from ..utils import ensure_list
+from ..utils import ensure_list, normalize_whitespace
 from ..xml import DISPLAY_ATTRIBUTE, clone_element, is_inline_element
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
@@ -159,10 +159,13 @@ class XMLInterrupter:
 
         if latex is None:
             latex = "".join(t.text for t in text_segments)
-        elif is_inline_element(math_element):
-            latex = f"${latex}$"
+            latex = normalize_whitespace(latex).strip()
         else:
-            latex = f"$${latex}$$"
+            latex = normalize_whitespace(latex).strip()
+            if is_inline_element(math_element):
+                latex = f"${latex}$"
+            else:
+                latex = f"$${latex}$$"
 
         return f" {latex} "
 
