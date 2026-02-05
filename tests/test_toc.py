@@ -19,7 +19,7 @@ class TestReadTocEpub:
         temp_path = toc_temp_dir / "temp_little_prince.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, _context = read_toc(zip_file)
 
             # 验证读取到的目录项数量
             assert len(toc_list) == 28, "应该有 28 个顶层目录项"
@@ -46,7 +46,7 @@ class TestReadTocEpub:
         temp_path = toc_temp_dir / "temp_chinese.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, _context = read_toc(zip_file)
 
             # 验证读取到的目录项数量
             assert len(toc_list) == 1, "应该只有 1 个顶层目录项"
@@ -68,7 +68,7 @@ class TestReadTocEpub3:
         temp_path = toc_temp_dir / "temp_deepseek.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, _context = read_toc(zip_file)
 
             # 验证读取到的目录项数量
             assert len(toc_list) == 2, "应该有 2 个顶层目录项"
@@ -100,18 +100,18 @@ class TestWriteTocEpub:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, context = read_toc(zip_file)
 
             # 修改目录项标题
             for item in toc_list:
                 item.title = f"[Modified] {item.title}"
 
             # 写回修改后的目录
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证修改是否成功
         with Zip(output_path, toc_temp_dir / "verify_little_prince.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
 
             assert len(modified_toc) == len(toc_list)
             assert modified_toc[0].title == "[Modified] Chapter I"
@@ -130,7 +130,7 @@ class TestWriteTocEpub:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, context = read_toc(zip_file)
 
             # 添加新的目录项
             new_item = Toc(
@@ -143,11 +143,11 @@ class TestWriteTocEpub:
             toc_list.append(new_item)
 
             # 写回修改后的目录
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证添加是否成功
         with Zip(output_path, toc_temp_dir / "verify_chinese.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
 
             assert len(modified_toc) == 2, "应该有 2 个顶层目录项"
             assert modified_toc[0].title == "封面"
@@ -162,18 +162,18 @@ class TestWriteTocEpub:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, context = read_toc(zip_file)
             original_count = len(toc_list)
 
             # 删除前 3 个目录项
             toc_list = toc_list[3:]
 
             # 写回修改后的目录
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证删除是否成功
         with Zip(output_path, toc_temp_dir / "verify_removed.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
 
             assert len(modified_toc) == original_count - 3
             assert modified_toc[0].title == "Chapter IV"
@@ -190,7 +190,7 @@ class TestWriteTocEpub3:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, context = read_toc(zip_file)
 
             # 递归修改所有目录项标题
             def modify_titles(items):
@@ -202,11 +202,11 @@ class TestWriteTocEpub3:
             modify_titles(toc_list)
 
             # 写回修改后的目录
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证修改是否成功
         with Zip(output_path, toc_temp_dir / "verify_deepseek.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
 
             assert len(modified_toc) == 2
             assert modified_toc[0].title == "【译】封面"
@@ -223,7 +223,7 @@ class TestWriteTocEpub3:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, context = read_toc(zip_file)
 
             # 添加一个带子节点的新目录项
             new_parent = Toc(
@@ -239,11 +239,11 @@ class TestWriteTocEpub3:
             toc_list.append(new_parent)
 
             # 写回修改后的目录
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证添加是否成功
         with Zip(output_path, toc_temp_dir / "verify_nested.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
 
             assert len(modified_toc) == 3, "应该有 3 个顶层目录项"
             new_item = modified_toc[-1]
@@ -293,12 +293,13 @@ class TestEdgeCases:
 
         # 读取原始目录
         with Zip(source_path, output_path) as zip_file:
+            _toc_list, context = read_toc(zip_file)
             # 写入空目录列表
-            write_toc(zip_file, [])
+            write_toc(zip_file, [], context)
 
         # 验证空目录
         with Zip(output_path, toc_temp_dir / "verify_empty.epub") as zip_file:
-            toc_list = read_toc(zip_file)
+            toc_list, _context = read_toc(zip_file)
             assert len(toc_list) == 0, "目录应该为空"
 
     def test_toc_with_special_characters(self, toc_temp_dir):
@@ -309,6 +310,7 @@ class TestEdgeCases:
         special_title = "Chapter <1> & \"Quotes\" & 'Apostrophes' & 测试"
 
         with Zip(source_path, output_path) as zip_file:
+            _toc_list, context = read_toc(zip_file)
             toc_list = [
                 Toc(
                     title=special_title,
@@ -316,11 +318,11 @@ class TestEdgeCases:
                     id="special-1",
                 )
             ]
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证特殊字符是否正确保存
         with Zip(output_path, toc_temp_dir / "verify_special.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
             assert len(modified_toc) == 1
             # XML 会转义特殊字符，但读取时会还原
             assert modified_toc[0].title == special_title
@@ -331,6 +333,7 @@ class TestEdgeCases:
         output_path = toc_temp_dir / "no_href.epub"
 
         with Zip(source_path, output_path) as zip_file:
+            _toc_list, context = read_toc(zip_file)
             toc_list = [
                 Toc(
                     title="第一部分",
@@ -342,11 +345,11 @@ class TestEdgeCases:
                     ],
                 )
             ]
-            write_toc(zip_file, toc_list)
+            write_toc(zip_file, toc_list, context)
 
         # 验证纯分组节点
         with Zip(output_path, toc_temp_dir / "verify_no_href.epub") as zip_file:
-            modified_toc = read_toc(zip_file)
+            modified_toc, _context = read_toc(zip_file)
             assert len(modified_toc) == 1
             assert modified_toc[0].title == "第一部分"
             assert modified_toc[0].href is None
@@ -364,12 +367,12 @@ class TestRoundTrip:
 
         # 第一次读取
         with Zip(source_path, output_path) as zip_file:
-            original_toc = read_toc(zip_file)
-            write_toc(zip_file, original_toc)
+            original_toc, context = read_toc(zip_file)
+            write_toc(zip_file, original_toc, context)
 
         # 第二次读取，验证一致性
         with Zip(output_path, toc_temp_dir / "roundtrip_epub2_verify.epub") as zip_file:
-            roundtrip_toc = read_toc(zip_file)
+            roundtrip_toc, _context = read_toc(zip_file)
 
             assert len(roundtrip_toc) == len(original_toc)
             for orig, rt in zip(original_toc, roundtrip_toc):
@@ -385,12 +388,12 @@ class TestRoundTrip:
 
         # 第一次读取
         with Zip(source_path, output_path) as zip_file:
-            original_toc = read_toc(zip_file)
-            write_toc(zip_file, original_toc)
+            original_toc, context = read_toc(zip_file)
+            write_toc(zip_file, original_toc, context)
 
         # 第二次读取，验证一致性
         with Zip(output_path, toc_temp_dir / "roundtrip_epub3_verify.epub") as zip_file:
-            roundtrip_toc = read_toc(zip_file)
+            roundtrip_toc, _context = read_toc(zip_file)
 
             def compare_toc_recursive(orig_list, rt_list):
                 assert len(orig_list) == len(rt_list)
