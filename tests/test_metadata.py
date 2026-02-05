@@ -19,7 +19,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_little_prince.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata, context = read_metadata(zip_file)
+            metadata, _ = read_metadata(zip_file)
 
             # 验证读取到的元数据数量
             assert len(metadata) == 6, "应该有 6 个可翻译的元数据字段"
@@ -55,7 +55,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_chinese.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata, context = read_metadata(zip_file)
+            metadata, _ = read_metadata(zip_file)
 
             # 这个文件没有可翻译的元数据字段
             assert len(metadata) == 0, "应该没有可翻译的元数据字段"
@@ -66,7 +66,7 @@ class TestReadMetadata:
         temp_path = metadata_temp_dir / "temp_skip_fields.epub"
 
         with Zip(source_path, temp_path) as zip_file:
-            metadata, context = read_metadata(zip_file)
+            metadata, _ = read_metadata(zip_file)
 
             # 验证不应该出现的字段
             tag_names = [field.tag_name for field in metadata]
