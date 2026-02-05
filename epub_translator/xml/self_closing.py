@@ -3,6 +3,8 @@ import re
 # Some non-standard EPUB generators use HTML-style tags without self-closing syntax
 # We need to convert them to XML-compatible format before parsing
 # These are HTML5 void elements that must be self-closing in XHTML
+# Note: "meta" is excluded because OPF files have <meta property="...">content</meta>
+# which is NOT a void element (different namespace, different rules)
 _VOID_TAGS = (
     "area",
     "base",
@@ -13,7 +15,6 @@ _VOID_TAGS = (
     "img",
     "input",
     "link",
-    "meta",
     "param",
     "source",
     "track",
@@ -26,7 +27,8 @@ def self_close_void_elements(xml_content: str) -> str:
     Convert void HTML elements to self-closing format for XML parsing.
 
     This function handles non-standard HTML where void elements are not self-closed.
-    For illegal cases like <meta>content</meta>, the content is removed.
+    Note: "meta" is excluded from processing because EPUB OPF files have
+    <meta property="...">content</meta> which is NOT a void element.
 
     Args:
         xml_content: HTML/XHTML content string
@@ -35,9 +37,8 @@ def self_close_void_elements(xml_content: str) -> str:
         Content with void elements in self-closing format
 
     Example:
-        <meta charset="utf-8"> → <meta charset="utf-8" />
         <br> → <br />
-        <meta>illegal</meta> → <meta />
+        <link rel="stylesheet" href="style.css"> → <link rel="stylesheet" href="style.css" />
     """
     for tag in _VOID_TAGS:
         xml_content = _fix_void_element(xml_content, tag)
