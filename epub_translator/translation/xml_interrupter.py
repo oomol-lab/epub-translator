@@ -7,7 +7,7 @@ from mathml2latex.mathml import process_mathml
 
 from ..segment import TextSegment, combine_text_segments, find_block_depth
 from ..utils import ensure_list
-from ..xml import DISPLAY_ATTRIBUTE, clone_element
+from ..xml import DISPLAY_ATTRIBUTE, clone_element, is_inline_element
 
 _ID_KEY = "__XML_INTERRUPTER_ID"
 _MATH_TAG = "math"
@@ -159,7 +159,7 @@ class XMLInterrupter:
 
         if latex is None:
             latex = "".join(t.text for t in text_segments)
-        elif math_element.get(DISPLAY_ATTRIBUTE, None) == "inline":
+        elif is_inline_element(math_element):
             latex = f"${latex}$"
         else:
             latex = f"$${latex}$$"
