@@ -22,6 +22,7 @@ class LLMExecutor:
         retry_interval_seconds: float,
         create_logger: Callable[[], Logger | None],
         statistics: Statistics,
+        extra_body: dict[str, object] | None = None,
     ) -> None:
         self._model_name: str = model
         self._timeout: float | None = timeout
@@ -29,6 +30,7 @@ class LLMExecutor:
         self._retry_interval_seconds: float = retry_interval_seconds
         self._create_logger: Callable[[], Logger | None] = create_logger
         self._statistics = statistics
+        self._extra_body: dict[str, object] | None = extra_body
         self._client = OpenAI(
             api_key=api_key,
             base_url=url,
@@ -163,6 +165,7 @@ class LLMExecutor:
             top_p=top_p,
             temperature=temperature,
             max_tokens=max_tokens,
+            extra_body=self._extra_body,
         )
         buffer = StringIO()
         for chunk in stream:
