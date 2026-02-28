@@ -500,3 +500,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
 - **OOMOL Studio**: [Open in OOMOL Studio](https://hub.oomol.com/package/books-translator?open=true)
+
+
+## Usage
+
+```python
+# Usage examples
+```
+
+
+## Examples
+
+```python
+# Example code
+```
