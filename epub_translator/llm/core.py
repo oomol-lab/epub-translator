@@ -36,6 +36,7 @@ class LLM:
         retry_interval_seconds: float = 6.0,
         cache_path: PathLike | str | None = None,
         log_dir_path: PathLike | str | None = None,
+        extra_body: dict[str, object] | None = None,
     ) -> None:
         prompts_path = Path(str(files("epub_translator"))) / "data"
         self._templates: dict[str, Template] = {}
@@ -55,6 +56,7 @@ class LLM:
             retry_interval_seconds=retry_interval_seconds,
             create_logger=self._create_logger,
             statistics=self._statistics,
+            extra_body=extra_body,
         )
 
     @property
