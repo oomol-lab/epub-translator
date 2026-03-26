@@ -18,11 +18,11 @@ Whether you're learning a new language, conducting academic research, or simply 
 
 ![Translation Effect](./docs/images/translation.png)
 
-### Online Demo
+### Online Version
 
-We provide an [online demo platform](https://hub.oomol.com/package/books-translator) where you can try EPUB Translator's bilingual translation capabilities without any installation. Simply upload your EPUB file and get a translated bilingual edition.
+If you'd like to try EPUB Translator without setting it up locally, you can use [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
 
-[![EPUB Translator Online Demo](docs/images/online-en.png)](https://hub.oomol.com/package/books-translator)
+[![EPUB Translator Online Version](docs/images/online-en.png)](https://inkora.oomol.com/epub-translator)
 
 ## Installation
 
@@ -499,4 +499,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **OOMOL Studio**: [Open in OOMOL Studio](https://hub.oomol.com/package/books-translator?open=true)
+- **Online App**: [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator)

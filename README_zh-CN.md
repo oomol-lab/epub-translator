@@ -18,11 +18,11 @@
 
 ![翻译效果](./docs/images/translation.png)
 
-### 在线体验
+### 在线版本
 
-我们提供[在线演示平台](https://hub.oomol.com/zh-CN/package/books-translator),无需安装即可体验 EPUB Translator 的双语翻译功能。只需上传您的 EPUB 文件,即可获得翻译后的双语版本。
+如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
 
-[![EPUB Translator 在线演示](docs/images/online-cn.png)](https://hub.oomol.com/zh-CN/package/books-translator)
+[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://inkora.oomol.com/epub-translator)
 
 ## 安装
 
@@ -499,4 +499,4 @@ print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
 ## 支持
 
 - **问题反馈**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **OOMOL Studio**: [在 OOMOL Studio 中打开](https://hub.oomol.com/package/books-translator?open=true)
+- **在线版本**: [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator)
