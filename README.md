@@ -480,13 +480,8 @@ print(f"Combined total: {translation_llm.total_tokens + fill_llm.total_tokens}")
 
 ## Related Projects
 
-### PDF Craft
-
-[PDF Craft](https://github.com/oomol-lab/pdf-craft) converts PDF files into EPUB and other formats, with a focus on scanned books. Combine PDF Craft with EPUB Translator to convert and translate scanned PDF books into bilingual EPUB format.
-
-**Workflow**: Scanned PDF → [PDF Craft] → EPUB → [EPUB Translator] → Bilingual EPUB
-
-For a complete tutorial, watch: [Convert scanned PDF books to EPUB format and translate them into bilingual books](https://www.bilibili.com/video/BV1tMQZY5EYY/)
+- [PDF Craft](https://github.com/oomol-lab/pdf-craft): If your source book is a scanned or image-based PDF, PDF Craft can convert it to EPUB first, so it is ready for translation. See this [demo video](https://www.bilibili.com/video/BV1tMQZY5EYY/) for the full scanned PDF to bilingual EPUB workflow.
+- [SpineDigest](https://github.com/oomol-lab/spinedigest): If you want more than translation and need a structural digest of the book, SpineDigest can turn an EPUB into summaries, chapter topology, and a knowledge graph.
 
 ## Contributing
 

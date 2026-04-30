@@ -480,13 +480,8 @@ print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
 
 ## 相关项目
 
-### PDF Craft
-
-[PDF Craft](https://github.com/oomol-lab/pdf-craft) 可以将 PDF 文件转换为 EPUB 等多种格式，专注于处理扫描版书籍。将 PDF Craft 与 EPUB Translator 结合使用，可以将扫描版 PDF 书籍转换并翻译成双语 EPUB 格式。
-
-**工作流程**: 扫描版 PDF → [PDF Craft] → EPUB → [EPUB Translator] → 双语 EPUB
-
-完整教程请观看: [将扫描版 PDF 书籍转换为 EPUB 格式并翻译成双语书](https://www.bilibili.com/video/BV1tMQZY5EYY/)
+- [PDF Craft](https://github.com/oomol-lab/pdf-craft)：如果你的源文件是扫描版或图片型 PDF，可以先用 PDF Craft 转成 EPUB，再接入 EPUB Translator 做翻译。完整流程可参考这个[演示视频](https://www.bilibili.com/video/BV1tMQZY5EYY/)。
+- [SpineDigest](https://github.com/oomol-lab/spinedigest)：如果你不只是想翻译，还想进一步获得整本书的结构化提炼，SpineDigest 可以基于 EPUB 生成摘要、章节拓扑和知识图谱。
 
 ## 贡献
 
