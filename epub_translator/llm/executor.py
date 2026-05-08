@@ -3,7 +3,7 @@ from io import StringIO
 from logging import Logger
 from time import sleep
 
-from openai import OpenAI
+from openai import OpenAI, omit
 from openai.types.chat import ChatCompletionMessageParam
 
 from .error import is_retry_error
@@ -157,19 +157,16 @@ class LLMExecutor:
                     }
                 )
 
-        request_kwargs: dict[str, object] = {
-            "model": self._model_name,
-            "messages": messages,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-            "top_p": top_p,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "extra_body": self._extra_body,
-        }
-        request_kwargs = {key: value for key, value in request_kwargs.items() if value is not None}
-
-        stream = self._client.chat.completions.create(**request_kwargs)
+        stream = self._client.chat.completions.create(
+            model=self._model_name,
+            messages=messages,
+            stream=True,
+            stream_options={"include_usage": True},
+            top_p=top_p if top_p is not None else omit,
+            temperature=temperature if temperature is not None else omit,
+            max_tokens=max_tokens if max_tokens is not None else omit,
+            extra_body=self._extra_body,
+        )
         buffer = StringIO()
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
