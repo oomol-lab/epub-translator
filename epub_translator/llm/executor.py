@@ -157,16 +157,19 @@ class LLMExecutor:
                     }
                 )
 
-        stream = self._client.chat.completions.create(
-            model=self._model_name,
-            messages=messages,
-            stream=True,
-            stream_options={"include_usage": True},
-            top_p=top_p,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            extra_body=self._extra_body,
-        )
+        request_kwargs: dict[str, object] = {
+            "model": self._model_name,
+            "messages": messages,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+            "top_p": top_p,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "extra_body": self._extra_body,
+        }
+        request_kwargs = {key: value for key, value in request_kwargs.items() if value is not None}
+
+        stream = self._client.chat.completions.create(**request_kwargs)
         buffer = StringIO()
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
