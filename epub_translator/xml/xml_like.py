@@ -236,10 +236,17 @@ def _normalize_unquoted_html_entities(content: str) -> str:
     result: list[str] = []
     index = 0
     quote: str | None = None
+    in_tag = False
 
     while index < len(content):
         char = content[index]
-        if char in ("'", '"'):
+
+        if char == "<" and quote is None:
+            in_tag = True
+        elif char == ">" and quote is None:
+            in_tag = False
+
+        if in_tag and char in ("'", '"'):
             quote = None if quote == char else char if quote is None else quote
             result.append(char)
             index += 1

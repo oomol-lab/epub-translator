@@ -302,7 +302,22 @@ class TestXMLLikeNode(unittest.TestCase):
 
         p = node.element.find(".//p")
         self.assertIsNotNone(p)
+        p = cast(Element, p)
         self.assertEqual(p.text, "A\u00a0B \u00a9 \u2014 <tag> \u00a9 \u00a0")
+
+    def test_apostrophe_in_text_does_not_disable_html_entity_normalization(self):
+        """测试正文中的 apostrophe 不会影响后续 HTML 命名实体规范化"""
+        original_content = b"""<html>
+<body><p>It's &copy;</p></body>
+</html>"""
+
+        input_file = io.BytesIO(original_content)
+        node = XMLLikeNode(input_file)
+
+        p = node.element.find(".//p")
+        self.assertIsNotNone(p)
+        p = cast(Element, p)
+        self.assertEqual(p.text, "It's \u00a9")
 
     def test_quoted_html_named_entities_are_left_unchanged(self):
         """测试引号内的 HTML 命名实体不会被规范化"""
