@@ -291,6 +291,29 @@ class TestXMLLikeNode(unittest.TestCase):
         self.assertIn("<m:mo>", result, "m:mo prefix missing")
         self.assertIn("<m:mn>", result, "m:mn prefix missing")
 
+    def test_unquoted_html_named_entities_are_supported(self):
+        """测试引号外的 HTML 命名实体会被规范化为 XML 可解析内容"""
+        original_content = b"""<html>
+<body><p>A&nbsp;B &copy; &mdash; &lt;tag&gt; &#169; &#xA0;</p></body>
+</html>"""
+
+        input_file = io.BytesIO(original_content)
+        node = XMLLikeNode(input_file)
+
+        p = node.element.find(".//p")
+        self.assertIsNotNone(p)
+        self.assertEqual(p.text, "A\u00a0B \u00a9 \u2014 <tag> \u00a9 \u00a0")
+
+    def test_quoted_html_named_entities_are_left_unchanged(self):
+        """测试引号内的 HTML 命名实体不会被规范化"""
+        original_content = b"""<html>
+<body><p title="A&nbsp;B">Hello</p></body>
+</html>"""
+
+        input_file = io.BytesIO(original_content)
+        with self.assertRaises(ValueError):
+            XMLLikeNode(input_file)
+
 
 if __name__ == "__main__":
     unittest.main()
