@@ -1,6 +1,7 @@
 import io
 import re
 import warnings
+from html.entities import html5
 from typing import IO
 from xml.etree.ElementTree import Element, fromstring, tostring
 
@@ -31,6 +32,8 @@ _ROOT_NAMESPACES = {
 _ENCODING_PATTERN = re.compile(r'encoding\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
 _FIRST_ELEMENT_PATTERN = re.compile(r"<(?![?!])[a-zA-Z]")
 _NAMESPACE_IN_TAG = re.compile(r"\{([^}]+)\}")
+_HTML_NAMED_ENTITY_PATTERN = re.compile(r"&([A-Za-z][A-Za-z0-9]+);")
+_XML_PREDEFINED_ENTITIES = {"amp", "lt", "gt", "apos", "quot"}
 
 # When an attribute name exists in multiple namespaces (e.g., 'type' in XHTML and EPUB ops),
 # _attr_to_namespace only records ONE namespace per attribute name. During serialization,
@@ -66,6 +69,7 @@ class XMLLikeNode:
         try:
             # 不必判断类型，这是一个防御性极强的函数，可做到 shit >> XML
             xml_content = self_close_void_elements(xml_content)
+            xml_content = _normalize_unquoted_html_entities(xml_content)
             self.element = self._extract_and_clean_namespaces(
                 element=fromstring(xml_content),
             )
@@ -226,3 +230,50 @@ class XMLLikeNode:
             xml_string = pattern.sub(replacement, xml_string)
 
         return xml_string
+
+
+def _normalize_unquoted_html_entities(content: str) -> str:
+    result: list[str] = []
+    index = 0
+    quote: str | None = None
+    in_tag = False
+
+    while index < len(content):
+        char = content[index]
+
+        if char == "<" and quote is None:
+            in_tag = True
+        elif char == ">" and quote is None:
+            in_tag = False
+
+        if in_tag and char in ("'", '"'):
+            quote = None if quote == char else char if quote is None else quote
+            result.append(char)
+            index += 1
+            continue
+
+        if quote is None and char == "&":
+            match = _HTML_NAMED_ENTITY_PATTERN.match(content, index)
+            if match:
+                entity_name = match.group(1)
+                replacement = _html_entity_to_numeric_reference(entity_name)
+                if replacement is not None:
+                    result.append(replacement)
+                    index = match.end()
+                    continue
+
+        result.append(char)
+        index += 1
+
+    return "".join(result)
+
+
+def _html_entity_to_numeric_reference(entity_name: str) -> str | None:
+    if entity_name in _XML_PREDEFINED_ENTITIES:
+        return None
+
+    value = html5.get(f"{entity_name};")
+    if value is None:
+        return None
+
+    return "".join(f"&#{ord(char)};" for char in value)
