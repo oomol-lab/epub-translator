@@ -20,9 +20,9 @@ Whether you're learning a new language, conducting academic research, or simply 
 
 ### Online Version
 
-If you'd like to try EPUB Translator without setting it up locally, you can use [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
+If you'd like to try EPUB Translator without setting it up locally, you can use [EPUB Translator](https://pdfcraft.ai/epub-translator), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
 
-[![EPUB Translator Online Version](docs/images/online-en.png)](https://inkora.oomol.com/epub-translator)
+[![EPUB Translator Online Version](docs/images/online-en.png)](https://pdfcraft.ai/epub-translator)
 
 ## Installation
 
@@ -494,4 +494,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **Online App**: [Inkora - EPUB Translator](https://inkora.oomol.com/epub-translator)
+- **Online App**: [Inkora - EPUB Translator](https://pdfcraft.ai/epub-translator)
