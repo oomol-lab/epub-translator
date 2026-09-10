@@ -20,9 +20,9 @@
 
 ### 在线版本
 
-如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [EPUB Translator](https://pdfcraft.ai/epub-translator)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
+如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [EPUB Translator](https://pdf.oomol.com/epub-translator)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
 
-[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdfcraft.ai/epub-translator)
+[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdf.oomol.com/epub-translator)
 
 ## 安装
 
@@ -494,4 +494,4 @@ print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
 ## 支持
 
 - **问题反馈**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **在线版本**: [Inkora - EPUB Translator](https://pdfcraft.ai/epub-translator)
+- **在线版本**: [Inkora - EPUB Translator](https://pdf.oomol.com/epub-translator)
