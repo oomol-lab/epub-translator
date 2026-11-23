@@ -6,6 +6,8 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
+    <a href="https://pdfcraft.ai/docs/getting-started/mcp/" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
+    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.1-6BA539" alt="OpenAPI 3.1" /></a>
   </p>
   <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p>English | <a href="./README_zh-CN.md">中文</a></p>
@@ -16,13 +18,33 @@ Want to read a book in a foreign language without losing the original context? E
 
 Whether you're learning a new language, conducting academic research, or simply enjoying foreign literature, you get both versions in one book - preserving all formatting, images, and structure.
 
+<table>
+  <tr>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
+  </tr>
+  <tr>
+    <td width="33.33%" valign="top">No Python or LLM API key setup needed. Translate complete EPUB books online into translation-only or bilingual editions with pay-as-you-go credits.</td>
+    <td width="33.33%" valign="top">Run locally with <code>pip install epub-translator</code> and your own LLM endpoint. Full control over prompts, models, and files.</td>
+    <td width="33.33%" valign="top">Connect whole-book EPUB and PDF translation to Claude, Cursor, or your own apps via hosted REST API and remote MCP server.</td>
+  </tr>
+  <tr>
+    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/epub-translator/"><strong>Translate EPUB Online</strong></a></td>
+    <td width="33.33%" align="center"><a href="#quick-start"><strong>Self-host</strong></a></td>
+    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/docs/getting-started/mcp/"><strong>API &amp; MCP Docs</strong></a></td>
+  </tr>
+</table>
+
+Use PDF Craft Online for [bilingual EPUB translation](https://pdfcraft.ai/epub-translator/), [scanned PDF translation](https://pdfcraft.ai/pdf-translator/), [PDF to EPUB conversion](https://pdfcraft.ai/pdf-craft/), or compare options in [Tool Comparisons](https://pdfcraft.ai/compare/).
+
 ![Translation Effect](./docs/images/translation.png)
 
 ### Online Version
 
-If you'd like to try EPUB Translator without setting it up locally, you can use [EPUB Translator](https://pdfcraft.ai/epub-translator), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
+If you'd like to try EPUB Translator without setting it up locally, you can use [EPUB Translator](https://pdfcraft.ai/epub-translator/), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
 
-[![EPUB Translator Online Version](docs/images/online-en.png)](https://pdfcraft.ai/epub-translator)
+[![EPUB Translator Online Version](docs/images/online-en.png)](https://pdfcraft.ai/epub-translator/)
 
 ## Installation
 
@@ -494,4 +516,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **Online App**: [Inkora - EPUB Translator](https://pdfcraft.ai/epub-translator)
+- **Online App**: [PDF Craft - EPUB Translator](https://pdfcraft.ai/epub-translator/)

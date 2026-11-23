@@ -6,6 +6,8 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
+    <a href="https://pdfcraft.ai/zh-CN/docs/getting-started/mcp/" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
+    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.1-6BA539" alt="OpenAPI 3.1" /></a>
   </p>
   <p><a href="https://hub.oomol.com/zh-CN/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p><a href="./README.md">English</a> | 中文</p>
@@ -16,13 +18,33 @@
 
 无论你是在学习新语言、进行学术研究,还是纯粹享受外国文学,你都能在一本书中同时获得两种版本——保留所有格式、图片和结构。
 
+<table>
+  <tr>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
+    <td width="33.33%" align="center"><img src="docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
+  </tr>
+  <tr>
+    <td width="33.33%" valign="top">无需安装 Python 或配置大模型密钥，在浏览器中直接翻译整本 EPUB，支持纯译文或双语对照版，按量计费且额度长期有效。</td>
+    <td width="33.33%" valign="top">通过 <code>pip install epub-translator</code> 在本机运行并接入你自己的 LLM 接口，自由掌控提示词、模型和文件。</td>
+    <td width="33.33%" valign="top">通过托管 REST API 与远程 MCP 服务，将整书 EPUB 和 PDF 翻译能力直接接入 Claude、Cursor 或你自己的应用。</td>
+  </tr>
+  <tr>
+    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/zh-CN/epub-translator/"><strong>在线翻译 EPUB</strong></a></td>
+    <td width="33.33%" align="center"><a href="#快速开始"><strong>本地自托管</strong></a></td>
+    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/zh-CN/docs/getting-started/mcp/"><strong>API 与 MCP 文档</strong></a></td>
+  </tr>
+</table>
+
+可直接在线使用 [EPUB 双语翻译](https://pdfcraft.ai/zh-CN/epub-translator/)、[扫描版 PDF 翻译](https://pdfcraft.ai/zh-CN/pdf-translator/) 与 [PDF 转 EPUB](https://pdfcraft.ai/zh-CN/pdf-craft/)，或查看[工具对比](https://pdfcraft.ai/zh-CN/compare/)了解不同方案的差异。
+
 ![翻译效果](./docs/images/translation.png)
 
 ### 在线版本
 
-如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [EPUB Translator](https://pdfcraft.ai/epub-translator)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
+如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [PDF Craft EPUB 翻译](https://pdfcraft.ai/zh-CN/epub-translator/)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
 
-[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdfcraft.ai/epub-translator)
+[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdfcraft.ai/zh-CN/epub-translator/)
 
 ## 安装
 
@@ -494,4 +516,4 @@ print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
 ## 支持
 
 - **问题反馈**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **在线版本**: [Inkora - EPUB Translator](https://pdfcraft.ai/epub-translator)
+- **在线版本**: [PDF Craft - EPUB Translator](https://pdfcraft.ai/zh-CN/epub-translator/)
