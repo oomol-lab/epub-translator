@@ -7,7 +7,7 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
     <a href="https://pdfcraft.ai/docs/getting-started/mcp/" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
-    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.1-6BA539" alt="OpenAPI 3.1" /></a>
+    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.0.3-6BA539" alt="OpenAPI 3.0.3" /></a>
   </p>
   <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
   <p>English | <a href="./README_zh-CN.md">中文</a></p>
@@ -20,9 +20,9 @@ Whether you're learning a new language, conducting academic research, or simply 
 
 <table>
   <tr>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
   </tr>
   <tr>
     <td width="33.33%" valign="top">No Python or LLM API key setup needed. Translate complete EPUB books online into translation-only or bilingual editions with pay-as-you-go credits.</td>
