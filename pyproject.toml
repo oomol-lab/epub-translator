@@ -37,8 +37,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://hub.oomol.com/package/books-translator"
+Homepage = "https://pdfcraft.ai/epub-translator/"
+"Online Translator" = "https://pdfcraft.ai/epub-translator/"
+Documentation = "https://pdfcraft.ai/docs/getting-started/overview/"
+"MCP Server" = "https://pdfcraft.ai/docs/getting-started/mcp/"
 Repository = "https://github.com/oomol-lab/epub-translator"
+Issues = "https://github.com/oomol-lab/epub-translator/issues"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
