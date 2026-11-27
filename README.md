@@ -6,17 +6,20 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
-    <a href="https://pdfcraft.ai/docs/getting-started/mcp/" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
-    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.0.3-6BA539" alt="OpenAPI 3.0.3" /></a>
+    <a href="https://pdfcraft.ai/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_badge_mcp" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
+    <a href="https://pdfcraft.ai/docs/api/overview/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_badge_api" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.0.3-6BA539" alt="OpenAPI 3.0.3" /></a>
   </p>
-  <p><a href="https://hub.oomol.com/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
+  <p>
+    <a href="https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_top"><strong>Translate EPUB Online</strong></a> |
+    <a href="https://pdfcraft.ai/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_top_mcp"><strong>MCP &amp; REST API</strong></a> |
+    <a href="https://pdfcraft.ai/recharge/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_top_pricing"><strong>Pricing</strong></a> |
+    <a href="#quick-start"><strong>Python Quick Start</strong></a>
+  </p>
   <p>English | <a href="./README_zh-CN.md">中文</a></p>
 </div>
 
 
-Want to read a book in a foreign language without losing the original context? EPUB Translator transforms any EPUB into a bilingual edition with AI-powered translations displayed side-by-side with the original text.
-
-Whether you're learning a new language, conducting academic research, or simply enjoying foreign literature, you get both versions in one book - preserving all formatting, images, and structure.
+Want to read a book in a foreign language without losing the original context? EPUB Translator transforms any EPUB into a bilingual or translation-only edition with AI-powered translations, preserving chapters, table of contents, images, and formatting.
 
 <table>
   <tr>
@@ -25,26 +28,30 @@ Whether you're learning a new language, conducting academic research, or simply 
     <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
   </tr>
   <tr>
-    <td width="33.33%" valign="top">No Python or LLM API key setup needed. Translate complete EPUB books online into translation-only or bilingual editions with pay-as-you-go credits.</td>
+    <td width="33.33%" valign="top">No Python or LLM API key setup needed. Upload an EPUB in your browser to export a bilingual or translation-only edition, with pay-as-you-go credits and no subscription.</td>
     <td width="33.33%" valign="top">Run locally with <code>pip install epub-translator</code> and your own LLM endpoint. Full control over prompts, models, and files.</td>
-    <td width="33.33%" valign="top">Connect whole-book EPUB and PDF translation to Claude, Cursor, or your own apps via hosted REST API and remote MCP server.</td>
+    <td width="33.33%" valign="top">Connect whole-book EPUB and PDF translation to Claude, Cursor, Codex, or your own apps via 1-click remote MCP and hosted REST API.</td>
   </tr>
   <tr>
-    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/epub-translator/"><strong>Translate EPUB Online</strong></a></td>
+    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_table_cloud"><strong>Translate EPUB Online</strong></a></td>
     <td width="33.33%" align="center"><a href="#quick-start"><strong>Self-host</strong></a></td>
-    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/docs/getting-started/mcp/"><strong>API &amp; MCP Docs</strong></a></td>
+    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_table_mcp"><strong>Connect MCP &amp; API</strong></a></td>
   </tr>
 </table>
 
-Use PDF Craft Online for [bilingual EPUB translation](https://pdfcraft.ai/epub-translator/), [scanned PDF translation](https://pdfcraft.ai/pdf-translator/), [PDF to EPUB conversion](https://pdfcraft.ai/pdf-craft/), or compare options in [Tool Comparisons](https://pdfcraft.ai/compare/).
+Want to check output quality or cost before uploading? Download [bilingual vs. translation-only sample EPUBs](https://pdfcraft.ai/blog/epub-translation-output-modes/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_samples), read the [EPUB translator benchmark](https://pdfcraft.ai/blog/epub-translation-benchmark-pdf-craft-vs-otranslator-booktranslator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_benchmark), or check [pay-as-you-go pricing](https://pdfcraft.ai/recharge/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_pricing). Working with a scanned PDF instead? Try [PDF to EPUB](https://pdfcraft.ai/pdf-craft/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_pdf_craft) or [PDF Translator](https://pdfcraft.ai/pdf-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_pdf_translator).
 
-![Translation Effect](./docs/images/translation.png)
+![Translation Effect](https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/translation.png)
 
-### Online Version
+## Translate Online (No Setup Required)
 
-If you'd like to try EPUB Translator without setting it up locally, you can use [EPUB Translator](https://pdfcraft.ai/epub-translator/), the official online app for the same bilingual EPUB translation workflow. It lets you upload an EPUB file and try the main experience directly in your browser.
+Don't want to install Python, configure token encodings, or manage LLM API keys? **[PDF Craft EPUB Translator](https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_online_intro)** is the official online app built on the same bilingual EPUB translation engine. Upload an `.epub` in your browser, choose bilingual or translation-only output, see the word count and credit estimate before submitting, and download the finished EPUB.
 
-[![EPUB Translator Online Version](docs/images/online-en.png)](https://pdfcraft.ai/epub-translator/)
+**[Upload your EPUB and translate it online →](https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_online_cta)**
+
+[![EPUB Translator Online Version](https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/online-en.png)](https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_online_screenshot)
+
+Looking for a desktop or mobile reader to read and compare translated EPUBs side-by-side? Download [PDF Craft Desktop and iOS](https://pdfcraft.ai/download/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_download).
 
 ## Installation
 
@@ -54,13 +61,9 @@ pip install epub-translator
 
 **Requirements**: Python 3.11, 3.12, or 3.13
 
+> Just want to translate a book without setting up Python or an LLM API key? [Translate your EPUB online with PDF Craft →](https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_quickstart_callout) or [connect via MCP and REST API →](https://pdfcraft.ai/connect/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_quickstart_mcp).
+
 ## Quick Start
-
-### Using OOMOL Studio (Recommended)
-
-The easiest way to use EPUB Translator is through OOMOL Studio with a visual interface:
-
-[![Watch the Tutorial](./docs/images/link2youtube.png)](https://www.youtube.com/watch?v=QsAdiskxfXI)
 
 ### Using Python API
 
@@ -108,6 +111,12 @@ with tqdm(total=100, desc="Translating", unit="%") as pbar:
         on_progress=on_progress,
     )
 ```
+
+### Visual Workflow (OOMOL Studio)
+
+You can also run the open-source workflow locally in [OOMOL Studio](https://hub.oomol.com/package/books-translator?open=true):
+
+[![Watch the Tutorial](https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/link2youtube.png)](https://www.youtube.com/watch?v=QsAdiskxfXI)
 
 ## API Reference
 
@@ -502,8 +511,8 @@ print(f"Combined total: {translation_llm.total_tokens + fill_llm.total_tokens}")
 
 ## Related Projects
 
-- [PDF Craft](https://github.com/oomol-lab/pdf-craft): If your source book is a scanned or image-based PDF, PDF Craft can convert it to EPUB first, so it is ready for translation. See this [demo video](https://www.bilibili.com/video/BV1tMQZY5EYY/) for the full scanned PDF to bilingual EPUB workflow.
-- [SpineDigest](https://github.com/oomol-lab/spinedigest): If you want more than translation and need a structural digest of the book, SpineDigest can turn an EPUB into summaries, chapter topology, and a knowledge graph.
+- [PDF Craft](https://github.com/oomol-lab/pdf-craft) ([Online App](https://pdfcraft.ai/pdf-craft/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_related_pdfcraft)): If your source book is a scanned or image-based PDF, PDF Craft can convert it to EPUB first so it is ready for translation, or translate scanned PDFs directly online. See this [demo video](https://www.bilibili.com/video/BV1tMQZY5EYY/) for the full scanned PDF to bilingual EPUB workflow.
+- [Wiki Graph](https://github.com/oomol-lab/wiki-graph): If you want more than translation and need a structural digest of the book, Wiki Graph turns an EPUB into summaries, chapter topology, and a knowledge graph.
 
 ## Contributing
 
@@ -515,5 +524,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
+- **Online EPUB Translator**: [PDF Craft EPUB Translator](https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_footer)
+- **MCP & REST API**: [Connect Claude, Cursor, and Agents](https://pdfcraft.ai/connect/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_footer_mcp) | [REST API Docs](https://pdfcraft.ai/docs/api/overview/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_footer_api)
+- **Desktop & iOS Reader**: [Download PDF Craft](https://pdfcraft.ai/download/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_footer_download)
+- **Pricing**: [Pay-as-you-go Credits](https://pdfcraft.ai/recharge/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_en_footer_pricing)
 - **Issues**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **Online App**: [PDF Craft - EPUB Translator](https://pdfcraft.ai/epub-translator/)

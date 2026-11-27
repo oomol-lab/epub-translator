@@ -37,10 +37,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://pdfcraft.ai/epub-translator/"
-"Online Translator" = "https://pdfcraft.ai/epub-translator/"
-Documentation = "https://pdfcraft.ai/docs/getting-started/overview/"
-"MCP Server" = "https://pdfcraft.ai/docs/getting-started/mcp/"
+Homepage = "https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_pypi&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=pypi_homepage"
+"Online Translator" = "https://pdfcraft.ai/epub-translator/?utm_source=epub_translator_pypi&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=pypi_online"
+"Connect MCP" = "https://pdfcraft.ai/connect/?utm_source=epub_translator_pypi&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=pypi_mcp"
+"API Docs" = "https://pdfcraft.ai/docs/api/overview/?utm_source=epub_translator_pypi&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=pypi_api"
+Pricing = "https://pdfcraft.ai/recharge/?utm_source=epub_translator_pypi&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=pypi_pricing"
 Repository = "https://github.com/oomol-lab/epub-translator"
 Issues = "https://github.com/oomol-lab/epub-translator/issues"
 

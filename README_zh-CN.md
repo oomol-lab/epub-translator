@@ -6,45 +6,52 @@
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/v/epub-translator.svg" alt="pypi epub-translator" /></a>
     <a href="https://pypi.org/project/epub-translator/" target="_blank"><img src="https://img.shields.io/pypi/pyversions/epub-translator.svg" alt="python versions" /></a>
     <a href="https://github.com/oomol-lab/epub-translator/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/oomol-lab/epub-translator" alt="license" /></a>
-    <a href="https://pdfcraft.ai/zh-CN/docs/getting-started/mcp/" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
-    <a href="https://pdfcraft.ai/openapi.json" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.0.3-6BA539" alt="OpenAPI 3.0.3" /></a>
+    <a href="https://pdfcraft.ai/zh-CN/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_badge_mcp" target="_blank"><img src="https://img.shields.io/badge/MCP-ready-111827" alt="MCP ready" /></a>
+    <a href="https://pdfcraft.ai/zh-CN/docs/api/overview/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_badge_api" target="_blank"><img src="https://img.shields.io/badge/OpenAPI-3.0.3-6BA539" alt="OpenAPI 3.0.3" /></a>
   </p>
-  <p><a href="https://hub.oomol.com/zh-CN/package/books-translator?open=true" target="_blank"><img src="https://static.oomol.com/assets/button.svg" alt="Open in OOMOL Studio" /></a></p>
+  <p>
+    <a href="https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_top"><strong>在线翻译 EPUB</strong></a> |
+    <a href="https://pdfcraft.ai/zh-CN/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_top_mcp"><strong>接入 MCP 与 API</strong></a> |
+    <a href="https://pdfcraft.ai/zh-CN/recharge/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_top_pricing"><strong>定价与按量计费</strong></a> |
+    <a href="#快速开始"><strong>Python 快速开始</strong></a>
+  </p>
   <p><a href="./README.md">English</a> | 中文</p>
 </div>
 
 
-想读一本外文书,却担心失去原文的语境?EPUB Translator 可以将任何 EPUB 转换成双语版本,AI 翻译与原文并列展示。
-
-无论你是在学习新语言、进行学术研究,还是纯粹享受外国文学,你都能在一本书中同时获得两种版本——保留所有格式、图片和结构。
+想读一本外文书，却担心失去原文语境？EPUB Translator 可以将整本 EPUB 转换为双语对照版或纯译文版，尽量保留原有章节、目录、图片和排版结构。
 
 <table>
   <tr>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
-    <td width="33.33%" align="center"><img src="docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/pdfcraft-cloud.svg" alt="PDF Craft Cloud" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/self-hosted.svg" alt="Self-hosted" width="140"></td>
+    <td width="33.33%" align="center"><img src="https://raw.githubusercontent.com/oomol-lab/epub-translator/main/docs/images/deployment-options/api-mcp.svg" alt="API &amp; MCP" width="140"></td>
   </tr>
   <tr>
-    <td width="33.33%" valign="top">无需安装 Python 或配置大模型密钥，在浏览器中直接翻译整本 EPUB，支持纯译文或双语对照版，按量计费且额度长期有效。</td>
+    <td width="33.33%" valign="top">无需安装 Python 或配置大模型密钥，在浏览器中上传 EPUB 即可生成双语对照或纯译文版，按量计费且无需订阅。</td>
     <td width="33.33%" valign="top">通过 <code>pip install epub-translator</code> 在本机运行并接入你自己的 LLM 接口，自由掌控提示词、模型和文件。</td>
-    <td width="33.33%" valign="top">通过托管 REST API 与远程 MCP 服务，将整书 EPUB 和 PDF 翻译能力直接接入 Claude、Cursor 或你自己的应用。</td>
+    <td width="33.33%" valign="top">通过一键远程 MCP 服务与托管 REST API，将整书 EPUB 和 PDF 翻译能力直接接入 Claude、Cursor、Codex 或你自己的应用。</td>
   </tr>
   <tr>
-    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/zh-CN/epub-translator/"><strong>在线翻译 EPUB</strong></a></td>
+    <td width="33.33%" align="center">🚀 <a href="https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_table_cloud"><strong>在线翻译 EPUB</strong></a></td>
     <td width="33.33%" align="center"><a href="#快速开始"><strong>本地自托管</strong></a></td>
-    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/zh-CN/docs/getting-started/mcp/"><strong>API 与 MCP 文档</strong></a></td>
+    <td width="33.33%" align="center"><a href="https://pdfcraft.ai/zh-CN/connect/?utm_source=epub_translator_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_zh_cn_table_mcp"><strong>接入 MCP 与 API</strong></a></td>
   </tr>
 </table>
 
-可直接在线使用 [EPUB 双语翻译](https://pdfcraft.ai/zh-CN/epub-translator/)、[扫描版 PDF 翻译](https://pdfcraft.ai/zh-CN/pdf-translator/) 与 [PDF 转 EPUB](https://pdfcraft.ai/zh-CN/pdf-craft/)，或查看[工具对比](https://pdfcraft.ai/zh-CN/compare/)了解不同方案的差异。
+上传前想先看实际效果或费用？可下载[双语与纯译文 EPUB 样例](https://pdfcraft.ai/zh-CN/blog/epub-translation-output-modes/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_samples)、阅读 [EPUB 翻译横向评测](https://pdfcraft.ai/zh-CN/blog/epub-translation-benchmark-pdf-craft-vs-otranslator-booktranslator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_benchmark)，或查看[按量计费定价](https://pdfcraft.ai/zh-CN/recharge/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_pricing)。如果手头是扫描版 PDF，也可以直接使用 [PDF 转 EPUB](https://pdfcraft.ai/zh-CN/pdf-craft/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_pdf_craft) 或 [PDF 翻译](https://pdfcraft.ai/zh-CN/pdf-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_pdf_translator)。
 
 ![翻译效果](./docs/images/translation.png)
 
-### 在线版本
+## 在线翻译（免本地配置）
 
-如果你希望在不进行本地安装的情况下体验 EPUB Translator，可以试试 [PDF Craft EPUB 翻译](https://pdfcraft.ai/zh-CN/epub-translator/)，这是一个基于相同双语 EPUB 翻译流程构建的正式在线应用。你可以直接上传 EPUB 文件，在浏览器中体验主要功能。
+不想安装 Python、配置 Token 编码或申请大模型 API Key？**[PDF Craft EPUB 翻译](https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_online_intro)** 是基于同一套双语 EPUB 翻译引擎构建的官方在线应用。在浏览器中上传 `.epub`，选择双语对照或纯译文输出，提交前即可看到字数与费用预估，完成后直接下载成品 EPUB。
 
-[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdfcraft.ai/zh-CN/epub-translator/)
+**[上传 EPUB，立即在线翻译 →](https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_online_cta)**
+
+[![EPUB Translator 在线版本](docs/images/online-cn.png)](https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_online_screenshot)
+
+如果你需要桌面端或 iOS 阅读器来对照阅读和整理双语译本，可以下载 [PDF Craft 桌面端与 iOS 客户端](https://pdfcraft.ai/zh-CN/download/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_download)。
 
 ## 安装
 
@@ -54,13 +61,9 @@ pip install epub-translator
 
 **系统要求**: Python 3.11、3.12 或 3.13
 
+> 只想快速翻译一本书，不想配置 Python 环境或自备大模型 API Key？[直接在浏览器中使用 PDF Craft 在线翻译 →](https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_quickstart_callout)，或通过 [MCP 与 REST API →](https://pdfcraft.ai/zh-CN/connect/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_quickstart_mcp) 一键接入 Claude、Cursor。
+
 ## 快速开始
-
-### 使用 OOMOL Studio (推荐)
-
-最简单的使用方式是通过 OOMOL Studio 的可视化界面:
-
-[![观看教程](./docs/images/link2youtube.png)](https://www.youtube.com/watch?v=QsAdiskxfXI)
 
 ### 使用 Python API
 
@@ -108,6 +111,12 @@ with tqdm(total=100, desc="翻译中", unit="%") as pbar:
         on_progress=on_progress,
     )
 ```
+
+### 可视化工作流（OOMOL Studio）
+
+你也可以在 [OOMOL Studio](https://hub.oomol.com/zh-CN/package/books-translator?open=true) 中以可视化工作流的方式本地运行：
+
+[![观看教程](./docs/images/link2youtube.png)](https://www.youtube.com/watch?v=QsAdiskxfXI)
 
 ## API 参考
 
@@ -502,18 +511,21 @@ print(f"总计: {translation_llm.total_tokens + fill_llm.total_tokens}")
 
 ## 相关项目
 
-- [PDF Craft](https://github.com/oomol-lab/pdf-craft)：如果你的源文件是扫描版或图片型 PDF，可以先用 PDF Craft 转成 EPUB，再接入 EPUB Translator 做翻译。完整流程可参考这个[演示视频](https://www.bilibili.com/video/BV1tMQZY5EYY/)。
-- [SpineDigest](https://github.com/oomol-lab/spinedigest)：如果你不只是想翻译，还想进一步获得整本书的结构化提炼，SpineDigest 可以基于 EPUB 生成摘要、章节拓扑和知识图谱。
+- [PDF Craft](https://github.com/oomol-lab/pdf-craft)（[在线版](https://pdfcraft.ai/zh-CN/pdf-craft/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_related_pdfcraft)）：如果你的源文件是扫描版或图片型 PDF，可以先用 PDF Craft 转成 EPUB 再做翻译，或直接在线翻译扫描版 PDF。完整流程可参考这个[演示视频](https://www.bilibili.com/video/BV1tMQZY5EYY/)。
+- [Wiki Graph](https://github.com/oomol-lab/wiki-graph)：如果你不只是想翻译，还想进一步获得整本书的结构化提炼，Wiki Graph 可以基于 EPUB 生成摘要、章节拓扑和知识图谱。
 
 ## 贡献
 
-欢迎贡献! 请随时提交 Pull Request。
+欢迎贡献！请随时提交 Pull Request。
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
 
 ## 支持
 
+- **在线翻译 EPUB**: [PDF Craft EPUB 翻译](https://pdfcraft.ai/zh-CN/epub-translator/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_footer)
+- **MCP 与 REST API**: [一键接入 Claude、Cursor 与 Agent](https://pdfcraft.ai/zh-CN/connect/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_footer_mcp) | [REST API 文档](https://pdfcraft.ai/zh-CN/docs/api/overview/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_footer_api)
+- **桌面端与 iOS 阅读器**: [下载 PDF Craft 客户端](https://pdfcraft.ai/zh-CN/download/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_footer_download)
+- **定价与按量计费**: [查看费率与充值](https://pdfcraft.ai/zh-CN/recharge/?utm_source=epub_translator_readme&utm_medium=referral&utm_campaign=pdfcraft_online&utm_content=readme_zh_cn_footer_pricing)
 - **问题反馈**: [GitHub Issues](https://github.com/oomol-lab/epub-translator/issues)
-- **在线版本**: [PDF Craft - EPUB Translator](https://pdfcraft.ai/zh-CN/epub-translator/)
