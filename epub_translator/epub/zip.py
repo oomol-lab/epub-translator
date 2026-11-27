@@ -1,3 +1,4 @@
+import shutil
 import zipfile
 from pathlib import Path
 from typing import IO
@@ -52,13 +53,12 @@ class Zip:
     def migrate(self, path: Path):
         path_str = path.as_posix()
         source_info = self._source_zip.getinfo(path_str)
-        with self.read(path) as source_file:
-            content = source_file.read()
-        self._target_zip.writestr(
-            zinfo_or_arcname=source_info,
-            data=content,
-            compress_type=source_info.compress_type,
-        )
+        # Open the source first: opening the target entry resets the shared ZipInfo.
+        with (
+            self._source_zip.open(source_info, "r") as source_file,
+            self._target_zip.open(source_info, "w") as target_file,
+        ):
+            shutil.copyfileobj(source_file, target_file, _BUFFER_SIZE * 4)
         self._processed_files.add(path)
 
     def read(self, path: Path) -> IO[bytes]:
